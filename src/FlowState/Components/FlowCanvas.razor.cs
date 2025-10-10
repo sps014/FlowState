@@ -41,6 +41,8 @@ namespace FlowState.Components
         // Selection changed sends an array of selected node IDs
         [Parameter] public EventCallback<string[]> OnSelectionChanged { get; set; }
 
+        [Parameter] public EventCallback OnNotifyNodesCleared { get; set; }
+
 
         /// <summary>
         /// Optional override for the background grid pattern.
@@ -53,7 +55,10 @@ namespace FlowState.Components
         private ElementReference gridRef;
         private ElementReference canvasRef;
         private ElementReference flowContentRef;
+
+#nullable disable
         private IJSObjectReference module;
+#nullable restore
 
         private DotNetObjectReference<FlowCanvas>? dotnetObjRef;
 
@@ -169,6 +174,13 @@ namespace FlowState.Components
         {
             if (OnSelectionChanged.HasDelegate)
                 await OnSelectionChanged.InvokeAsync(nodeIds);
+        }
+
+        [JSInvokable]
+        public async Task NotifyNodesCleared()
+        {
+            if (OnNotifyNodesCleared.HasDelegate)
+                await OnNotifyNodesCleared.InvokeAsync();
         }
 
 

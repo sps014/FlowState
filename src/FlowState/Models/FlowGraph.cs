@@ -19,8 +19,13 @@ public class FlowGraph
 
     public void CreateNode<T>() where T : FlowNodeBase
     {
-        NodesInfo.Add(new NodeInfo { NodeType = typeof(T), Component = null , Parameters = { ["Graph"] = this } });
+        NodesInfo.Add(new NodeInfo { NodeType = typeof(T), Component = null, Parameters = { ["Graph"] = this } });
         NodeAdded?.Invoke(this, EventArgs.Empty);
+    }
+    
+    public FlowNodeBase? GetNodeById(string id)
+    {
+        return Nodes.FirstOrDefault(n => n.Id == id);
     }
 
     public EventHandler? NodeAdded;
