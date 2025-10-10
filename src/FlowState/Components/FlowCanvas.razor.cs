@@ -55,7 +55,7 @@ namespace FlowState.Components
         private ElementReference flowContentRef;
         private IJSObjectReference module;
 
-        private DotNetObjectReference<FlowCanvas> dotnetObjRef;
+        private DotNetObjectReference<FlowCanvas>? dotnetObjRef;
 
         // Default dotted grid pattern
         private const string DefaultGridStyle =
@@ -104,7 +104,7 @@ namespace FlowState.Components
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
         }
 
-        private void Refresh(object sender, EventArgs e)
+        private void Refresh(object? _, EventArgs e)
         {
             StateHasChanged();
         }
@@ -155,7 +155,6 @@ namespace FlowState.Components
         {
             if (OnNodeSelected.HasDelegate)
                 await OnNodeSelected.InvokeAsync(nodeId);
-            Console.WriteLine("Node selected: " + nodeId);
         }
 
         [JSInvokable]
@@ -163,7 +162,6 @@ namespace FlowState.Components
         {
             if (OnNodeDeselected.HasDelegate)
                 await OnNodeDeselected.InvokeAsync(nodeId);
-            Console.WriteLine("Node deselected: " + nodeId);
         }
 
         [JSInvokable]
@@ -171,13 +169,13 @@ namespace FlowState.Components
         {
             if (OnSelectionChanged.HasDelegate)
                 await OnSelectionChanged.InvokeAsync(nodeIds);
-            Console.WriteLine("Selection changed: " + string.Join(", ", nodeIds));
         }
 
 
         public async ValueTask DisposeAsync()
         {
-            Graph.NodeAdded -= Refresh;
+            if (Graph != null)
+                Graph.NodeAdded -= Refresh;
 
             if (module != null)
             {
