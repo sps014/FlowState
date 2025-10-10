@@ -5,13 +5,13 @@ namespace FlowState.Models.Events
     /// </summary>
     public class PanEventArgs : EventArgs
     {
-        public PanEventArgs(int x ,int y)
+        public PanEventArgs(double x ,double y)
         {
             X = x;
             Y = y;
         }
 
-        public int X { get; }
-        public int Y { get; }
+        public double X { get; }
+        public double Y { get; }
     }
 }

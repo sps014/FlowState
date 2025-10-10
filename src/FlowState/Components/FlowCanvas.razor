@@ -3,24 +3,20 @@
 
 <div @ref="canvasRef"
      class="@Class"
-     @onpointerdown="StartPan"
-     @onpointermove="PanMove"
-     @onpointerup="EndPan"
-     @onpointerleave="EndPan"
      @onwheel="OnWheel" @onmousewheel:preventDefault
      style="width:@Width; height:@Height; overflow:hidden; position:relative; cursor:grab; @Style">
 
     <!-- Background grid -->
-    <div class="flow-grid" style="@EffectiveGridStyle"></div>
+    <div class="flow-grid" style="@EffectiveGridStyle" @ref="gridRef"></div>
 
     <!-- Movable content -->
-    <div class="flow-content" style="@ContentStyle">
+    <div class="flow-content" @ref="flowContentRef" style="@ContentStyle">
     @if(Graph != null){
         <div class="nodes">
         @foreach(var nodeInfo in Graph.NodesInfo)
         {
             <CascadingValue TValue="FlowNodeBase" Value="@nodeInfo.Instance">
-            <DynamicComponent Type="nodeInfo.NodeType" @ref="nodeInfo.Component" Parameters="nodeInfo.Parameters"/>
+                <DynamicComponent Type="nodeInfo.NodeType" @ref="nodeInfo.Component" Parameters="nodeInfo.Parameters"/>
             </CascadingValue>
         }
         </div>
