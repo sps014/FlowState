@@ -19,7 +19,9 @@
         <div class="nodes">
         @foreach(var nodeInfo in Graph.NodesInfo)
         {
-            <DynamicComponent Type="nodeInfo.NodeType" @ref="nodeInfo.Component"/>
+            <CascadingValue TValue="FlowNodeBase" Value="@nodeInfo.Instance">
+            <DynamicComponent Type="nodeInfo.NodeType" @ref="nodeInfo.Component" Parameters="nodeInfo.Parameters"/>
+            </CascadingValue>
         }
         </div>
         }

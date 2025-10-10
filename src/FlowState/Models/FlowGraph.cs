@@ -8,7 +8,9 @@ public class FlowGraph
 {
     public FlowNodeRegistry nodeRegistry { get; } = new FlowNodeRegistry();
     internal List<NodeInfo> NodesInfo { get; } = new List<NodeInfo>();
-    public IReadOnlyList<FlowNodeBase> Nodes => NodesInfo.Where(n => n.Component != null && n.Component.Instance!=null).Select(n => (n.Component!.Instance as FlowNodeBase)!).ToList();
+    public IReadOnlyList<FlowNodeBase> Nodes => NodesInfo.Where(n => n.Instance!=null).Select(ny=> ny.Instance!).ToList();
+    
+    public FlowCanvas? Canvas { get; set; }
 
     public void RegisterNode<T>() where T : FlowNodeBase
     {
@@ -17,7 +19,7 @@ public class FlowGraph
 
     public void CreateNode<T>() where T : FlowNodeBase
     {
-        NodesInfo.Add(new NodeInfo { NodeType = typeof(T), Component = null});
+        NodesInfo.Add(new NodeInfo { NodeType = typeof(T), Component = null , Parameters = { ["Graph"] = this } });
         NodeAdded?.Invoke(this, EventArgs.Empty);
     }
 
@@ -28,4 +30,18 @@ internal record NodeInfo
 {
     public required Type NodeType { get; init; }
     public DynamicComponent? Component { get; set; }
+
+    public FlowNodeBase? Instance
+    {
+        get
+        {
+            if(Component!=null && Component.Instance is FlowNodeBase fn)
+            {
+                return fn;
+            }
+            return null;
+        }
+    }
+
+    public Dictionary<string, object> Parameters { get; init; } = new Dictionary<string, object>();
 }

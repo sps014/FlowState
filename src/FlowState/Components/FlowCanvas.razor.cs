@@ -78,6 +78,8 @@ namespace FlowState.Components
         {
             if (Graph == null)
                 throw new InvalidOperationException("FlowCanvas requires a valid FlowGraph instance.");
+                
+            Graph.Canvas = this;
             Graph.NodeAdded += Refresh;
         }
 

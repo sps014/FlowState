@@ -1,3 +1,4 @@
+using FlowState.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.JSInterop;
@@ -15,14 +16,12 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable
     public string Id { get; } = Guid.NewGuid().ToString();
     public abstract ValueTask ExecuteAsync();
 
-    [CascadingParameter]
-    public FlowNode? FlowNode { get; set; }
+    [Parameter]
+    public FlowGraph? Graph { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
-
-        Console.WriteLine(FlowNode==null);
     }
     public void Dispose()
     {
