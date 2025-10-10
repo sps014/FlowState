@@ -1,11 +1,40 @@
 ﻿@page "/"
 @using FlowState.Components
+@using FlowState.Models
 @rendermode InteractiveServer	
 
 <PageTitle>Home</PageTitle>
 
-<FlowCanvas Height="100vh" Width="800vw">
-    <div style="width:120px; height:120px; background:crimson; color:white; line-height:120px; text-align:center;">
-        Default Dotted Grid
-    </div>
+<FlowCanvas Height="100vh" Width="100vw" Graph="graph">
+    
 </FlowCanvas>
+
+<button @onclick="OnOkClicked">Ok</button>
+
+
+@code
+{
+    FlowGraph graph = new FlowGraph();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        graph.RegisterNode<InputNode>();
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            graph.CreateNode<InputNode>();
+            StateHasChanged();
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private void OnOkClicked()
+    {
+        FlowNodeBase c= graph.Nodes.First();
+        Console.WriteLine($"Node count: {c.X},{c.Y}");
+        StateHasChanged();
+    }
+}

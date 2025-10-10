@@ -1,0 +1,17 @@
+.flow-canvas {
+    background-color: #fff;
+    touch-action: none;
+    user-select: none;
+    overflow: hidden;
+    position: relative;
+}
+
+.flow-grid {
+    pointer-events: none; /* background shouldn’t block clicks */
+    background-repeat: repeat;
+}
+
+.flow-content {
+    pointer-events: auto; /* so child elements are interactive */
+    transition: transform 0s;
+}
