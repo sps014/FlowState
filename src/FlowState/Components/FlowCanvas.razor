@@ -1,0 +1,151 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<div id="@id" @ref="canvasRef"
+     class="@Class"
+     @onpointerdown="StartPan"
+     @onpointermove="PanMove"
+     @onpointerup="EndPan"
+     @onpointerleave="EndPan"
+     @onwheel="OnWheel" @onmousewheel:preventDefault
+     style="width:@Width; height:@Height; overflow:hidden; position:relative; cursor:grab; @Style">
+
+    <!-- Background grid -->
+    <div class="flow-grid" style="@EffectiveGridStyle"></div>
+
+    <!-- Movable content -->
+    <div class="flow-content" style="@ContentStyle">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    private string id = Guid.NewGuid().ToString();
+
+    [EditorRequired, Parameter] public string Width { get; set; } = "100%";
+    [EditorRequired, Parameter] public string Height { get; set; } = "100%";
+    [Parameter] public string Style { get; set; } = "";
+    [Parameter] public string Class { get; set; } = "flow-canvas";
+
+    [Parameter] public int OffsetX { get; set; } = 0;
+    [Parameter] public int OffsetY { get; set; } = 0;
+
+    [Parameter] public double MinZoom { get; set; } = 0.2;
+    [Parameter] public double MaxZoom { get; set; } = 3.0;
+
+    [Parameter] public double Zoom { get; set; } = 1.0;
+    [Parameter] public EventCallback<PanEventArgs> OnPanned { get; set; }
+    [Parameter] public EventCallback<double> OnZoomed { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>
+    /// Optional override for the background grid pattern.
+    /// </summary>
+    [Parameter] public string? GridStyle { get; set; }
+
+    private bool isPanning;
+    private double startX, startY;
+    private double lastOffsetX, lastOffsetY;
+    private ElementReference canvasRef;
+    private IJSObjectReference? module;
+
+    // Default dotted grid pattern
+    private const string DefaultGridStyle =
+        """
+        background-image:radial-gradient(#000 1px, transparent 1px);
+        background-size:32px 32px;
+        background-repeat:repeat;
+        """;
+
+    private string EffectiveGridStyle =>
+        $"""
+        position:absolute;
+        inset:0;
+        {(string.IsNullOrWhiteSpace(GridStyle) ? DefaultGridStyle : GridStyle)};
+        background-position:{OffsetX}px {OffsetY}px;
+        """;
+
+    private string ContentStyle =>
+        $"""
+        position:absolute;
+        top:0;left:0;
+        transform:translate3d({OffsetX}px,{OffsetY}px,0) scale({Zoom});
+        will-change:transform;
+        """;
+
+    protected override  async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if(firstRender)
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowCanvas.js");
+    }
+
+    private void StartPan(PointerEventArgs e)
+    {
+        isPanning = true;
+        startX = e.ClientX;
+        startY = e.ClientY;
+        lastOffsetX = OffsetX;
+        lastOffsetY = OffsetY;
+    }
+
+    private void EndPan(EventArgs e) => isPanning = false;
+
+    private async Task PanMove(PointerEventArgs e)
+    {
+        if (!isPanning) return;
+        OffsetX = (int)(lastOffsetX + (e.ClientX - startX));
+        OffsetY = (int)(lastOffsetY + (e.ClientY - startY));
+        await OnPanned.InvokeAsync(new PanEventArgs(OffsetX, OffsetY));
+        StateHasChanged();
+    }
+
+    private async Task OnWheel(WheelEventArgs e)
+    {
+
+        if (module == null) return;
+
+        // Scroll up = zoom in, scroll down = zoom out
+        double delta = e.DeltaY < 0 ? 0.1 : -0.1;
+        double newZoom = Math.Clamp(Zoom + delta, MinZoom, MaxZoom);
+
+        if (Math.Abs(newZoom - Zoom) < 0.001) return; // already at limit
+
+        var rect = await module.InvokeAsync<DOMRect>("getBoundingClientRect", canvasRef);
+        double mouseX = e.ClientX - rect.Left;
+        double mouseY = e.ClientY - rect.Top;
+
+        // Adjust offsets so zoom is centered at cursor
+        OffsetX = (int)(mouseX - (mouseX - OffsetX) * (newZoom / Zoom));
+        OffsetY = (int)(mouseY - (mouseY - OffsetY) * (newZoom / Zoom));
+
+        Zoom = newZoom;
+
+        await OnZoomed.InvokeAsync(Zoom);
+        StateHasChanged();
+    }
+}
+
+
+
+<style>
+.flow-canvas {
+    background-color: #fff;
+    touch-action: none;
+    user-select: none;
+    overflow: hidden;
+    position: relative;
+}
+
+.flow-grid {
+    pointer-events: none; /* background shouldn’t block clicks */
+    background-repeat: repeat;
+}
+
+.flow-content {
+    pointer-events: auto; /* so child elements are interactive */
+    transition: transform 0s;
+}
+</style>
