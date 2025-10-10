@@ -6,6 +6,10 @@ let offsetX = 0;
 let offsetY = 0;
 
 let isPanning = false;
+let isNodeDragging = false;
+
+let selectedNode = null;
+
 let startX = 0;
 let startY = 0;
 let lastOffsetX = 0;
@@ -17,6 +21,9 @@ let maxZoom = 2.0;
 
 let gridBackgroundSize = { width: 32, height: 32 };
 let dotnetRef = null;
+
+let lastMouseX = 0;
+let lastMouseY = 0;
 
 export function setGridBackgroundSize(width, height) {
   gridBackgroundSize = { width, height };
@@ -48,19 +55,84 @@ export function removeCanvasEvents(el) {
 }
 
 function pointerdown(e) {
+  if (dragNodeStart(e)) return;
   panStart(e);
 }
 
 function pointermove(e) {
+  if (isNodeDragging) {
+    dragNodeMove(e);
+    return;
+  }
   panMove(e);
 }
 
 function pointerup(e) {
+  if (dragNodeStop(e)) return;
   panEnd(e);
 }
 
 function pointerleave(e) {
   panEnd(e);
+}
+
+function dragNodeStart(e) {
+  const currentNode = getClickedNode(e);
+  if (currentNode !== null) {
+    selectedNode = currentNode;
+    isNodeDragging = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+    e.stopPropagation();
+    e.preventDefault();
+    return true;
+  }
+
+  return false;
+}
+
+function dragNodeStop(e) {
+  if (selectedNode === null || isNodeDragging === false) return false;
+
+  isNodeDragging = false;
+
+  dotnetRef.invokeMethodAsync(
+    "NotifyNodeMoved",
+    selectedNode.id,
+    lastMouseX,
+    lastMouseY
+  );
+
+selectedNode = null;
+
+
+  lastMouseX = 0;
+  lastMouseY = 0;
+
+  e.stopPropagation();
+  e.preventDefault();
+
+  return true;
+}
+
+function dragNodeMove(e) {
+  if (!isNodeDragging) return;
+  if (selectedNode === null) return;
+
+  const deltaX = e.clientX - lastMouseX;
+  const deltaY = e.clientY - lastMouseY;
+  lastMouseX = e.clientX;
+  lastMouseY = e.clientY;
+
+  const style = window.getComputedStyle(selectedNode);
+  const matrix = new DOMMatrixReadOnly(style.transform);
+  const nodeX = matrix.m41 + deltaX / zoom;
+  const nodeY = matrix.m42 + deltaY / zoom;
+
+  selectedNode.style.transform = `translate3d(${nodeX}px, ${nodeY}px, 0px)`;
+
+  e.stopPropagation();
+  e.preventDefault();
 }
 
 function onWheel(e) {
@@ -126,6 +198,9 @@ function panEnd(e) {
   e.preventDefault();
 }
 
+function getClickedNode(e) {
+  return e.target.closest(".flow-node");
+}
 
 export function setCanvasProperties(props) {
   offsetX = props.offsetX;
@@ -142,21 +217,21 @@ export function getCanvasProperties() {
     offsetY: offsetY,
     zoom: zoom,
     minZoom: minZoom,
-    maxZoom: maxZoom
+    maxZoom: maxZoom,
   };
 }
 
 export function setOffset(x, y) {
-    offsetX = x;
-    offsetY = y;
-    updateTransforms();
+  offsetX = x;
+  offsetY = y;
+  updateTransforms();
 }
 
 export function setZoom(zoomLevel) {
-    zoom = clamp(zoomLevel, minZoom, maxZoom);
-    updateTransforms();
+  zoom = clamp(zoomLevel, minZoom, maxZoom);
+  updateTransforms();
 }
 
 function clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
+  return Math.min(Math.max(value, min), max);
 }

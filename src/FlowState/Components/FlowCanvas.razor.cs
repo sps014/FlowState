@@ -34,6 +34,8 @@ namespace FlowState.Components
         [Parameter] public EventCallback<PanEventArgs> OnPanned { get; set; }
         [Parameter] public EventCallback<double> OnZoomed { get; set; }
 
+        [Parameter] public EventCallback<NodeMovedArg> OnNodeMoved { get; set; }
+
         /// <summary>
         /// Optional override for the background grid pattern.
         /// </summary>
@@ -105,7 +107,7 @@ namespace FlowState.Components
         {
             return module.InvokeVoidAsync("setCanvasProperties", canvasProperties);
         }
-        
+
         public ValueTask<CanvasProperties> GetViewportPropertiesAsync()
         {
             return module.InvokeAsync<CanvasProperties>("getCanvasProperties");
@@ -138,6 +140,12 @@ namespace FlowState.Components
         public async Task NotifyZoomed(double zoom)
         {
             await OnZoomed.InvokeAsync(zoom);
+        }
+
+        [JSInvokable]
+        public async Task NotifyNodeMoved(string nodeId, double x, double y)
+        {
+            await OnNodeMoved.InvokeAsync(new NodeMovedArg(nodeId, x, y));
         }
 
         public async ValueTask DisposeAsync()
