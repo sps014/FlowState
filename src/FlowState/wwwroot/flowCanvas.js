@@ -4,37 +4,29 @@ let flowContentEl = null;
 
 let offsetX = 0;
 let offsetY = 0;
+let zoom = 1;
+let minZoom = 0.2;
+let maxZoom = 2.0;
+let gridBackgroundSize = { width: 32, height: 32 };
 
+let dotnetRef = null;
+
+// --- State
 let isPanning = false;
 let isNodeDragging = false;
-
-let selectedNode = null;
-
 let startX = 0;
 let startY = 0;
 let lastOffsetX = 0;
 let lastOffsetY = 0;
 
-let zoom = 1;
-let minZoom = 0.2;
-let maxZoom = 2.0;
-
-let gridBackgroundSize = { width: 32, height: 32 };
-let dotnetRef = null;
-
+let selectedNodes = new Set();
+let dragStartPositions = new Map();
 let lastMouseX = 0;
 let lastMouseY = 0;
 
-export function setGridBackgroundSize(width, height) {
-  gridBackgroundSize = { width, height };
-}
+let nodeSelectionClass = "selected";
 
-export function setupCanvasEvents(
-  el,
-  gridElement,
-  flowContentElement,
-  dotnetReference
-) {
+export function setupCanvasEvents(el, gridElement, flowContentElement, dotnetReference) {
   canvasEl = el;
   gridEl = gridElement;
   flowContentEl = flowContentElement;
@@ -54,8 +46,24 @@ export function removeCanvasEvents(el) {
   el.removeEventListener("pointerleave", pointerleave);
 }
 
+// =================== Pointer Handling ====================
+
 function pointerdown(e) {
-  if (dragNodeStart(e)) return;
+  const node = getClickedNode(e);
+
+  if (node) {
+    handleNodeSelection(node, e);
+    dragNodeStart(e, node);
+    return;
+  } else {
+    // Clear all selections if clicked on empty space
+    if (selectedNodes.size > 0) {
+      const deselected = [...selectedNodes].map(n => n.id);
+      clearSelection();
+      dotnetRef.invokeMethodAsync("NotifyNodesCleared", deselected);
+    }
+  }
+
   panStart(e);
 }
 
@@ -68,7 +76,10 @@ function pointermove(e) {
 }
 
 function pointerup(e) {
-  if (dragNodeStop(e)) return;
+  if (isNodeDragging) {
+    dragNodeStop(e);
+    return;
+  }
   panEnd(e);
 }
 
@@ -76,87 +87,103 @@ function pointerleave(e) {
   panEnd(e);
 }
 
-function dragNodeStart(e) {
-  const currentNode = getClickedNode(e);
-  if (currentNode !== null) {
-    selectedNode = currentNode;
-    isNodeDragging = true;
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
-    e.stopPropagation();
-    e.preventDefault();
-    return true;
+// =================== Node Selection ====================
+
+function handleNodeSelection(node, e) {
+  if (e.ctrlKey || e.metaKey) {
+    if (selectedNodes.has(node)) {
+      node.classList.remove(nodeSelectionClass);
+      selectedNodes.delete(node);
+      dotnetRef.invokeMethodAsync("NotifyNodeDeselected", node.id);
+    } else {
+      node.classList.add(nodeSelectionClass);
+      selectedNodes.add(node);
+      dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
+    }
+  } else {
+    // Replace current selection
+    for (const n of selectedNodes) n.classList.remove(nodeSelectionClass);
+    selectedNodes.clear();
+    node.classList.add(nodeSelectionClass);
+    selectedNodes.add(node);
+    dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
   }
 
-  return false;
+  // --- NEW: invoke selection changed with all currently selected node IDs
+  const selectedIds = [...selectedNodes].map(n => n.id);
+  dotnetRef.invokeMethodAsync("NotifySelectionChanged", selectedIds);
 }
 
-function dragNodeStop(e) {
-  if (selectedNode === null || isNodeDragging === false) return false;
-
-  isNodeDragging = false;
-
-  dotnetRef.invokeMethodAsync(
-    "NotifyNodeMoved",
-    selectedNode.id,
-    lastMouseX,
-    lastMouseY
-  );
-
-selectedNode = null;
-
-
-  lastMouseX = 0;
-  lastMouseY = 0;
-
-  e.stopPropagation();
-  e.preventDefault();
-
-  return true;
+function clearSelection() {
+  for (const n of selectedNodes) {
+    n.classList.remove(nodeSelectionClass);
+  }
+  selectedNodes.clear();
 }
 
-function dragNodeMove(e) {
-  if (!isNodeDragging) return;
-  if (selectedNode === null) return;
+// =================== Node Dragging ====================
 
-  const deltaX = e.clientX - lastMouseX;
-  const deltaY = e.clientY - lastMouseY;
+function dragNodeStart(e, node) {
+  if (selectedNodes.size === 0) {
+    selectedNodes.add(node);
+    node.classList.add(nodeSelectionClass);
+    dotnetRef.invokeMethodAsync("NotifyNodeSelected", [node.id]);
+  }
+
+  isNodeDragging = true;
   lastMouseX = e.clientX;
   lastMouseY = e.clientY;
 
-  const style = window.getComputedStyle(selectedNode);
-  const matrix = new DOMMatrixReadOnly(style.transform);
-  const nodeX = matrix.m41 + deltaX / zoom;
-  const nodeY = matrix.m42 + deltaY / zoom;
-
-  selectedNode.style.transform = `translate3d(${nodeX}px, ${nodeY}px, 0px)`;
+  dragStartPositions.clear();
+  for (const n of selectedNodes) {
+    const style = window.getComputedStyle(n);
+    const matrix = new DOMMatrixReadOnly(style.transform);
+    dragStartPositions.set(n, { x: matrix.m41, y: matrix.m42 });
+  }
 
   e.stopPropagation();
   e.preventDefault();
 }
 
-function onWheel(e) {
-  const delta = e.deltaY < 0 ? 0.02 : -0.02;
-  const newZoom = clamp(zoom + delta, minZoom, maxZoom);
+function dragNodeMove(e) {
+  if (!isNodeDragging || selectedNodes.size === 0) return;
 
-  if (Math.abs(newZoom - zoom) < 0.001) return; // already at limit
-  const rect = canvasEl.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
+  const deltaX = (e.clientX - lastMouseX) / zoom;
+  const deltaY = (e.clientY - lastMouseY) / zoom;
+  lastMouseX = e.clientX;
+  lastMouseY = e.clientY;
 
-  // Adjust offsets so zoom is centered at cursor
-  offsetX = mouseX - (mouseX - offsetX) * (newZoom / zoom);
-  offsetY = mouseY - (mouseY - offsetY) * (newZoom / zoom);
-
-  zoom = newZoom;
-
-  updateTransforms();
+  for (const n of selectedNodes) {
+    const startPos = dragStartPositions.get(n);
+    const newX = startPos.x + deltaX;
+    const newY = startPos.y + deltaY;
+    n.style.transform = `translate3d(${newX}px, ${newY}px, 0px)`;
+    dragStartPositions.set(n, { x: newX, y: newY });
+  }
 
   e.stopPropagation();
   e.preventDefault();
-
-  dotnetRef.invokeMethodAsync("NotifyZoomed", zoom);
 }
+
+function dragNodeStop(e) {
+  if (!isNodeDragging) return;
+
+  isNodeDragging = false;
+
+  // Notify all moved nodes
+  for (const n of selectedNodes) {
+    const pos = dragStartPositions.get(n);
+    if (pos) {
+      dotnetRef.invokeMethodAsync("NotifyNodeMoved", n.id, pos.x, pos.y);
+    }
+  }
+
+  dragStartPositions.clear();
+  e.stopPropagation();
+  e.preventDefault();
+}
+
+// =================== Panning & Zoom ====================
 
 function panStart(e) {
   isPanning = true;
@@ -181,25 +208,56 @@ function panMove(e) {
   e.preventDefault();
 }
 
-function updateTransforms() {
-  flowContentEl.style.transform = `translate3d(${offsetX}px, ${offsetY}px,0px) scale(${zoom})`;
-  gridEl.style.backgroundPosition = `${
-    offsetX % (gridBackgroundSize.width * zoom)
-  }px ${offsetY % (gridBackgroundSize.height * zoom)}px`;
-  gridEl.style.backgroundSize = `${gridBackgroundSize.width * zoom}px ${
-    gridBackgroundSize.height * zoom
-  }px`;
-}
-
 function panEnd(e) {
+  if (!isPanning) return;
   isPanning = false;
   dotnetRef.invokeMethodAsync("NotifyPanned", offsetX, offsetY);
   e.stopPropagation();
   e.preventDefault();
 }
 
+function onWheel(e) {
+  const delta = e.deltaY < 0 ? 0.02 : -0.02;
+  const newZoom = clamp(zoom + delta, minZoom, maxZoom);
+  if (Math.abs(newZoom - zoom) < 0.001) return;
+
+  const rect = canvasEl.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  offsetX = mouseX - (mouseX - offsetX) * (newZoom / zoom);
+  offsetY = mouseY - (mouseY - offsetY) * (newZoom / zoom);
+
+  zoom = newZoom;
+  updateTransforms();
+
+  dotnetRef.invokeMethodAsync("NotifyZoomed", zoom);
+
+  e.stopPropagation();
+  e.preventDefault();
+}
+
+// =================== Helpers ====================
+
+function updateTransforms() {
+  flowContentEl.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0px) scale(${zoom})`;
+  gridEl.style.backgroundPosition = `${offsetX % (gridBackgroundSize.width * zoom)}px ${offsetY % (gridBackgroundSize.height * zoom)}px`;
+  gridEl.style.backgroundSize = `${gridBackgroundSize.width * zoom}px ${gridBackgroundSize.height * zoom}px`;
+}
+
 function getClickedNode(e) {
   return e.target.closest(".flow-node");
+}
+
+function clamp(v, min, max) {
+  return Math.min(Math.max(v, min), max);
+}
+
+// =================== Public API ====================
+
+export function setComponentProperties(width, height, nodeSelectionClassParam) {
+  gridBackgroundSize = { width, height };
+  nodeSelectionClass = nodeSelectionClassParam;
 }
 
 export function setCanvasProperties(props) {
@@ -212,13 +270,7 @@ export function setCanvasProperties(props) {
 }
 
 export function getCanvasProperties() {
-  return {
-    offsetX: offsetX,
-    offsetY: offsetY,
-    zoom: zoom,
-    minZoom: minZoom,
-    maxZoom: maxZoom,
-  };
+  return { offsetX, offsetY, zoom, minZoom, maxZoom };
 }
 
 export function setOffset(x, y) {
@@ -227,11 +279,7 @@ export function setOffset(x, y) {
   updateTransforms();
 }
 
-export function setZoom(zoomLevel) {
-  zoom = clamp(zoomLevel, minZoom, maxZoom);
+export function setZoom(z) {
+  zoom = clamp(z, minZoom, maxZoom);
   updateTransforms();
-}
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
 }
