@@ -3,7 +3,7 @@ namespace FlowStateBlazorServer.Components.Nodes;
 using FlowState.Attributes;
 using FlowState.Components;
 
-[FlowNode("Input")]
+[FlowNodeMetadata("Input")]
 public partial class InputNode
 {
     public override ValueTask ExecuteAsync()

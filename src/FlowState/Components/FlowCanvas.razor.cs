@@ -11,8 +11,7 @@ namespace FlowState.Components
 {
     public partial class FlowCanvas : IDisposable
     {
-        private string id = Guid.NewGuid().ToString();
-
+        public string Id { get; } = Guid.NewGuid().ToString();
 
         [EditorRequired]
         [Parameter]

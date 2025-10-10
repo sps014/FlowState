@@ -1,7 +1,7 @@
 @using Microsoft.JSInterop
 @inject IJSRuntime JS
 
-<div id="@id" @ref="canvasRef"
+<div @ref="canvasRef"
      class="@Class"
      @onpointerdown="StartPan"
      @onpointermove="PanMove"

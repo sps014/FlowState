@@ -1,10 +1,10 @@
 namespace FlowState.Attributes;
 
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-public sealed class FlowNodeAttribute : Attribute
+public sealed class FlowNodeMetadataAttribute : Attribute
 {
     public string Category { get; }
-    public FlowNodeAttribute(string category)
+    public FlowNodeMetadataAttribute(string category)
     {
         Category = category;
     }
