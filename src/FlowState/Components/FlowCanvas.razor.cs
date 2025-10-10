@@ -41,9 +41,6 @@ namespace FlowState.Components
 
         [Parameter] public Size GridBackgroundSize { get; set; } = new Size(32, 32);
 
-        private bool isPanning;
-        private double startX, startY;
-        private double lastOffsetX, lastOffsetY;
 
         private ElementReference gridRef;
         private ElementReference canvasRef;
@@ -96,60 +93,35 @@ namespace FlowState.Components
             module = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowCanvas.js");
             await module.InvokeVoidAsync("setGridBackgroundSize", GridBackgroundSize.Width, GridBackgroundSize.Height);
             await module.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef, flowContentRef, dotnetObjRef);
+            await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
         }
 
-        private void Refresh(object? sender, EventArgs e)
+        private void Refresh(object sender, EventArgs e)
         {
             StateHasChanged();
         }
-       
-        private async Task OnWheel(WheelEventArgs e)
+
+        public ValueTask SetViewportPropertiesAsync(CanvasProperties canvasProperties)
         {
-
-            if (module == null) return;
-
-            // Scroll up = zoom in, scroll down = zoom out
-            double delta = e.DeltaY < 0 ? 0.02 : -0.02;
-            double newZoom = Math.Clamp(Zoom + delta, MinZoom, MaxZoom);
-
-            if (Math.Abs(newZoom - Zoom) < 0.001) return; // already at limit
-
-            var rect = await module.InvokeAsync<DOMRect>("getBoundingClientRect", canvasRef);
-            double mouseX = e.ClientX - rect.Left;
-            double mouseY = e.ClientY - rect.Top;
-
-            // Adjust offsets so zoom is centered at cursor
-            //OffsetX = (int)(mouseX - (mouseX - OffsetX) * (newZoom / Zoom));
-            //OffsetY = (int)(mouseY - (mouseY - OffsetY) * (newZoom / Zoom));
-
-            Zoom = newZoom;
-
-            await OnZoomed.InvokeAsync(Zoom);
-            StateHasChanged();
+            return module.InvokeVoidAsync("setCanvasProperties", canvasProperties);
+        }
+        
+        public ValueTask<CanvasProperties> GetViewportPropertiesAsync()
+        {
+            return module.InvokeAsync<CanvasProperties>("getCanvasProperties");
+        }
+        public ValueTask SetOffsetAsync(int offsetX, int offsetY)
+        {
+            return module.InvokeVoidAsync("setOffset", offsetX, offsetY);
         }
 
-        public void SetViewport(CanvasProperties canvasProperties)
+        public ValueTask SetZoomAsync(double zoom)
         {
+            return module.InvokeVoidAsync("setZoom", zoom);
+        }
+
+
             
-        }
-        public void SetOffset(int offsetX, int offsetY)
-        {
-            
-        }
-
-        public void SetZoom(double zoom)
-        {
-            Zoom = Math.Clamp(zoom, MinZoom, MaxZoom);
-            StateHasChanged();
-        }
-
-        public CanvasProperties GetViewportProperties() =>
-            new CanvasProperties
-            {
-                OffsetX = 0,
-                OffsetY = 0,
-                Zoom = Zoom
-            };
 
         public void Dispose()
         {
@@ -160,6 +132,12 @@ namespace FlowState.Components
         public async Task NotifyPanned(double offsetX, double offsetY)
         {
             await OnPanned.InvokeAsync(new PanEventArgs(offsetX, offsetY));
+        }
+
+        [JSInvokable]
+        public async Task NotifyZoomed(double zoom)
+        {
+            await OnZoomed.InvokeAsync(zoom);
         }
 
         public async ValueTask DisposeAsync()
