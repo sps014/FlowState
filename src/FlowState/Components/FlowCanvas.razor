@@ -31,7 +31,7 @@
     [Parameter] public int OffsetY { get; set; } = 0;
 
     [Parameter] public double MinZoom { get; set; } = 0.2;
-    [Parameter] public double MaxZoom { get; set; } = 3.0;
+    [Parameter] public double MaxZoom { get; set; } = 2.0;
 
     [Parameter] public double Zoom { get; set; } = 1.0;
     [Parameter] public EventCallback<PanEventArgs> OnPanned { get; set; }
@@ -58,21 +58,24 @@
         background-repeat:repeat;
         """;
 
-    private string EffectiveGridStyle =>
-        $"""
-        position:absolute;
-        inset:0;
-        {(string.IsNullOrWhiteSpace(GridStyle) ? DefaultGridStyle : GridStyle)};
-        background-position:{OffsetX}px {OffsetY}px;
-        """;
+  private string EffectiveGridStyle =>
+    $"""
+    position:absolute;
+    inset:0;
+    {(string.IsNullOrWhiteSpace(GridStyle) ? DefaultGridStyle : GridStyle)};
+    background-position:{OffsetX % (32 * Zoom)}px {OffsetY % (32 * Zoom)}px;
+    background-size:{32 * Zoom}px {32 * Zoom}px;
+    """;
 
-    private string ContentStyle =>
-        $"""
-        position:absolute;
-        top:0;left:0;
-        transform:translate3d({OffsetX}px,{OffsetY}px,0) scale({Zoom});
-        will-change:transform;
-        """;
+
+private string ContentStyle =>
+    $"""
+    position:absolute;
+    top:0;left:0;
+    transform:translate3d({OffsetX}px,{OffsetY}px,0) scale({Zoom});
+    transform-origin: 0 0;
+    will-change:transform;
+    """;
 
     protected override  async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -108,7 +111,7 @@
         if (module == null) return;
 
         // Scroll up = zoom in, scroll down = zoom out
-        double delta = e.DeltaY < 0 ? 0.1 : -0.1;
+        double delta = e.DeltaY < 0 ? 0.02 : -0.02;
         double newZoom = Math.Clamp(Zoom + delta, MinZoom, MaxZoom);
 
         if (Math.Abs(newZoom - Zoom) < 0.001) return; // already at limit
@@ -126,6 +129,34 @@
         await OnZoomed.InvokeAsync(Zoom);
         StateHasChanged();
     }
+
+    public void SetViewport(CanvasProperties canvasProperties)
+    {
+        OffsetX = canvasProperties.OffsetX;
+        OffsetY = canvasProperties.OffsetY;
+        Zoom = canvasProperties.Zoom;
+        StateHasChanged();
+    }
+    public void SetOffset(int offsetX, int offsetY)
+    {
+        OffsetX = offsetX;
+        OffsetY = offsetY;
+        StateHasChanged();
+    }
+
+    public void SetZoom(double zoom)
+    {
+        Zoom = Math.Clamp(zoom, MinZoom, MaxZoom);
+        StateHasChanged();
+    }
+
+    public CanvasProperties GetViewportProperties() =>
+        new CanvasProperties
+        {
+            OffsetX = OffsetX,
+            OffsetY = OffsetY,
+            Zoom = Zoom
+        };
 }
 
 
