@@ -8,7 +8,12 @@
     }
 </div>
 
-@code {
+@code 
+{
+
+    [Parameter]
+    public Type T {get;set;} = typeof(object);
+
     [Parameter]
     public SocketType Type { get; set; } = SocketType.Input;
 

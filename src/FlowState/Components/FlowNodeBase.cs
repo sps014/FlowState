@@ -40,14 +40,14 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable
         {
             if (!inputSockets.TryAdd(flowSocket.Name, flowSocket))
             {
-                throw new Exception("Socket type=input exists with the name : " + flowSocket.Name);
+                throw new Exception("Alreafy a Socket[type=Input] exists with the same name : " + flowSocket.Name);
             }
         }
         else
         {
             if (!outputSockets.TryAdd(flowSocket.Name, flowSocket))
             {
-                throw new Exception("Socket type=output exists with the name : " + flowSocket.Name);
+                throw new Exception("Alreafy a Socket[type=Output] exists with the same name : " + flowSocket.Name);
             }
         }
     }
