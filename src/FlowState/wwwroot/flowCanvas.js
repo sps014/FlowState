@@ -64,8 +64,8 @@ function pointerdown(e) {
   const node = getClickedNode(e);
 
   if (node) {
-    handleNodeSelection(node, e);
-    dragNodeStart(e, node);
+      handleNodeSelection(node, e);
+      dragNodeStart(e, node);
     return;
   } else {
     // Clear all selections if clicked on empty space
@@ -154,7 +154,7 @@ function dragNodeStart(e, node) {
   }
 
   e.stopPropagation();
-  e.preventDefault();
+  //e.preventDefault();
 }
 
 function dragNodeMove(e) {
@@ -174,7 +174,6 @@ function dragNodeMove(e) {
   }
 
   e.stopPropagation();
-  e.preventDefault();
 }
 
 function dragNodeStop(e) {
@@ -192,7 +191,6 @@ function dragNodeStop(e) {
 
   dragStartPositions.clear();
   e.stopPropagation();
-  e.preventDefault();
 }
 
 // =================== Panning & Zoom ====================
@@ -334,6 +332,7 @@ function splitNumberAndUnit(input)
 function getClickedNode(e) {
   return e.target.closest(".flow-node");
 }
+
 
 function clamp(v, min, max) {
   return Math.min(Math.max(v, min), max);

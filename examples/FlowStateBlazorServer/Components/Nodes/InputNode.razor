@@ -1,10 +1,12 @@
 @using FlowState.Components
 @inherits FlowNodeBase
+@using FlowState.Models
 
 <FlowNode>
 <div class="title">🔢 Number</div>
             <div class="body">
-              <input type="number" class="input-box" data-key="num:value" value="0" placeholder="Enter value">
-              <flow-socket type="output" name="value" label="Value" data-type="number"></flow-socket>
+              <input type="number" class="input-box" draggable="false" value="0" placeholder="Enter value">
+              <FlowSocket Name="OutputValue"  Label="Value"/>
+              <FlowSocket Name="OutputValue"  Label="Value" Type="SocketType.Output"/>
         </div>
 </FlowNode>
