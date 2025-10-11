@@ -16,7 +16,7 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable
 
     [EditorRequired]
     [Parameter]
-    public string Id { get; set; } 
+    public string Id { get; set; }
     public abstract ValueTask ExecuteAsync();
 
     [Parameter]
@@ -25,13 +25,31 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable
     internal FlowNode? DomElement;
 
 
-    private List<FlowSocket> sockets = new();
+    private Dictionary<string, FlowSocket> inputSockets = new();
+    private Dictionary<string, FlowSocket> outputSockets = new();
 
-    public IReadOnlyList<FlowSocket> Sockets => sockets;
+
+    public IReadOnlyList<FlowSocket> Sockets => [.. inputSockets.Values, .. outputSockets.Values];
+    public IReadOnlyDictionary<string,FlowSocket> InputSockets => inputSockets;
+    public IReadOnlyDictionary<string,FlowSocket> OutputSockets => outputSockets;
+
 
     public void AddSocket(FlowSocket flowSocket)
     {
-        sockets.Add(flowSocket);
+        if (flowSocket.Type == SocketType.Input)
+        {
+            if (!inputSockets.TryAdd(flowSocket.Name, flowSocket))
+            {
+                throw new Exception("Socket type=input exists with the name : " + flowSocket.Name);
+            }
+        }
+        else
+        {
+            if (!outputSockets.TryAdd(flowSocket.Name, flowSocket))
+            {
+                throw new Exception("Socket type=output exists with the name : " + flowSocket.Name);
+            }
+        }
     }
     public void Dispose()
     {
