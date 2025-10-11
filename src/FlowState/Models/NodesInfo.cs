@@ -4,8 +4,9 @@ using Microsoft.AspNetCore.Components;
 namespace FlowState.Models;
 
 
-internal record NodeInfo
+public record NodeInfo
 {
+    public required string Id { get; init; }
     public required Type NodeType { get; init; }
     public DynamicComponent? Component { get; set; }
 

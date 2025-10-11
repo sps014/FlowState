@@ -29,7 +29,7 @@
     public string OuterColor { get; set; } = "#065f46"; // customizable border
 
     [CascadingParameter]
-    public FlowNodeBase? FlowNode {get;set;}
+    public FlowNodeBase? FlowNode { get; set; }
 
     [Parameter]
     public int Size { get; set; } = 14; // socket width/height
@@ -37,7 +37,17 @@
     private string Class => ChildContent == null ? "socket-default" : string.Empty;
 
     private string SocketStyle =>
-        $"width:{Size}px; height:{Size}px; background-color:{InnerColor}; border:3px solid {OuterColor};";
+    $"width:{Size}px; height:{Size}px; background-color:{InnerColor}; border:3px solid {OuterColor};";
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        if (!firstRender)
+            return;
+        if (FlowNode != null)
+            FlowNode.AddSocket(this);
+    }
 }
 
 <style>

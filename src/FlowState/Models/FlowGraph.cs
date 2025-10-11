@@ -17,7 +17,7 @@ public class FlowGraph
         nodeRegistry.Register<T>();
     }
 
-    public void CreateNode(Type type,double x,double y,Dictionary<string,object> data)
+    public NodeInfo CreateNode(Type type,double x,double y,Dictionary<string,object> data)
     {
         var id = Guid.NewGuid().ToString();
 
@@ -29,13 +29,15 @@ public class FlowGraph
         data["X"] = x;
         data["Y"] = y;
 
-        NodesInfo.Add(id,new NodeInfo { NodeType = type, Component = null, Parameters = data });
-        NodeAdded?.Invoke(this, EventArgs.Empty);    
+        NodesInfo.Add(id,new NodeInfo { Id=id, NodeType = type, Component = null, Parameters = data });
+        NodeAdded?.Invoke(this, EventArgs.Empty);
+
+        return NodesInfo[id];  
     }
 
-    public void CreateNode<T>(double x,double y,Dictionary<string,object> data) where T : FlowNodeBase
+    public NodeInfo CreateNode<T>(double x,double y,Dictionary<string,object> data) where T : FlowNodeBase
     {
-        CreateNode(typeof(T), x, y, data);
+        return CreateNode(typeof(T), x, y, data);
     }
     
     public FlowNodeBase? GetNodeById(string id)

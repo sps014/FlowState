@@ -24,7 +24,15 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable
 
     internal FlowNode? DomElement;
 
-    
+
+    private List<FlowSocket> sockets = new();
+
+    public IReadOnlyList<FlowSocket> Sockets => sockets;
+
+    public void AddSocket(FlowSocket flowSocket)
+    {
+        sockets.Add(flowSocket);
+    }
     public void Dispose()
     {
 
