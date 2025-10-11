@@ -28,8 +28,11 @@
     [Parameter]
     public string OuterColor { get; set; } = "#065f46"; // customizable border
 
+    [CascadingParameter]
+    public FlowNodeBase? FlowNode {get;set;}
+
     [Parameter]
-    public int Size { get; set; } = 16; // socket width/height
+    public int Size { get; set; } = 14; // socket width/height
 
     private string Class => ChildContent == null ? "socket-default" : string.Empty;
 

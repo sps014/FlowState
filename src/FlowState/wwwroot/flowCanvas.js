@@ -13,6 +13,8 @@ let dotnetRef = null;
 // --- State
 let isPanning = false;
 let isNodeDragging = false;
+let isConnectingNodes = false;
+
 let startX = 0;
 let startY = 0;
 let lastOffsetX = 0;
@@ -26,7 +28,8 @@ let lastMouseY = 0;
 let nodeSelectionClass = "selected";
 
 let cacheGridBackgroundSize = null;
-let cacheGridBackgroundPosition = null;
+let cacheGridSizeMatrix = null;
+
 
 export function setupCanvasEvents(
   el,
@@ -42,7 +45,6 @@ export function setupCanvasEvents(
   const style = window.getComputedStyle(gridEl);
 
   cacheGridBackgroundSize = style.backgroundSize;
-  cacheGridBackgroundPosition = style.backgroundPosition;
 
   el.addEventListener("pointerdown", pointerdown);
   el.addEventListener("pointermove", pointermove);
@@ -61,9 +63,16 @@ export function removeCanvasEvents(el) {
 // =================== Pointer Handling ====================
 
 function pointerdown(e) {
+
+  const socket = getClickedSocket(e);
   const node = getClickedNode(e);
 
-  if (node) {
+  if(socket)
+  {
+    isConnectingNodes = true;
+  }
+
+  else if (node) {
       handleNodeSelection(node, e);
       dragNodeStart(e, node);
     return;
@@ -296,7 +305,6 @@ function panBackgroundPosition() {
     gridEl.style.backgroundPosition = backgroundPos;
 }
 
-let cacheGridSizeMatrix = null;
 function getBackgroundSizesMatrix() {
 
     if(cacheGridSizeMatrix!=null)
@@ -331,6 +339,11 @@ function splitNumberAndUnit(input)
 
 function getClickedNode(e) {
   return e.target.closest(".flow-node");
+}
+
+function getClickedSocket(e)
+{
+  return e.target.closest('.socket-anchor');
 }
 
 
