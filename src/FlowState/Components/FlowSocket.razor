@@ -1,4 +1,4 @@
-<div class="flow-socket" type="@Type">
+<div class="flow-socket @LayoutClass" type="@Type">
     <div class="socket-anchor @Class" style="@SocketStyle">
         @ChildContent
     </div>
@@ -8,11 +8,11 @@
     }
 </div>
 
-@code 
+@code
 {
 
     [Parameter]
-    public Type T {get;set;} = typeof(object);
+    public Type T { get; set; } = typeof(object);
 
     [Parameter]
     public SocketType Type { get; set; } = SocketType.Input;
@@ -41,6 +41,9 @@
 
     private string Class => ChildContent == null ? "socket-default" : string.Empty;
 
+    private string LayoutClass => ChildContent == null ? "socket-container" : string.Empty;
+
+
     private string SocketStyle =>
     $"width:{Size}px; height:{Size}px; background-color:{InnerColor}; border:3px solid {OuterColor};";
 
@@ -58,6 +61,9 @@
 <style>
     .flow-socket {
         position: relative;
+    }
+
+    .socket-container {
         display: flex;
         align-items: center;
         gap: 8px;
