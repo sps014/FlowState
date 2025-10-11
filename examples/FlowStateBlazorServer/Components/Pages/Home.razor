@@ -7,7 +7,7 @@
 
 <FlowCanvas Height="100vh" Width="100vw" Graph="graph">
  <BackgroundContent>
-        <FlowBackground />
+        <FlowBackground class="flow-grid-lines"/>
     </BackgroundContent>
     </FlowCanvas>
 
@@ -42,3 +42,27 @@
         StateHasChanged();
     }
 }
+
+<style>
+.flow-grid-lines
+{
+    background: #111827;
+    background-image: 
+    /* Main grid lines */
+    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px),
+    /* Minor grid lines */
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 
+    50px 50px,
+    50px 50px,
+    10px 10px,
+    10px 10px;
+  background-position: 
+    0 0,        /* Main grid */
+    0 0,        /* Main grid */
+    0 0,        /* Minor grid */
+    0 0;        /* Minor grid */
+}
+</style>
