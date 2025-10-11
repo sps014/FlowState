@@ -7,8 +7,8 @@ namespace FlowState.Models;
 public class FlowGraph
 {
     public FlowNodeRegistry nodeRegistry { get; } = new FlowNodeRegistry();
-    internal List<NodeInfo> NodesInfo { get; } = new List<NodeInfo>();
-    public IReadOnlyList<FlowNodeBase> Nodes => NodesInfo.Where(n => n.Instance!=null).Select(ny=> ny.Instance!).ToList();
+    internal Dictionary<string,NodeInfo> NodesInfo { get; } = new ();
+    public IReadOnlyList<FlowNodeBase> Nodes => NodesInfo.Values.Where(n => n.Instance!=null).Select(ny=> ny.Instance!).ToList();
     
     public FlowCanvas? Canvas { get; set; }
 
@@ -17,36 +17,33 @@ public class FlowGraph
         nodeRegistry.Register<T>();
     }
 
-    public void CreateNode<T>() where T : FlowNodeBase
+    public void CreateNode(Type type,double x,double y,Dictionary<string,object> data)
     {
-        NodesInfo.Add(new NodeInfo { NodeType = typeof(T), Component = null, Parameters = { ["Graph"] = this } });
-        NodeAdded?.Invoke(this, EventArgs.Empty);
+        var id = Guid.NewGuid().ToString();
+
+        data["Graph"] = this;
+
+        if (!data.ContainsKey("Id"))
+            data["Id"] = id;
+
+        data["X"] = x;
+        data["Y"] = y;
+
+        NodesInfo.Add(id,new NodeInfo { NodeType = type, Component = null, Parameters = data });
+        NodeAdded?.Invoke(this, EventArgs.Empty);    
+    }
+
+    public void CreateNode<T>(double x,double y,Dictionary<string,object> data) where T : FlowNodeBase
+    {
+        CreateNode(typeof(T), x, y, data);
     }
     
     public FlowNodeBase? GetNodeById(string id)
     {
-        return Nodes.FirstOrDefault(n => n.Id == id);
+        if (NodesInfo.ContainsKey(id))
+            return NodesInfo[id].Instance;
+        return null;
     }
 
     public EventHandler? NodeAdded;
-}
-
-internal record NodeInfo
-{
-    public required Type NodeType { get; init; }
-    public DynamicComponent? Component { get; set; }
-
-    public FlowNodeBase? Instance
-    {
-        get
-        {
-            if(Component!=null && Component.Instance is FlowNodeBase fn)
-            {
-                return fn;
-            }
-            return null;
-        }
-    }
-
-    public Dictionary<string, object> Parameters { get; init; } = new Dictionary<string, object>();
 }

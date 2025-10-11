@@ -123,7 +123,6 @@ namespace FlowState.Components
             return module.InvokeVoidAsync("setZoom", zoom);
         }
 
-
         [JSInvokable]
         public async Task NotifyPanned(double offsetX, double offsetY)
         {

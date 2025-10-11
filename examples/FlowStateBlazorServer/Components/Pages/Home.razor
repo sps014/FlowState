@@ -27,8 +27,8 @@
     {
         if (firstRender)
         {
-            graph.CreateNode<InputNode>();
-            graph.CreateNode<InputNode>();
+            graph.CreateNode<InputNode>(0,0,[]);
+            graph.CreateNode<InputNode>(200,200,[]);
 
             StateHasChanged();
         }
