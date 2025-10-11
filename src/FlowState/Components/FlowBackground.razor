@@ -1,0 +1,39 @@
+@using System.Runtime.Serialization
+<div class="flow-grid @Class" @ref="gridRef" style="position:absolute;inset:0;"></div>
+
+
+@code
+{
+    private ElementReference gridRef;
+
+    [Parameter]
+    public string Class { get; set; } = "grid-dot";
+
+
+    [CascadingParameter]
+    public FlowCanvas? Canvas { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        if(!firstRender)
+        {
+            return;
+        }
+
+        if(Canvas!=null)
+            Canvas.gridRef=gridRef;
+
+    }
+
+}
+
+<style>
+    .grid-dot {
+        background-image: radial-gradient(#000 1px, transparent 1px);
+        background-repeat: repeat;
+        background-size: 32px 32px;
+        background-position: 0px 0px;
+    }
+</style>

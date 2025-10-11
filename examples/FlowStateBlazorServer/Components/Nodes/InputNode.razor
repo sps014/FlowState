@@ -2,7 +2,9 @@
 @inherits FlowNodeBase
 
 <FlowNode>
-<div style="width:120px; height:120px; background:crimson; color:white; line-height:120px; text-align:center;">
-        Default Dotted Grid
-    </div>
+<div class="title">🔢 Number</div>
+            <div class="body">
+              <input type="number" class="input-box" data-key="num:value" value="0" placeholder="Enter value">
+              <flow-socket type="output" name="value" label="Value" data-type="number"></flow-socket>
+        </div>
 </FlowNode>

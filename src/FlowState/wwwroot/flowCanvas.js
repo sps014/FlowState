@@ -7,7 +7,6 @@ let offsetY = 0;
 let zoom = 1;
 let minZoom = 0.2;
 let maxZoom = 2.0;
-let gridBackgroundSize = { width: 32, height: 32 };
 
 let dotnetRef = null;
 
@@ -26,11 +25,24 @@ let lastMouseY = 0;
 
 let nodeSelectionClass = "selected";
 
-export function setupCanvasEvents(el, gridElement, flowContentElement, dotnetReference) {
+let cacheGridBackgroundSize = null;
+let cacheGridBackgroundPosition = null;
+
+export function setupCanvasEvents(
+  el,
+  gridElement,
+  flowContentElement,
+  dotnetReference
+) {
   canvasEl = el;
-  gridEl = gridElement;
   flowContentEl = flowContentElement;
+  gridEl = gridElement;
+
   dotnetRef = dotnetReference;
+  const style = window.getComputedStyle(gridEl);
+
+  cacheGridBackgroundSize = style.backgroundSize;
+  cacheGridBackgroundPosition = style.backgroundPosition;
 
   el.addEventListener("pointerdown", pointerdown);
   el.addEventListener("pointermove", pointermove);
@@ -58,7 +70,7 @@ function pointerdown(e) {
   } else {
     // Clear all selections if clicked on empty space
     if (selectedNodes.size > 0) {
-      const deselected = [...selectedNodes].map(n => n.id);
+      const deselected = [...selectedNodes].map((n) => n.id);
       clearSelection();
       dotnetRef.invokeMethodAsync("NotifyNodesCleared", deselected);
     }
@@ -110,7 +122,7 @@ function handleNodeSelection(node, e) {
   }
 
   // --- NEW: invoke selection changed with all currently selected node IDs
-  const selectedIds = [...selectedNodes].map(n => n.id);
+  const selectedIds = [...selectedNodes].map((n) => n.id);
   dotnetRef.invokeMethodAsync("NotifySelectionChanged", selectedIds);
 }
 
@@ -241,9 +253,83 @@ function onWheel(e) {
 
 function updateTransforms() {
   flowContentEl.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0px) scale(${zoom})`;
-  gridEl.style.backgroundPosition = `${offsetX % (gridBackgroundSize.width * zoom)}px ${offsetY % (gridBackgroundSize.height * zoom)}px`;
-  gridEl.style.backgroundSize = `${gridBackgroundSize.width * zoom}px ${gridBackgroundSize.height * zoom}px`;
+  panBackgroundPosition();
+  scaleBackgroundSize();
 }
+
+function scaleBackgroundSize() {
+  const bgSizes = cacheGridBackgroundSize.split(','); // split by layer
+
+  const scaledSizes = bgSizes.map(size => {
+    // Trim and split "32px 32px" → ["32px", "32px"]
+    const parts = size.trim().split(/\s+/);
+
+    // Only scale numeric px values
+    const scaled = parts.map(val => {
+      const match = val.match(/^([\d.]+)([a-z%]*)$/i);
+      if (match) {
+        const [, num, unit] = match;
+        const scaledNum = parseFloat(num) * zoom;
+        return `${scaledNum}${unit}`;
+      }
+      // Keep keywords like 'auto', 'cover', 'contain'
+      return val;
+    });
+
+    return scaled.join(' ');
+  });
+
+  // Reapply efficiently
+  gridEl.style.backgroundSize = scaledSizes.join(', ');
+}
+
+function panBackgroundPosition() {
+    const gridBackgroundSize = {width:32,height:32};
+    //gridEl.style.backgroundPosition = `${offsetX % (gridBackgroundSize.width * zoom)}px ${offsetY % (gridBackgroundSize.height * zoom)}px`;
+
+    let gridSizeMatrix =getBackgroundSizesMatrix();
+    let positions= [];
+    for(let row of gridSizeMatrix)
+    {
+        const computed = `${offsetX%(row[0].number*zoom)}${row[0].unit} ${offsetY%(row[1].number*zoom)}${row[1].unit}`;
+        positions.push(computed);       
+    }
+    const backgroundPos = positions.join(',');
+    gridEl.style.backgroundPosition = backgroundPos;
+}
+
+let cacheGridSizeMatrix = null;
+function getBackgroundSizesMatrix() {
+
+    if(cacheGridSizeMatrix!=null)
+        return cacheGridSizeMatrix;
+
+  const bgSizes = cacheGridBackgroundSize.split(',');
+
+  cacheGridSizeMatrix = bgSizes.map(size => {
+    const parts = size.trim().split(/\s+/);
+    let res = [];
+    for(let p of parts)
+    {
+        let d = splitNumberAndUnit(p);
+        res.push(d);
+    }
+    return res;
+  });
+
+  return cacheGridSizeMatrix;
+}
+function splitNumberAndUnit(input) 
+{
+    const match = input.match(/^(-?\d*\.?\d+)([a-z%]*)$/i);
+    if (!match) return {number:0,unit:"px"}; 
+    return {
+        number: parseFloat(match[1]),
+        unit: match[2] || ''
+    };
+}
+
+
 
 function getClickedNode(e) {
   return e.target.closest(".flow-node");
@@ -255,8 +341,7 @@ function clamp(v, min, max) {
 
 // =================== Public API ====================
 
-export function setComponentProperties(width, height, nodeSelectionClassParam) {
-  gridBackgroundSize = { width, height };
+export function setComponentProperties(nodeSelectionClassParam) {
   nodeSelectionClass = nodeSelectionClassParam;
 }
 

@@ -11,6 +11,10 @@ namespace FlowState.Components
 {
     public partial class FlowCanvas : IAsyncDisposable
     {
+
+        [EditorRequired]
+        [Parameter]
+        public RenderFragment? BackgroundContent { get; set; }
         public string Id { get; } = Guid.NewGuid().ToString();
 
         [EditorRequired]
@@ -49,33 +53,16 @@ namespace FlowState.Components
         /// </summary>
         [Parameter] public string GridStyle { get; set; } = string.Empty;
 
-        [Parameter] public Size GridBackgroundSize { get; set; } = new Size(32, 32);
-
-
-        private ElementReference gridRef;
         private ElementReference canvasRef;
         private ElementReference flowContentRef;
+        internal ElementReference gridRef;
 
 #nullable disable
         private IJSObjectReference module;
 #nullable restore
 
         private DotNetObjectReference<FlowCanvas>? dotnetObjRef;
-
-        // Default dotted grid pattern
-        private const string DefaultGridStyle =
-            """
-        background-image:radial-gradient(#000 1px, transparent 1px);
-        background-repeat:repeat;
-        """;
-
-        private string EffectiveGridStyle =>
-          $"""
-    position:absolute;
-    inset:0;
-    {(string.IsNullOrWhiteSpace(GridStyle) ? DefaultGridStyle : GridStyle)};
-    background-size:{GridBackgroundSize.Width * Zoom}px {GridBackgroundSize.Height * Zoom}px;
-    """;
+    
 
 
         private string ContentStyle =>
@@ -103,9 +90,12 @@ namespace FlowState.Components
             if (!firstRender)
                 return;
 
+            if (BackgroundContent == null)
+                throw new Exception("Flow Canvas Background is null");
+
             module = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowCanvas.js");
-            await module.InvokeVoidAsync("setComponentProperties", GridBackgroundSize.Width, GridBackgroundSize.Height, NodeSelectionClass);
-            await module.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef, flowContentRef, dotnetObjRef);
+            await module.InvokeVoidAsync("setComponentProperties", NodeSelectionClass);
+            await module.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef,flowContentRef, dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
         }
 
