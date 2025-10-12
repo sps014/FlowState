@@ -1,5 +1,6 @@
 <div class="flow-socket @LayoutClass" type="@Type.ToString().ToLower()">
-    <div class="socket-anchor @Class" style="@SocketStyle" @ref="anchorRef" type="@Type.ToString().ToLower()">
+    <div class="socket-anchor @Class" style="@SocketStyle" @ref="anchorRef"
+         type="@Type.ToString().ToLower()" innerColor="@InnerColor" outerColor="@OuterColor">
         @ChildContent
     </div>
     @if (ChildContent == null)

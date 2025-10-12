@@ -47,6 +47,8 @@ namespace FlowState.Components
 
         [Parameter] public EventCallback OnNotifyNodesCleared { get; set; }
 
+        private FlowEdge? TempEdge = null;
+
         [Parameter]
         public EventCallback OnCanvasLoaded { get; set; }
 
@@ -97,6 +99,7 @@ namespace FlowState.Components
 
             if (BackgroundContent == null)
                 throw new Exception("Flow Canvas Background is null");
+
 
             JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowCanvas.js");
             await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass);
@@ -159,7 +162,7 @@ namespace FlowState.Components
 
         internal ValueTask AddEdgeToNodeEdgeMapAsync(FlowEdge edge, FlowNodeBase node)
         {
-            return JsModule.InvokeVoidAsync("addUpdateEdgeMap", edge.edgeRef, node.DomElement?.nodeRef,edge?.FromSocket.anchorRef,edge?.ToSocket.anchorRef);
+            return JsModule.InvokeVoidAsync("addUpdateEdgeMap", edge.edgeRef, node.DomElement?.nodeRef,edge?.FromSocket?.anchorRef,edge?.ToSocket?.anchorRef);
         }
         internal ValueTask RemoveEdgeFromNodeEdgeMapAsync(FlowEdge edge, FlowNodeBase node)
         {

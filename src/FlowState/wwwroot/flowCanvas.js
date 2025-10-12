@@ -15,6 +15,10 @@ let isPanning = false;
 let isNodeDragging = false;
 let isConnectingNodes = false;
 
+let tempEdgeStartPosition = null;
+let tempEdgeStopPosition = null;
+
+
 let startX = 0;
 let startY = 0;
 let lastOffsetX = 0;
@@ -29,6 +33,10 @@ let nodeSelectionClass = "selected";
 
 let cacheGridBackgroundSize = null;
 let cacheGridSizeMatrix = null;
+
+let nodeEdgeMap = new Map(); // Map<NodeEl,Edges>
+let edgeSocketsMap = new Map(); // Map<NodeEl,{to:SocketEl,from:SocketEl}
+let tempEdgeElement = null;
 
 export function setupCanvasEvents(
   el,
@@ -67,6 +75,16 @@ function pointerdown(e) {
 
   if (socket) {
     isConnectingNodes = true;
+    tempEdgeStartPosition = null;
+    tempEdgeStopPosition = null;
+
+    if(socket.getAttribute('type')=='input')
+      tempEdgeStopPosition = getSocketPosition(socket);
+    else
+      tempEdgeStartPosition = getSocketPosition(socket);
+
+    console.log(tempEdgeStartPosition,tempEdgeStopPosition,socket);
+
   } else if (node) {
     handleNodeSelection(node, e);
     dragNodeStart(e, node);
@@ -84,6 +102,11 @@ function pointerdown(e) {
 }
 
 function pointermove(e) {
+  if(isConnectingNodes)
+  {
+    updateTempConnection(e);
+    return;
+  }
   if (isNodeDragging) {
     dragNodeMove(e);
     return;
@@ -413,7 +436,7 @@ function createCubicPath(from, to, fromSocket = null) {
   let c1, c2;
 
   if (fromSocket) {
-    const isOutput = fromSocket.type === "output";
+    const isOutput = fromSocket.getAttribute('type') === "output";
     if (isOutput) {
       // Output socket: curve goes right from start, left into end
       c1 = { x: from.x + offset, y: from.y };
@@ -431,8 +454,6 @@ function createCubicPath(from, to, fromSocket = null) {
   return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
 }
 
-let nodeEdgeMap = new Map(); // WeakMap<NodeEl,Edges>
-let edgeSocketsMap = new Map();
 
 export function addUpdateEdgeMap(edgeEl, nodeEl, fromSocketEl, toSocketEl) {
   if (nodeEdgeMap.has(nodeEl)) {
@@ -486,4 +507,28 @@ export function getTransformPosition(nodeEl) {
   const matrix = new DOMMatrixReadOnly(style.transform);
 
   return { x: matrix.m41, y: matrix.m42 };
+}
+
+function updateTempConnection(e)
+{
+  if(tempEdgeStartPosition==null && tempEdgeStopPosition==null)
+    return;
+
+  let currentCursorPos = {x:e.clientX,y:e.clientY};
+
+  let path;
+
+  if(tempEdgeStartPosition)
+    path = createCubicPath(tempEdgeStartPosition,currentCursorPos);
+  else
+    path = createCubicPath(currentCursorPos,tempEdgeStopPosition);
+
+    tempEdgeElement.setAttribute("d",path);
+}
+
+
+export function setTempEdgeElement(el)
+{
+  tempEdgeElement = el;
+  console.log(el)
 }

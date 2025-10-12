@@ -7,7 +7,7 @@
 <PageTitle>Home</PageTitle>
 
 
-<FlowCanvas Height="95vh" Width="100vw" Graph="graph" OnCanvasLoaded="OnLoaded">
+<FlowCanvas Height="100vh" Width="100vw" Graph="graph" OnCanvasLoaded="OnLoaded">
  <BackgroundContent>
         <FlowBackground class="flow-grid-lines"/>
     </BackgroundContent>
@@ -35,8 +35,8 @@
 
         await Task.Delay(100);
 
-        var data = graph.Connect(fromNodeInfo.Id,toNodeInfo.Id,"Output","Input");
-        Console.WriteLine(data.Error);
+        //var data = graph.Connect(fromNodeInfo.Id,toNodeInfo.Id,"Output","Input");
+        //Console.WriteLine(data.Error);
         StateHasChanged();
     }
 }

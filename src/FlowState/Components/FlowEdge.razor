@@ -2,8 +2,8 @@
 @implements IAsyncDisposable
 
 @using Microsoft.JSInterop
-<path class="edge" style="pointer-events: none; @Style" @ref="edgeRef" stroke-width="@StrokeWidth"
-    fill="@Fill" stroke-linecap="@StrokeLineCap" stroke="@Stroke" @attributes="InputAttributes">
+<path class="edge" style="pointer-events: none; @Style" @ref="edgeRef" stroke-width="@StrokeWidth" fill="@Fill"
+    stroke-linecap="@StrokeLineCap" stroke="@Stroke" @attributes="InputAttributes">
 </path>
 @code
 {
@@ -31,19 +31,21 @@
     [Parameter]
     public double StrokeWidth { get; set; } = 2.5;
 
-    [EditorRequired]
     [Parameter]
-    public FlowSocket FromSocket { get; set; }
+    public FlowSocket? FromSocket { get; set; }
 
-    [EditorRequired]
     [Parameter]
-    public FlowSocket ToSocket { get; set; }
+    public FlowSocket? ToSocket { get; set; }
 
     [Parameter]
     public string StrokeLineCap { get; set; } = "round";
 
     [Parameter(CaptureUnmatchedValues = true)]
     public Dictionary<string, object>? InputAttributes { get; set; } = [];
+
+
+    [Parameter]
+    public bool IsTempEdge { get; set; } = false;
 
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -53,28 +55,47 @@
         if (!firstRender)
             return;
 
-        if(Graph==null)
+        if (Graph == null || Graph.Canvas == null)
             return;
 
-        await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this,FromSocket.FlowNode!);
-        await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this,ToSocket.FlowNode!);
-        await UpdatePathAsync();
+
+        if (!IsTempEdge && FromSocket!=null && ToSocket!=null)
+        {
+            await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, FromSocket.FlowNode!);
+            await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, ToSocket.FlowNode!);
+            await UpdatePathAsync();
+        }
+        else
+            await SetTempEdgeElementAsync();
 
     }
 
     public ValueTask UpdatePathAsync()
     {
-        if(Graph==null || Graph.Canvas==null)
+        if (Graph == null || Graph.Canvas == null || FromSocket==null || ToSocket==null)
             return ValueTask.CompletedTask;
-        return Graph.Canvas.JsModule.InvokeVoidAsync("updatePath",ToSocket.anchorRef,FromSocket.anchorRef,edgeRef);
+        return Graph.Canvas.JsModule.InvokeVoidAsync("updatePath", ToSocket.anchorRef, FromSocket.anchorRef, edgeRef);
     }
 
-    public  async ValueTask DisposeAsync()
+    private ValueTask SetTempEdgeElementAsync()
     {
-        if(Graph==null || Graph.Canvas==null)
+        if (Graph == null || Graph.Canvas == null)
+            return ValueTask.CompletedTask;
+
+        return Graph.Canvas.JsModule.InvokeVoidAsync("setTempEdgeElement", edgeRef);
+    }
+
+    public void Refresh()
+    {
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Graph == null || Graph.Canvas == null || IsTempEdge)
             return;
-        
-        await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this,FromSocket.FlowNode!);
-        await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this,ToSocket.FlowNode!);
+
+        await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, FromSocket?.FlowNode!);
+        await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, ToSocket?.FlowNode!);
     }
 }

@@ -26,6 +26,8 @@
                     }
                 </div>
                 <svg class="edges" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+
+                <FlowEdge IsTempEdge="true" Id="tempEdge" Graph="Graph" @ref="TempEdge"/>
                 @foreach(var edgeInfo in Graph.EdgesInfo)
                 {
                     <DynamicComponent Type="typeof(FlowEdge)" @ref="edgeInfo.Value.Component"
