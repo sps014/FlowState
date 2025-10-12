@@ -30,7 +30,6 @@ let nodeSelectionClass = "selected";
 let cacheGridBackgroundSize = null;
 let cacheGridSizeMatrix = null;
 
-
 export function setupCanvasEvents(
   el,
   gridElement,
@@ -63,18 +62,14 @@ export function removeCanvasEvents(el) {
 // =================== Pointer Handling ====================
 
 function pointerdown(e) {
-
   const socket = getClickedSocket(e);
   const node = getClickedNode(e);
 
-  if(socket)
-  {
+  if (socket) {
     isConnectingNodes = true;
-  }
-
-  else if (node) {
-      handleNodeSelection(node, e);
-      dragNodeStart(e, node);
+  } else if (node) {
+    handleNodeSelection(node, e);
+    dragNodeStart(e, node);
     return;
   } else {
     // Clear all selections if clicked on empty space
@@ -135,11 +130,9 @@ function handleNodeSelection(node, e) {
   dotnetRef.invokeMethodAsync("NotifySelectionChanged", selectedIds);
 }
 
-export function selectNodes(nodesEl)
-{
+export function selectNodes(nodesEl) {
   clearSelection();
-  for(let node of nodesEl)
-  {
+  for (let node of nodesEl) {
     node.classList.add(nodeSelectionClass);
     selectedNodes.add(node);
     dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
@@ -278,14 +271,14 @@ function updateTransforms() {
 }
 
 function scaleBackgroundSize() {
-  const bgSizes = cacheGridBackgroundSize.split(','); // split by layer
+  const bgSizes = cacheGridBackgroundSize.split(","); // split by layer
 
-  const scaledSizes = bgSizes.map(size => {
+  const scaledSizes = bgSizes.map((size) => {
     // Trim and split "32px 32px" → ["32px", "32px"]
     const parts = size.trim().split(/\s+/);
 
     // Only scale numeric px values
-    const scaled = parts.map(val => {
+    const scaled = parts.map((val) => {
       const match = val.match(/^([\d.]+)([a-z%]*)$/i);
       if (match) {
         const [, num, unit] = match;
@@ -296,69 +289,62 @@ function scaleBackgroundSize() {
       return val;
     });
 
-    return scaled.join(' ');
+    return scaled.join(" ");
   });
 
   // Reapply efficiently
-  gridEl.style.backgroundSize = scaledSizes.join(', ');
+  gridEl.style.backgroundSize = scaledSizes.join(", ");
 }
 
 function panBackgroundPosition() {
-    const gridBackgroundSize = {width:32,height:32};
-    //gridEl.style.backgroundPosition = `${offsetX % (gridBackgroundSize.width * zoom)}px ${offsetY % (gridBackgroundSize.height * zoom)}px`;
+  const gridBackgroundSize = { width: 32, height: 32 };
+  //gridEl.style.backgroundPosition = `${offsetX % (gridBackgroundSize.width * zoom)}px ${offsetY % (gridBackgroundSize.height * zoom)}px`;
 
-    let gridSizeMatrix =getBackgroundSizesMatrix();
-    let positions= [];
-    for(let row of gridSizeMatrix)
-    {
-        const computed = `${offsetX%(row[0].number*zoom)}${row[0].unit} ${offsetY%(row[1].number*zoom)}${row[1].unit}`;
-        positions.push(computed);       
-    }
-    const backgroundPos = positions.join(',');
-    gridEl.style.backgroundPosition = backgroundPos;
+  let gridSizeMatrix = getBackgroundSizesMatrix();
+  let positions = [];
+  for (let row of gridSizeMatrix) {
+    const computed = `${offsetX % (row[0].number * zoom)}${row[0].unit} ${
+      offsetY % (row[1].number * zoom)
+    }${row[1].unit}`;
+    positions.push(computed);
+  }
+  const backgroundPos = positions.join(",");
+  gridEl.style.backgroundPosition = backgroundPos;
 }
 
 function getBackgroundSizesMatrix() {
+  if (cacheGridSizeMatrix != null) return cacheGridSizeMatrix;
 
-    if(cacheGridSizeMatrix!=null)
-        return cacheGridSizeMatrix;
+  const bgSizes = cacheGridBackgroundSize.split(",");
 
-  const bgSizes = cacheGridBackgroundSize.split(',');
-
-  cacheGridSizeMatrix = bgSizes.map(size => {
+  cacheGridSizeMatrix = bgSizes.map((size) => {
     const parts = size.trim().split(/\s+/);
     let res = [];
-    for(let p of parts)
-    {
-        let d = splitNumberAndUnit(p);
-        res.push(d);
+    for (let p of parts) {
+      let d = splitNumberAndUnit(p);
+      res.push(d);
     }
     return res;
   });
 
   return cacheGridSizeMatrix;
 }
-function splitNumberAndUnit(input) 
-{
-    const match = input.match(/^(-?\d*\.?\d+)([a-z%]*)$/i);
-    if (!match) return {number:0,unit:"px"}; 
-    return {
-        number: parseFloat(match[1]),
-        unit: match[2] || ''
-    };
+function splitNumberAndUnit(input) {
+  const match = input.match(/^(-?\d*\.?\d+)([a-z%]*)$/i);
+  if (!match) return { number: 0, unit: "px" };
+  return {
+    number: parseFloat(match[1]),
+    unit: match[2] || "",
+  };
 }
-
-
 
 function getClickedNode(e) {
   return e.target.closest(".flow-node");
 }
 
-function getClickedSocket(e)
-{
-  return e.target.closest('.socket-anchor');
+function getClickedSocket(e) {
+  return e.target.closest(".socket-anchor");
 }
-
 
 function clamp(v, min, max) {
   return Math.min(Math.max(v, min), max);
@@ -394,116 +380,94 @@ export function setZoom(z) {
   updateTransforms();
 }
 
-
 // edge logic
 
-
-export function getSocketPosition(socketEl)
-{
+export function getSocketPosition(socketEl) {
   if (!socketEl) return { x: 0, y: 0 };
-    
-    const rect = socketEl.getBoundingClientRect();
-    const contentRect = flowContentEl.getBoundingClientRect();
-    
-    // Calculate position relative to flow-content (where SVG lives)
-    const x = rect.left + rect.width / 2 - contentRect.left;
-    const y = rect.top + rect.height / 2 - contentRect.top;
-    
-    return { x, y };
+
+  const rect = socketEl.getBoundingClientRect();
+  const surfaceRect = flowContentEl.getBoundingClientRect();
+
+  const x = (rect.left + rect.width / 2  - surfaceRect.left) / zoom;
+  const y = (rect.top + rect.height / 2 -  surfaceRect.top) / zoom;
+
+  return { x, y };
 }
 
 export function updatePath(outputSocketEl, inputSocketEl, edgeEl) {
   if (!outputSocketEl || !inputSocketEl || !edgeEl) return;
-  
-  const fromPos = getSocketPosition(outputSocketEl);  // Output is the start
-  const toPos = getSocketPosition(inputSocketEl);      // Input is the end
-  
+
+  const fromPos = getSocketPosition(outputSocketEl); // Output is the start
+  const toPos = getSocketPosition(inputSocketEl); // Input is the end
+
   const path = createCubicPath(fromPos, toPos, outputSocketEl, inputSocketEl);
-  
-  edgeEl.setAttribute('d', path);
+
+  edgeEl.setAttribute("d", path);
 }
 function createCubicPath(from, to, fromSocket = null) {
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    const dist = Math.hypot(dx, dy);
-    const offset = Math.min(200, dist * 0.5);
-    
-    let c1, c2;
-    
-    if (fromSocket) {
-      const isOutput = fromSocket.type === 'output';
-      if (isOutput) {
-        // Output socket: curve goes right from start, left into end
-        c1 = { x: from.x + offset, y: from.y };
-        c2 = { x: to.x - offset, y: to.y };
-      } else {
-        // Input socket: curve goes left from start, right into end  
-        c1 = { x: from.x - offset, y: from.y };
-        c2 = { x: to.x + offset, y: to.y };
-      }
-    } else {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dist = Math.hypot(dx, dy);
+  const offset = Math.min(200, dist * 0.5);
+
+  let c1, c2;
+
+  if (fromSocket) {
+    const isOutput = fromSocket.type === "output";
+    if (isOutput) {
+      // Output socket: curve goes right from start, left into end
       c1 = { x: from.x + offset, y: from.y };
       c2 = { x: to.x - offset, y: to.y };
+    } else {
+      // Input socket: curve goes left from start, right into end
+      c1 = { x: from.x - offset, y: from.y };
+      c2 = { x: to.x + offset, y: to.y };
     }
-    
-    return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
-}
+  } else {
+    c1 = { x: from.x + offset, y: from.y };
+    c2 = { x: to.x - offset, y: to.y };
+  }
 
+  return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
+}
 
 let nodeEdgeMap = new Map(); // WeakMap<NodeEl,Edges>
-let edgeSocketsMap = new Map(); 
+let edgeSocketsMap = new Map();
 
-export function addUpdateEdgeMap(edgeEl,nodeEl,fromSocketEl,toSocketEl)
-{
-  if(nodeEdgeMap.has(nodeEl))
-  {
+export function addUpdateEdgeMap(edgeEl, nodeEl, fromSocketEl, toSocketEl) {
+  if (nodeEdgeMap.has(nodeEl)) {
     nodeEdgeMap.get(nodeEl).push(edgeEl);
-  }
-  else
-  {
-    nodeEdgeMap.set(nodeEl,[edgeEl]);
+  } else {
+    nodeEdgeMap.set(nodeEl, [edgeEl]);
   }
 
-  edgeSocketsMap.set(edgeEl,{to:toSocketEl,from:fromSocketEl});
-
+  edgeSocketsMap.set(edgeEl, { to: toSocketEl, from: fromSocketEl });
 }
 
-export function deleteEdgeFromMap(edgeEl,nodeEl)
-{
-  if(nodeEdgeMap.has(nodeEl))
-  {
+export function deleteEdgeFromMap(edgeEl, nodeEl) {
+  if (nodeEdgeMap.has(nodeEl)) {
     nodeEdgeMap.get(nodeEl).delete(edgeEl);
   }
   edgeSocketsMap.delete(edgeEl);
 }
 
-
-function updateEdges(nodesEl)
-{
-  if(nodesEl==null || nodesEl==undefined)
-    return;
+function updateEdges(nodesEl) {
+  if (nodesEl == null || nodesEl == undefined) return;
 
   let edgesEl = getEdgesElementsToBeUpdated(nodesEl);
 
-  for(let edgeEl of edgesEl)
-  {
-    if(!edgeSocketsMap.has(edgeEl))
-      continue;
+  for (let edgeEl of edgesEl) {
+    if (!edgeSocketsMap.has(edgeEl)) continue;
     const data = edgeSocketsMap.get(edgeEl);
-    updatePath(data.to,data.from,edgeEl);
+    updatePath(data.to, data.from, edgeEl);
   }
-
 }
 
-function getEdgesElementsToBeUpdated(nodesEl)
-{
+function getEdgesElementsToBeUpdated(nodesEl) {
   let edgesElements = new Set();
-  for(let node of nodesEl)
-  {
-    if(nodeEdgeMap.has(node))
-    {
-      for(let edge of nodeEdgeMap.get(node))
-      {
+  for (let node of nodesEl) {
+    if (nodeEdgeMap.has(node)) {
+      for (let edge of nodeEdgeMap.get(node)) {
         edgesElements.add(edge);
       }
     }
@@ -511,19 +475,15 @@ function getEdgesElementsToBeUpdated(nodesEl)
   return edgesElements;
 }
 
-
-
-
 /* Node Element*/
-export function moveNode(nodeEl,x,y)
-{
-    nodeEl.style.transform = `translate3d(${x}px, ${y}px, 0px)`;
+export function moveNode(nodeEl, x, y) {
+  nodeEl.style.transform = `translate3d(${x}px, ${y}px, 0px)`;
+  updateEdges([nodeEl]);
 }
 
-export function getTransformPosition(nodeEl)
-{
-    const style = window.getComputedStyle(nodeEl);
-    const matrix = new DOMMatrixReadOnly(style.transform);
+export function getTransformPosition(nodeEl) {
+  const style = window.getComputedStyle(nodeEl);
+  const matrix = new DOMMatrixReadOnly(style.transform);
 
-    return { x: matrix.m41, y: matrix.m42 }; 
+  return { x: matrix.m41, y: matrix.m42 };
 }
