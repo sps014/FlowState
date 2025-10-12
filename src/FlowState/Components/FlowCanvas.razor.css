@@ -7,24 +7,36 @@
 }
 
 .flow-grid {
-    pointer-events: none; /* background shouldn’t block clicks */
+    pointer-events: none;
+    /* background shouldn’t block clicks */
     background-repeat: repeat;
 }
 
 .flow-content {
-    pointer-events: auto; /* so child elements are interactive */
+    pointer-events: auto;
+    /* so child elements are interactive */
     transition: transform 0s;
+    width: 100%;
+    height: 100%;
 }
 
 .edges {
-  position: absolute;
-  inset: 0;
-  pointer-events: none; /* so nodes can handle events */
-  width: 100%; 
-  height: 100%;
-  overflow: visible;
-  z-index: 1; /* Behind nodes */
-  
-  transform: translateZ(0);
+    position: absolute;
+    pointer-events: none;
+    /* so nodes can handle events */
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    z-index: 1;
+    inset: 0;
+    /* Behind nodes */
 
+    transform: translateZ(0);
+
+}
+
+.nodes {
+    position: relative;
+    z-index: 2;
+    background: transparent;
 }

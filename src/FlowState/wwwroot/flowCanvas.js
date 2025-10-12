@@ -401,36 +401,26 @@ export function getSocketPosition(socketEl)
   if (!socketEl) return { x: 0, y: 0 };
     
     const rect = socketEl.getBoundingClientRect();
-    const surfaceRect = gridEl.getBoundingClientRect();
+    const contentRect = flowContentEl.getBoundingClientRect();
     
-    // Offset by socket width based on type
-    let xOffset = rect.width / 2;
-    if (socketEl.type === 'output') {
-      xOffset = rect.width / 2; // +width/2 for output sockets
-    } else if (socketEl.type === 'input') {
-      xOffset = -rect.width / 2; // -width/2 for input sockets
-    }
-    
-    const x = (rect.left + rect.width / 2 + xOffset - surfaceRect.left - offsetX) / zoom;
-    const y = (rect.top + rect.height / 2 - surfaceRect.top - offsetY) / zoom;
+    // Calculate position relative to flow-content (where SVG lives)
+    const x = rect.left + rect.width / 2 - contentRect.left;
+    const y = rect.top + rect.height / 2 - contentRect.top;
     
     return { x, y };
 }
 
-export function updatePath(fromSocketEl,toSocketEl,edgeEl) {
-    if (!fromSocketEl || !toSocketEl || !edgeEl) return;
-    
-    const fromPos = getSocketPosition(fromSocketEl);
-    const toPos = getSocketPosition(toSocketEl);
-    
-    const path = createCubicPath(fromPos, toPos, fromSocketEl, toSocketEl);
-    
-    edgeEl.setAttribute('d', path);
-
-  }
-
-  function createCubicPath(from, to, fromSocket = null) {
-
+export function updatePath(outputSocketEl, inputSocketEl, edgeEl) {
+  if (!outputSocketEl || !inputSocketEl || !edgeEl) return;
+  
+  const fromPos = getSocketPosition(outputSocketEl);  // Output is the start
+  const toPos = getSocketPosition(inputSocketEl);      // Input is the end
+  
+  const path = createCubicPath(fromPos, toPos, outputSocketEl, inputSocketEl);
+  
+  edgeEl.setAttribute('d', path);
+}
+function createCubicPath(from, to, fromSocket = null) {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
     const dist = Math.hypot(dx, dy);
@@ -441,9 +431,11 @@ export function updatePath(fromSocketEl,toSocketEl,edgeEl) {
     if (fromSocket) {
       const isOutput = fromSocket.type === 'output';
       if (isOutput) {
+        // Output socket: curve goes right from start, left into end
         c1 = { x: from.x + offset, y: from.y };
         c2 = { x: to.x - offset, y: to.y };
       } else {
+        // Input socket: curve goes left from start, right into end  
         c1 = { x: from.x - offset, y: from.y };
         c2 = { x: to.x + offset, y: to.y };
       }
@@ -453,4 +445,4 @@ export function updatePath(fromSocketEl,toSocketEl,edgeEl) {
     }
     
     return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
-  }
+}

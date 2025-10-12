@@ -59,6 +59,6 @@
     {
         if(Graph==null || Graph.Canvas==null)
             return ValueTask.CompletedTask;
-        return Graph.Canvas.JsModule.InvokeVoidAsync("updatePath",FromSocket.anchorRef,ToSocket.anchorRef,edgeRef);
+        return Graph.Canvas.JsModule.InvokeVoidAsync("updatePath",ToSocket.anchorRef,FromSocket.anchorRef,edgeRef);
     }
 }
