@@ -193,6 +193,8 @@ function dragNodeMove(e) {
     dragStartPositions.set(n, { x: newX, y: newY });
   }
 
+  updateEdges(selectedNodes);
+
   e.stopPropagation();
 }
 
@@ -448,9 +450,10 @@ function createCubicPath(from, to, fromSocket = null) {
 }
 
 
-let nodeEdgeMap = new WeakMap();
+let nodeEdgeMap = new Map(); // WeakMap<NodeEl,Edges>
+let edgeSocketsMap = new Map(); 
 
-export function addUpdateEdgeMap(nodeEl,edgeEl)
+export function addUpdateEdgeMap(edgeEl,nodeEl,fromSocketEl,toSocketEl)
 {
   if(nodeEdgeMap.has(nodeEl))
   {
@@ -460,16 +463,37 @@ export function addUpdateEdgeMap(nodeEl,edgeEl)
   {
     nodeEdgeMap.set(nodeEl,[edgeEl]);
   }
+
+  edgeSocketsMap.set(edgeEl,{to:toSocketEl,from:fromSocketEl});
+
 }
 
-export function deleteEdgeFromMap(nodeEl,edgeEl)
+export function deleteEdgeFromMap(edgeEl,nodeEl)
 {
   if(nodeEdgeMap.has(nodeEl))
   {
     nodeEdgeMap.get(nodeEl).delete(edgeEl);
   }
+  edgeSocketsMap.delete(edgeEl);
 }
 
+
+function updateEdges(nodesEl)
+{
+  if(nodesEl==null || nodesEl==undefined)
+    return;
+
+  let edgesEl = getEdgesElementsToBeUpdated(nodesEl);
+
+  for(let edgeEl of edgesEl)
+  {
+    if(!edgeSocketsMap.has(edgeEl))
+      continue;
+    const data = edgeSocketsMap.get(edgeEl);
+    updatePath(data.to,data.from,edgeEl);
+  }
+
+}
 
 function getEdgesElementsToBeUpdated(nodesEl)
 {

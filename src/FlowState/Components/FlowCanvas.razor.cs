@@ -159,7 +159,7 @@ namespace FlowState.Components
 
         internal ValueTask AddEdgeToNodeEdgeMapAsync(FlowEdge edge, FlowNodeBase node)
         {
-            return JsModule.InvokeVoidAsync("addUpdateEdgeMap", edge.edgeRef, node.DomElement?.nodeRef);
+            return JsModule.InvokeVoidAsync("addUpdateEdgeMap", edge.edgeRef, node.DomElement?.nodeRef,edge?.FromSocket.anchorRef,edge?.ToSocket.anchorRef);
         }
         internal ValueTask RemoveEdgeFromNodeEdgeMapAsync(FlowEdge edge, FlowNodeBase node)
         {

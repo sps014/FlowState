@@ -56,8 +56,8 @@
         if(Graph==null)
             return;
 
-        await Graph.AddEdgeToNodeEdgeMapAsync(this,FromSocket.FlowNode!);
-        await Graph.AddEdgeToNodeEdgeMapAsync(this,ToSocket.FlowNode!);
+        await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this,FromSocket.FlowNode!);
+        await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this,ToSocket.FlowNode!);
         await UpdatePathAsync();
 
     }
@@ -71,10 +71,10 @@
 
     public  async ValueTask DisposeAsync()
     {
-        if(Graph==null)
+        if(Graph==null || Graph.Canvas==null)
             return;
         
-        await Graph.RemoveEdgeFromNodeEdgeMapAsync(this,FromSocket.FlowNode!);
-        await Graph.RemoveEdgeFromNodeEdgeMapAsync(this,ToSocket.FlowNode!);
+        await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this,FromSocket.FlowNode!);
+        await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this,ToSocket.FlowNode!);
     }
 }

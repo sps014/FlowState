@@ -94,20 +94,6 @@ public class FlowGraph
         return (EdgesInfo[id],null);
     }
 
-    internal ValueTask AddEdgeToNodeEdgeMapAsync(FlowEdge edge, FlowNodeBase node)
-    {
-        if (Canvas == null)
-            return ValueTask.CompletedTask;
-        return Canvas.AddEdgeToNodeEdgeMapAsync(edge, node);
-    }
-
-    internal ValueTask RemoveEdgeFromNodeEdgeMapAsync(FlowEdge edge, FlowNodeBase node)
-    {
-        if (Canvas == null)
-            return ValueTask.CompletedTask;
-        return Canvas.RemoveEdgeFromNodeEdgeMapAsync(edge, node);
-    }
-
     public FlowNodeBase? GetNodeById(string id)
     {
         if (NodesInfo.ContainsKey(id))
