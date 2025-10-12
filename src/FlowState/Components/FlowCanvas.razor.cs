@@ -123,6 +123,32 @@ namespace FlowState.Components
             return module.InvokeVoidAsync("setZoom", zoom);
         }
 
+        public ValueTask SelectNodesAsync(params string[] nodeIds)
+        {
+            if (Graph == null)
+                return ValueTask.CompletedTask;
+
+            var nodesEls = new List<ElementReference>();
+
+            foreach (var nodeId in nodeIds)
+            {
+                var node = Graph.GetNodeById(nodeId);
+                if (node == null || node.DomElement == null)
+                    continue;
+                nodesEls.Add(node.DomElement.nodeRef);
+            }
+
+            return module.InvokeVoidAsync("selectNodes", nodesEls);
+        }
+
+        public ValueTask ClearNodeSelectionAsync()
+        {
+            if (Graph == null)
+                return ValueTask.CompletedTask;
+
+            return module.InvokeVoidAsync("clearSelection");
+        }
+
         [JSInvokable]
         public async Task NotifyPanned(double offsetX, double offsetY)
         {

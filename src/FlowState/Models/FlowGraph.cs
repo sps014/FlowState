@@ -7,9 +7,9 @@ namespace FlowState.Models;
 public class FlowGraph
 {
     public FlowNodeRegistry nodeRegistry { get; } = new FlowNodeRegistry();
-    internal Dictionary<string,NodeInfo> NodesInfo { get; } = new ();
-    public IReadOnlyList<FlowNodeBase> Nodes => NodesInfo.Values.Where(n => n.Instance!=null).Select(ny=> ny.Instance!).ToList();
-    
+    internal Dictionary<string, NodeInfo> NodesInfo { get; } = new();
+    public IReadOnlyList<FlowNodeBase> Nodes => NodesInfo.Values.Where(n => n.Instance != null).Select(ny => ny.Instance!).ToList();
+
     public FlowCanvas? Canvas { get; set; }
 
     public void RegisterNode<T>() where T : FlowNodeBase
@@ -17,7 +17,7 @@ public class FlowGraph
         nodeRegistry.Register<T>();
     }
 
-    public NodeInfo CreateNode(Type type,double x,double y,Dictionary<string,object> data)
+    public NodeInfo CreateNode(Type type, double x, double y, Dictionary<string, object> data)
     {
         var id = Guid.NewGuid().ToString();
 
@@ -29,23 +29,40 @@ public class FlowGraph
         data["X"] = x;
         data["Y"] = y;
 
-        NodesInfo.Add(id,new NodeInfo { Id=id, NodeType = type, Component = null, Parameters = data });
+        NodesInfo.Add(id, new NodeInfo { Id = id, NodeType = type, Component = null, Parameters = data });
         NodeAdded?.Invoke(this, EventArgs.Empty);
 
-        return NodesInfo[id];  
+        return NodesInfo[id];
     }
 
-    public NodeInfo CreateNode<T>(double x,double y,Dictionary<string,object> data) where T : FlowNodeBase
+    public NodeInfo CreateNode<T>(double x, double y, Dictionary<string, object> data) where T : FlowNodeBase
     {
         return CreateNode(typeof(T), x, y, data);
     }
-    
+
     public FlowNodeBase? GetNodeById(string id)
     {
         if (NodesInfo.ContainsKey(id))
             return NodesInfo[id].Instance;
         return null;
     }
+
+    public ValueTask SelectNodesAsync(params string[] nodeIds)
+    {
+        if (Canvas == null)
+            return ValueTask.CompletedTask;
+        return Canvas.SelectNodesAsync(nodeIds);
+    }
+
+
+    public ValueTask ClearNodeSelectionAsync()
+    {
+        if (Canvas == null)
+            return ValueTask.CompletedTask;
+        return Canvas.ClearNodeSelectionAsync();
+    }
+
+
 
     public EventHandler? NodeAdded;
 }

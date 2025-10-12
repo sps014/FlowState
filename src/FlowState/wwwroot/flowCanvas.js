@@ -130,12 +130,23 @@ function handleNodeSelection(node, e) {
     dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
   }
 
-  // --- NEW: invoke selection changed with all currently selected node IDs
+  // --- invoke selection changed with all currently selected node IDs
   const selectedIds = [...selectedNodes].map((n) => n.id);
   dotnetRef.invokeMethodAsync("NotifySelectionChanged", selectedIds);
 }
 
-function clearSelection() {
+export function selectNodes(nodesEl)
+{
+  clearSelection();
+  for(let node of nodesEl)
+  {
+    node.classList.add(nodeSelectionClass);
+    selectedNodes.add(node);
+    dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
+  }
+}
+
+export function clearSelection() {
   for (const n of selectedNodes) {
     n.classList.remove(nodeSelectionClass);
   }

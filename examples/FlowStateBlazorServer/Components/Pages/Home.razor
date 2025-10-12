@@ -11,7 +11,7 @@
     </BackgroundContent>
     </FlowCanvas>
 
-<button @onclick="OnOkClicked">Ok</button>
+<button @onclick="OnOkClicked" style="top:-10px">Ok</button>
 
 
 @code
@@ -29,17 +29,19 @@
         if (firstRender)
         {
             graph.CreateNode<InputNode>(0,0,[]);
-            graph.CreateNode<InputNode>(200,200,[]);
+            nodeInfo = graph.CreateNode<InputNode>(200,200,[]);
 
             StateHasChanged();
         }
         base.OnAfterRender(firstRender);
     }
 
-    private void OnOkClicked()
+    private async Task OnOkClicked()
     {
         //FlowNodeBase c= graph.Nodes.First();
         //Console.WriteLine($"Node count: {c.X},{c.Y}");
+        var id = nodeInfo.Id;
+        await graph.SelectNodesAsync(id);
         StateHasChanged();
     }
 }
