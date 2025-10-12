@@ -9,6 +9,8 @@
 
 
 <button @onclick="SaveGraph">Save Graph</button>
+<button @onclick="ClearGraph">Clear Graph</button>
+<button @onclick="LoadGraph">Load Graph</button>
 
 <FlowCanvas Height="100vh" Width="100vw" Graph="graph" OnCanvasLoaded="OnLoaded">
  <BackgroundContent>
@@ -21,6 +23,7 @@
 @code
 {
     FlowGraph graph = new FlowGraph();
+    private string data="{}";
 
     protected override void OnInitialized()
     {
@@ -36,7 +39,7 @@
         //FlowNodeBase c= graph.Nodes.First();
         //Console.WriteLine($"Node count: {c.X},{c.Y}");
         fromNodeInfo=graph.CreateNode<InputNode>(0,0,[]);
-        toNodeInfo = graph.CreateNode<InputNode>(200,200,[]);
+        toNodeInfo = graph.CreateNode(typeof(InputNode).AssemblyQualifiedName,200,200,[]);
 
         await Task.Delay(100);
 
@@ -48,8 +51,17 @@
 
     private async Task SaveGraph()
     {
-        var data = await graph.GetSerializableObjectAsync();
-        Console.WriteLine(data);
+        data = await graph.SerializeAsync();
+    }
+
+    private void ClearGraph()
+    {
+        graph.Clear();
+    }
+
+    private async Task LoadGraph()
+    {
+        await graph.DeserializeAsync(data);
     }
 }
 

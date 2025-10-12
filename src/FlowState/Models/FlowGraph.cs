@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using FlowState.Components;
 using FlowState.Models.Serializable;
 using Microsoft.AspNetCore.Components;
@@ -28,7 +29,7 @@ public class FlowGraph : ISerializable<GraphData>
         var id = Guid.NewGuid().ToString();
 
         data[nameof(FlowNodeBase.Graph)] = this;
-        
+
         if (!data.ContainsKey(nameof(FlowNodeBase.Id)))
             data[nameof(FlowNodeBase.Id)] = id;
 
@@ -41,9 +42,40 @@ public class FlowGraph : ISerializable<GraphData>
         return NodesInfo[id];
     }
 
+    public NodeInfo CreateNode(string type, double x, double y, Dictionary<string, object> data)
+    {
+        var parsedType = Type.GetType(type);
+        if(parsedType==null)
+            throw new Exception("Invalid type: " + type);
+            
+        return CreateNode(parsedType, x, y, data);
+    }
+
     public NodeInfo CreateNode<T>(double x, double y, Dictionary<string, object> data) where T : FlowNodeBase
     {
         return CreateNode(typeof(T), x, y, data);
+    }
+
+    public void RemoveNode(string id)
+    {
+        NodesInfo.Remove(id);
+        NodeRemoved?.Invoke(this, EventArgs.Empty);
+    }
+    public void RemoveEdge(string id)
+    {
+        EdgesInfo.Remove(id);
+        EdgeRemoved?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void RemoveAllEdges()
+    {
+        EdgesInfo.Clear();
+        EdgeRemoved?.Invoke(this, EventArgs.Empty);
+    }
+    public void RemoveAllNodes()
+    {
+        NodesInfo.Clear();
+        NodeRemoved?.Invoke(this, EventArgs.Empty);
     }
 
     public (EdgeInfo? Edge, string? Error) Connect(FlowSocket from, FlowSocket to,bool checkDataType = false)
@@ -155,7 +187,57 @@ public class FlowGraph : ISerializable<GraphData>
         return new GraphData { Canvas = canvas, Nodes = nodesProperties, Edges = edgesProperties };
     }
 
+    public async ValueTask<string> SerializeAsync()
+    {
+        var data = await GetSerializableObjectAsync();
+        return JsonSerializer.Serialize(data);
+    }
+
+    public ValueTask DeserializeAsync(string data)
+    {
+        var graphData = JsonSerializer.Deserialize<GraphData>(data);
+        if(graphData==null)
+            throw new Exception("Invalid graph data");
+        return DeserializeAsync(graphData);
+    }
+
+    public async ValueTask DeserializeAsync(GraphData graphData)
+    {
+        if (Canvas == null)
+            throw new Exception("Canvas is not set");
+
+        Clear();
+
+        await Canvas.SetViewportPropertiesAsync(graphData.Canvas);
+
+        foreach (var node in graphData.Nodes)
+        {
+            var type = Type.GetType(node.Type)!;
+            CreateNode(type, node.X, node.Y, node.Data ?? new());
+        }
+
+        await Task.Delay(100); // wait for the nodes to be created
+
+        foreach(var edge in graphData.Edges)
+        {
+            Connect(edge.FromNodeId, edge.ToNodeId, edge.FromSocketName, edge.ToSocketName);
+        }
+
+
+    }
+
+    public void Clear()
+    {
+        if (Canvas == null)
+            throw new Exception("Canvas is not set");
+        Canvas.Clear();
+    }
+    
+
     public EventHandler? NodeAdded;
     public EventHandler? EdgeAdded;
+
+    public EventHandler? NodeRemoved;
+    public EventHandler? EdgeRemoved;
 
 }

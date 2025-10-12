@@ -91,6 +91,8 @@ namespace FlowState.Components
             Graph.Canvas = this;
             Graph.NodeAdded += Refresh;
             Graph.EdgeAdded += Refresh;
+            Graph.NodeRemoved += Refresh;
+            Graph.EdgeRemoved += Refresh;
 
             dotnetObjRef = DotNetObjectReference.Create(this);
         }
@@ -143,6 +145,16 @@ namespace FlowState.Components
         public ValueTask SetZoomAsync(double zoom)
         {
             return JsModule.InvokeVoidAsync("setZoom", zoom);
+        }
+
+        public void Clear()
+        {
+            if (Graph == null)
+                return;
+
+            Graph.NodesInfo.Clear();
+            Graph.EdgesInfo.Clear();
+
         }
 
         public ValueTask SelectNodesAsync(params string[] nodeIds)
@@ -251,7 +263,9 @@ namespace FlowState.Components
             if (Graph != null)
             {
                 Graph.NodeAdded -= Refresh;
-                Graph.NodeAdded -= Refresh;
+                Graph.EdgeAdded -= Refresh;
+                Graph.NodeRemoved -= Refresh;
+                Graph.EdgeRemoved -= Refresh;
             }
 
             if (JsModule != null)

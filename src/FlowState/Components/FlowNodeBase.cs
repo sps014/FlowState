@@ -68,7 +68,7 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         parameterValues ??= new();
         parameterValues.Remove(nameof(Graph));
 
-        return ValueTask.FromResult(new NodeProperties(this.GetType().Name, Id, X, Y, parameterValues));
+        return ValueTask.FromResult(new NodeProperties(this.GetType().AssemblyQualifiedName!, Id, X, Y, parameterValues));
     }
 
     
