@@ -17,7 +17,7 @@ let isConnectingNodes = false;
 
 let tempEdgeStartPosition = null;
 let tempEdgeStopPosition = null;
-
+let tempSocket = null;
 
 let startX = 0;
 let startY = 0;
@@ -74,15 +74,8 @@ function pointerdown(e) {
   const node = getClickedNode(e);
 
   if (socket) {
-    isConnectingNodes = true;
-    tempEdgeStartPosition = null;
-    tempEdgeStopPosition = null;
-
-    if(socket.getAttribute('type')=='input')
-      tempEdgeStopPosition = getSocketPosition(socket);
-    else
-      tempEdgeStartPosition = getSocketPosition(socket);
-
+    tempSocket = socket;
+    startTempConnection(e,socket);
   } else if (node) {
     handleNodeSelection(node, e);
     dragNodeStart(e, node);
@@ -93,14 +86,12 @@ function pointerdown(e) {
       clearSelection();
       dotnetRef.invokeMethodAsync("NotifyNodesCleared", deselected);
     }
-      panStart(e);
-
+    panStart(e);
   }
 }
 
 function pointermove(e) {
-  if(isConnectingNodes)
-  {
+  if (isConnectingNodes) {
     updateTempConnection(e);
     return;
   }
@@ -112,27 +103,76 @@ function pointermove(e) {
 }
 
 function pointerup(e) {
-
-  if(isConnectingNodes)
-  {
+  if (isConnectingNodes) {
     stopTempConnection(e);
   }
   if (isNodeDragging) {
     dragNodeStop(e);
-  }
-  else{
+  } else {
     panEnd(e);
   }
 }
 
 function pointerleave(e) {
-
   panEnd(e);
 }
 
+function startTempConnection(e,socket) {
+  isConnectingNodes = true;
+  tempEdgeStartPosition = null;
+  tempEdgeStopPosition = null;
+
+  if (socket.getAttribute("type") == "input")
+    tempEdgeStopPosition = getSocketPosition(socket);
+  else tempEdgeStartPosition = getSocketPosition(socket);
+}
+
 function stopTempConnection(e) {
-  if (tempEdgeElement) tempEdgeElement.setAttribute('d','');
+
+  if(tempSocket)
+  {
+    let targetSocket = e.target.closest('.socket-anchor');
+    let tempSocketType = tempSocket.getAttribute('type');
+
+    if(targetSocket && tempSocket!==targetSocket && tempSocket.getAttribute('type')!=targetSocket.getAttribute('type'))
+    {
+
+      let fromNodeId;
+      let toNodeId;
+
+      let fromSocketName;
+      let toSocketName;
+
+      if(tempSocketType==='input') // its input then 'to'
+      {
+        toNodeId = tempSocket.getAttribute('node-id');
+        fromNodeId = targetSocket.getAttribute('node-id');
+
+        toSocketName = tempSocket.getAttribute('name');
+        fromSocketName = targetSocket.getAttribute('name');
+      }
+      else // its output then 'from'
+      {
+        toNodeId = targetSocket.getAttribute('node-id');
+        fromNodeId = tempSocket.getAttribute('node-id');
+
+        toSocketName = targetSocket.getAttribute('name');
+        fromSocketName = tempSocket.getAttribute('name');
+      }
+
+      connectRequest(fromNodeId,toNodeId,fromSocketName,toSocketName);
+    }
+  }
+  if (tempEdgeElement) tempEdgeElement.setAttribute("d", "");
+
+  tempSocket = null;
   isConnectingNodes = false;
+}
+
+
+function connectRequest(fromNodeId,toNodeId,fromSocketName,toSocketName)
+{
+  dotnetRef.invokeMethodAsync("EdgeConnectRequest",fromNodeId,toNodeId,fromSocketName,toSocketName);
 }
 
 // =================== Node Selection ====================
@@ -420,8 +460,8 @@ export function getSocketPosition(socketEl) {
   const rect = socketEl.getBoundingClientRect();
   const surfaceRect = flowContentEl.getBoundingClientRect();
 
-  const x = (rect.left + rect.width / 2  - surfaceRect.left) / zoom;
-  const y = (rect.top + rect.height / 2 -  surfaceRect.top) / zoom;
+  const x = (rect.left + rect.width / 2 - surfaceRect.left) / zoom;
+  const y = (rect.top + rect.height / 2 - surfaceRect.top) / zoom;
 
   return { x, y };
 }
@@ -445,7 +485,7 @@ function createCubicPath(from, to, fromSocket = null) {
   let c1, c2;
 
   if (fromSocket) {
-    const isOutput = fromSocket.getAttribute('type') === "output";
+    const isOutput = fromSocket.getAttribute("type") === "output";
     if (isOutput) {
       // Output socket: curve goes right from start, left into end
       c1 = { x: from.x + offset, y: from.y };
@@ -462,7 +502,6 @@ function createCubicPath(from, to, fromSocket = null) {
 
   return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
 }
-
 
 export function addUpdateEdgeMap(edgeEl, nodeEl, fromSocketEl, toSocketEl) {
   if (nodeEdgeMap.has(nodeEl)) {
@@ -518,25 +557,23 @@ export function getTransformPosition(nodeEl) {
   return { x: matrix.m41, y: matrix.m42 };
 }
 
-function updateTempConnection(e)
-{
-  if(tempEdgeStartPosition==null && tempEdgeStopPosition==null)
-    return;
+function updateTempConnection(e) {
+  if (tempEdgeStartPosition == null && tempEdgeStopPosition == null) return;
 
-  let currentCursorPos = {x:(e.clientX-offsetX)/zoom,y:(e.clientY-offsetY)/zoom};
+  let currentCursorPos = {
+    x: (e.clientX - offsetX) / zoom,
+    y: (e.clientY - offsetY) / zoom,
+  };
 
   let path;
 
-  if(tempEdgeStartPosition)
-    path = createCubicPath(tempEdgeStartPosition,currentCursorPos);
-  else
-    path = createCubicPath(currentCursorPos,tempEdgeStopPosition);
+  if (tempEdgeStartPosition)
+    path = createCubicPath(tempEdgeStartPosition, currentCursorPos);
+  else path = createCubicPath(currentCursorPos, tempEdgeStopPosition);
 
-    tempEdgeElement.setAttribute("d",path);
+  tempEdgeElement.setAttribute("d", path);
 }
 
-
-export function setTempEdgeElement(el)
-{
+export function setTempEdgeElement(el) {
   tempEdgeElement = el;
 }

@@ -47,6 +47,9 @@ namespace FlowState.Components
 
         [Parameter] public EventCallback OnNotifyNodesCleared { get; set; }
 
+        [Parameter] public EventCallback<ConnectRequestArgs> OnEdgeConnectRequest { get; set; }
+
+
         private FlowEdge? TempEdge = null;
 
         [Parameter]
@@ -222,6 +225,22 @@ namespace FlowState.Components
         {
             if (OnNotifyNodesCleared.HasDelegate)
                 await OnNotifyNodesCleared.InvokeAsync();
+        }
+
+        [JSInvokable]
+        public async ValueTask EdgeConnectRequest(string fromNodeId,string toNodeId,string fromSocketName,string toSocketName)
+        {
+
+            if (OnEdgeConnectRequest.HasDelegate)
+            {
+                ConnectRequestArgs e = new(fromNodeId, toNodeId, fromSocketName, toSocketName, Graph);
+                await OnEdgeConnectRequest.InvokeAsync(e);
+
+                if (!e.Handled)
+                    Graph!.Connect(e.FromSocket, e.ToSocket);
+            }
+            else
+                Graph!.Connect(fromNodeId, toNodeId,fromSocketName,toSocketName);
         }
 
 

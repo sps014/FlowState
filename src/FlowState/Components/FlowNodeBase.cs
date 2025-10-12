@@ -31,9 +31,15 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable
 
     public IReadOnlyList<FlowSocket> Sockets => [.. inputSockets.Values, .. outputSockets.Values];
     public IReadOnlyDictionary<string,FlowSocket> InputSockets => inputSockets;
-    public IReadOnlyDictionary<string,FlowSocket> OutputSockets => outputSockets;
+    public IReadOnlyDictionary<string, FlowSocket> OutputSockets => outputSockets;
+    
 
-
+    public FlowSocket? GetSocketByName(string name,SocketType type)
+    {
+        if (type == SocketType.Input)
+            return InputSockets.GetValueOrDefault(name);
+        return outputSockets.GetValueOrDefault(name);
+    }
     public void AddSocket(FlowSocket flowSocket)
     {
         if (flowSocket.Type == SocketType.Input)
