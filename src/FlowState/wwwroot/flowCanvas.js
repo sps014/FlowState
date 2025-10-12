@@ -446,3 +446,60 @@ function createCubicPath(from, to, fromSocket = null) {
     
     return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
 }
+
+
+let nodeEdgeMap = new WeakMap();
+
+export function addUpdateEdgeMap(nodeEl,edgeEl)
+{
+  if(nodeEdgeMap.has(nodeEl))
+  {
+    nodeEdgeMap.get(nodeEl).push(edgeEl);
+  }
+  else
+  {
+    nodeEdgeMap.set(nodeEl,[edgeEl]);
+  }
+}
+
+export function deleteEdgeFromMap(nodeEl,edgeEl)
+{
+  if(nodeEdgeMap.has(nodeEl))
+  {
+    nodeEdgeMap.get(nodeEl).delete(edgeEl);
+  }
+}
+
+
+function getEdgesElementsToBeUpdated(nodesEl)
+{
+  let edgesElements = new Set();
+  for(let node of nodesEl)
+  {
+    if(nodeEdgeMap.has(node))
+    {
+      for(let edge of nodeEdgeMap.get(node))
+      {
+        edgesElements.add(edge);
+      }
+    }
+  }
+  return edgesElements;
+}
+
+
+
+
+/* Node Element*/
+export function moveNode(nodeEl,x,y)
+{
+    nodeEl.style.transform = `translate3d(${x}px, ${y}px, 0px)`;
+}
+
+export function getTransformPosition(nodeEl)
+{
+    const style = window.getComputedStyle(nodeEl);
+    const matrix = new DOMMatrixReadOnly(style.transform);
+
+    return { x: matrix.m41, y: matrix.m42 }; 
+}

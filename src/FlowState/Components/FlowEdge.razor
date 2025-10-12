@@ -1,4 +1,6 @@
 @using System.Runtime.CompilerServices
+@implements IAsyncDisposable
+
 @using Microsoft.JSInterop
 <path class="edge" style="pointer-events: none; @Style" @ref="edgeRef" stroke-width="@StrokeWidth"
     fill="@Fill" stroke-linecap="@StrokeLineCap" stroke="@Stroke" @attributes="InputAttributes">
@@ -51,6 +53,11 @@
         if (!firstRender)
             return;
 
+        if(Graph==null)
+            return;
+
+        await Graph.AddEdgeToNodeEdgeMapAsync(this,FromSocket.FlowNode!);
+        await Graph.AddEdgeToNodeEdgeMapAsync(this,ToSocket.FlowNode!);
         await UpdatePathAsync();
 
     }
@@ -60,5 +67,14 @@
         if(Graph==null || Graph.Canvas==null)
             return ValueTask.CompletedTask;
         return Graph.Canvas.JsModule.InvokeVoidAsync("updatePath",ToSocket.anchorRef,FromSocket.anchorRef,edgeRef);
+    }
+
+    public  async ValueTask DisposeAsync()
+    {
+        if(Graph==null)
+            return;
+        
+        await Graph.RemoveEdgeFromNodeEdgeMapAsync(this,FromSocket.FlowNode!);
+        await Graph.RemoveEdgeFromNodeEdgeMapAsync(this,ToSocket.FlowNode!);
     }
 }

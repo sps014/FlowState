@@ -1,14 +1,13 @@
 ﻿@page "/"
 @using FlowState.Components
 @using FlowState.Models
+@using System.Threading.Tasks
 @rendermode InteractiveServer	
 
 <PageTitle>Home</PageTitle>
 
 
-<button @onclick="OnOkClicked" style="top:0">Ok</button>
-
-<FlowCanvas Height="95vh" Width="100vw" Graph="graph">
+<FlowCanvas Height="95vh" Width="100vw" Graph="graph" OnCanvasLoaded="OnLoaded">
  <BackgroundContent>
         <FlowBackground class="flow-grid-lines"/>
     </BackgroundContent>
@@ -25,24 +24,19 @@
         base.OnInitialized();
         graph.RegisterNode<InputNode>();
     }
-    private NodeInfo fromNodeInfo,toNodeInfo;
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (firstRender)
-        {
-            fromNodeInfo=graph.CreateNode<InputNode>(0,0,[]);
-            toNodeInfo = graph.CreateNode<InputNode>(200,200,[]);
+    private NodeInfo? fromNodeInfo,toNodeInfo;
 
-            StateHasChanged();
-        }
-        base.OnAfterRender(firstRender);
-    }
-
-    private async Task OnOkClicked()
+    private async Task OnLoaded()
     {
         //FlowNodeBase c= graph.Nodes.First();
         //Console.WriteLine($"Node count: {c.X},{c.Y}");
-        graph.Connect(fromNodeInfo.Id,toNodeInfo.Id,"Output","Input");
+        fromNodeInfo=graph.CreateNode<InputNode>(0,0,[]);
+        toNodeInfo = graph.CreateNode<InputNode>(200,200,[]);
+
+        await Task.Delay(100);
+
+        var data = graph.Connect(fromNodeInfo.Id,toNodeInfo.Id,"Output","Input");
+        Console.WriteLine(data.Error);
         StateHasChanged();
     }
 }

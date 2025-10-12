@@ -14,13 +14,6 @@
 
     internal ElementReference nodeRef;
 
-    #nullable disable
-    [Inject]
-    public IJSRuntime JS { get; set; }
-    private  IJSObjectReference JSModule;
-
-#nullable restore
-
     protected override void OnInitialized()
     {
         base.OnInitialized();
@@ -33,28 +26,32 @@
         if(!firstRender)
             return;
 
-        if(JSModule==null)
+        if(Node!=null && Node.Graph!=null)
         {
-            JSModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowNode.js");
+            Node.DomElement =  this;
+            await MoveNodeAsync(Node.X, Node.Y);
+        }
+        else
+        {
+            throw new Exception("Error rendering the node");
         }
 
-        Node.DomElement =  this;
-        await MoveNodeAsync(Node.X, Node.Y);
+        
 
     }
 
     public ValueTask MoveNodeAsync(double x, double y)
     {
-        if (JSModule!=null)
-            return JSModule.InvokeVoidAsync("moveNode", nodeRef, x, y);
+        if (Node !=null && Node.Graph!=null && Node.Graph.Canvas!=null && Node.Graph.Canvas.JsModule!=null)
+            return Node.Graph.Canvas.JsModule.InvokeVoidAsync("moveNode", nodeRef, x, y);
             
         return ValueTask.CompletedTask;
     }
     public ValueTask<DomPoint> GetTransformPositionAsync()
     {
-        if(JSModule==null)
+        if (Node !=null && Node.Graph!=null && Node.Graph.Canvas!=null && Node.Graph.Canvas.JsModule!=null)
         {
-            return JSModule.InvokeAsync<DomPoint>("getTransformPosition",nodeRef);
+            return Node.Graph.Canvas.JsModule.InvokeAsync<DomPoint>("getTransformPosition",nodeRef);
         }
 
         return ValueTask.FromResult(new DomPoint());

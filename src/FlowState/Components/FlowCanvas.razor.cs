@@ -47,6 +47,9 @@ namespace FlowState.Components
 
         [Parameter] public EventCallback OnNotifyNodesCleared { get; set; }
 
+        [Parameter]
+        public EventCallback OnCanvasLoaded { get; set; }
+
 
         /// <summary>
         /// Optional override for the background grid pattern.
@@ -99,6 +102,9 @@ namespace FlowState.Components
             await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass);
             await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef,flowContentRef, dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
+
+            if (OnCanvasLoaded.HasDelegate)
+                await OnCanvasLoaded.InvokeAsync();
         }
 
         private void Refresh(object? _, EventArgs e)
@@ -149,6 +155,15 @@ namespace FlowState.Components
                 return ValueTask.CompletedTask;
 
             return JsModule.InvokeVoidAsync("clearSelection");
+        }
+
+        internal ValueTask AddEdgeToNodeEdgeMapAsync(FlowEdge edge, FlowNodeBase node)
+        {
+            return JsModule.InvokeVoidAsync("addUpdateEdgeMap", edge.edgeRef, node.DomElement?.nodeRef);
+        }
+        internal ValueTask RemoveEdgeFromNodeEdgeMapAsync(FlowEdge edge, FlowNodeBase node)
+        {
+            return JsModule.InvokeVoidAsync("deleteEdgeFromMap", edge.edgeRef, node.DomElement?.nodeRef);
         }
 
         [JSInvokable]
