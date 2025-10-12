@@ -36,6 +36,8 @@ namespace FlowState.Components
         [Parameter] public double MaxZoom { get; set; } = 2.0;
 
         [Parameter] public double Zoom { get; set; } = 1.0;
+
+        [Parameter] public bool EdgeShouldMatchDataType { get; set; } = true;
         [Parameter] public EventCallback<PanEventArgs> OnPanned { get; set; }
         [Parameter] public EventCallback<double> OnZoomed { get; set; }
         [Parameter] public EventCallback<NodeMovedArgs> OnNodeMoved { get; set; }
@@ -70,7 +72,7 @@ namespace FlowState.Components
 #nullable restore
 
         private DotNetObjectReference<FlowCanvas>? dotnetObjRef;
-    
+
 
 
         private string ContentStyle =>
@@ -106,7 +108,7 @@ namespace FlowState.Components
 
             JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowCanvas.js");
             await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass);
-            await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef,flowContentRef, dotnetObjRef);
+            await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef, flowContentRef, dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
 
             if (TempEdge != null)
@@ -171,7 +173,7 @@ namespace FlowState.Components
 
         internal ValueTask AddEdgeToNodeEdgeMapAsync(FlowEdge edge, FlowNodeBase node)
         {
-            return JsModule.InvokeVoidAsync("addUpdateEdgeMap", edge.edgeRef, node.DomElement?.nodeRef,edge?.FromSocket?.anchorRef,edge?.ToSocket?.anchorRef);
+            return JsModule.InvokeVoidAsync("addUpdateEdgeMap", edge.edgeRef, node.DomElement?.nodeRef, edge?.FromSocket?.anchorRef, edge?.ToSocket?.anchorRef);
         }
         internal ValueTask RemoveEdgeFromNodeEdgeMapAsync(FlowEdge edge, FlowNodeBase node)
         {
@@ -228,7 +230,7 @@ namespace FlowState.Components
         }
 
         [JSInvokable]
-        public async ValueTask EdgeConnectRequest(string fromNodeId,string toNodeId,string fromSocketName,string toSocketName)
+        public async ValueTask EdgeConnectRequest(string fromNodeId, string toNodeId, string fromSocketName, string toSocketName)
         {
 
             if (OnEdgeConnectRequest.HasDelegate)
@@ -237,10 +239,10 @@ namespace FlowState.Components
                 await OnEdgeConnectRequest.InvokeAsync(e);
 
                 if (!e.Handled)
-                    Graph!.Connect(e.FromSocket, e.ToSocket);
+                    Graph!.Connect(e.FromSocket, e.ToSocket,EdgeShouldMatchDataType);
             }
             else
-                Graph!.Connect(fromNodeId, toNodeId,fromSocketName,toSocketName);
+                Graph!.Connect(fromNodeId, toNodeId, fromSocketName, toSocketName,EdgeShouldMatchDataType);
         }
 
 
@@ -254,9 +256,17 @@ namespace FlowState.Components
 
             if (JsModule != null)
             {
-                await JsModule.InvokeVoidAsync("removeCanvasEvents", canvasRef);
-                dotnetObjRef?.Dispose();
-                await JsModule.DisposeAsync();
+
+                try
+                {
+                    await JsModule.InvokeVoidAsync("removeCanvasEvents", canvasRef);
+                    dotnetObjRef?.Dispose();
+                    await JsModule.DisposeAsync();
+                }
+                catch
+                {
+
+                }
             }
         }
     }

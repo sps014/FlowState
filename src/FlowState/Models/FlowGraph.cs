@@ -44,16 +44,16 @@ public class FlowGraph
         return CreateNode(typeof(T), x, y, data);
     }
 
-    public (EdgeInfo? Edge, string? Error) Connect(FlowSocket from, FlowSocket to)
+    public (EdgeInfo? Edge, string? Error) Connect(FlowSocket from, FlowSocket to,bool checkDataType = false)
     {
         return Connect(from.FlowNode!.Id,to.FlowNode!.Id,from.Name,to.Name);
     }
 
 
-    public (EdgeInfo? Edge, string? Error) Connect(string fromNodeId, string toNodeId, string fromSocketName, string toSocketName)
+    public (EdgeInfo? Edge, string? Error) Connect(string fromNodeId, string toNodeId, string fromSocketName, string toSocketName, bool checkDataType = false)
     {
 
-        if (Edges.Any(x => x.FromSocket.Name == fromSocketName && x.ToSocket.Name == toSocketName
+        if (Edges.Any(x => x.FromSocket?.Name == fromSocketName && x.ToSocket?.Name == toSocketName
             && x.FromSocket.FlowNode!.Id == fromNodeId && x.ToSocket.FlowNode!.Id == toNodeId))
 
             return (null, "Already Exists Link");
@@ -63,21 +63,24 @@ public class FlowGraph
         var toNode = GetNodeById(toNodeId);
 
         if (fromNode == null)
-            return (null,"supplied fromNodeId didn't exist: " + fromNodeId);
+            return (null, "supplied fromNodeId didn't exist: " + fromNodeId);
         if (toNode == null)
-            return (null,"supplied toNodeId didn't exist: " + toNodeId);
+            return (null, "supplied toNodeId didn't exist: " + toNodeId);
 
         var fromSocket = fromNode.OutputSockets.GetValueOrDefault(fromSocketName);
         var toSocket = toNode.InputSockets.GetValueOrDefault(toSocketName);
 
         if (fromSocket == null)
-            return (null,"supplied from socket name didn't exist: " + fromSocketName);
+            return (null, "supplied from socket name didn't exist: " + fromSocketName);
 
         if (toSocket == null)
-            return (null,"supplied to socket name didn't exist: " + toSocketName);
+            return (null, "supplied to socket name didn't exist: " + toSocketName);
 
         if (fromSocket.Type == toSocket.Type)
-            return(null,"can't connect sockets of same type");
+            return (null, "can't connect sockets of same type");
+
+        if (checkDataType && !IsDataTypeCompatibile(fromSocket, toSocket))
+            return (null, $"Incompatible Data Types {fromSocket.T}->{toSocket.T}");
 
 
         var id = Guid.NewGuid().ToString();
@@ -91,7 +94,15 @@ public class FlowGraph
         EdgesInfo.Add(id, new EdgeInfo { Id = id, Component = null, Parameters = data });
         EdgeAdded?.Invoke(this, EventArgs.Empty);
 
-        return (EdgesInfo[id],null);
+        return (EdgesInfo[id], null);
+    }
+    
+    private bool IsDataTypeCompatibile(FlowSocket fromSocket,FlowSocket toSocket)
+    {
+        if (toSocket.T == typeof(object))
+            return true;
+
+        return toSocket.T == fromSocket.T;
     }
 
     public FlowNodeBase? GetNodeById(string id)
