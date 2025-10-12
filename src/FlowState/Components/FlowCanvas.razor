@@ -3,28 +3,36 @@
 
 
 <CascadingValue TValue="FlowCanvas" Value="this">
-<div @ref="canvasRef"
-     class="@Class"
-     style="width:@Width; height:@Height; overflow:hidden; position:relative; cursor:grab; @Style">
+    <div @ref="canvasRef" class="@Class"
+        style="width:@Width; height:@Height; overflow:hidden; position:relative; cursor:grab; @Style">
 
-    <!-- Background grid -->
-    @if(BackgroundContent!=null)
-    {
-        @BackgroundContent
-    }
-
-    <!-- Movable content -->
-    <div class="flow-content" @ref="flowContentRef" style="@ContentStyle">
-    @if(Graph != null){
-        <div class="nodes">
-        @foreach(var nodeInfo in Graph.NodesInfo)
+        <!-- Background grid -->
+        @if (BackgroundContent != null)
         {
-            <CascadingValue TValue="FlowNodeBase" Value="@nodeInfo.Value.Instance">
-                <DynamicComponent Type="nodeInfo.Value.NodeType" @ref="nodeInfo.Value.Component" Parameters="nodeInfo.Value.Parameters"/>
-            </CascadingValue>
+            @BackgroundContent
         }
+
+        <!-- Movable content -->
+        <div class="flow-content" @ref="flowContentRef" style="@ContentStyle">
+            @if (Graph != null)
+            {
+                <div class="nodes">
+                    @foreach (var nodeInfo in Graph.NodesInfo)
+                    {
+                        <CascadingValue TValue="FlowNodeBase" Value="@nodeInfo.Value.Instance">
+                            <DynamicComponent Type="nodeInfo.Value.NodeType" @ref="nodeInfo.Value.Component"
+                                Parameters="nodeInfo.Value.Parameters" />
+                        </CascadingValue>
+                    }
+                </div>
+                <svg class="edges">
+                @foreach(var edgeInfo in Graph.EdgesInfo)
+                {
+                    <DynamicComponent Type="typeof(FlowEdge)" @ref="edgeInfo.Value.Component"
+                         Parameters="edgeInfo.Value.Parameters"/>
+                }
+                </svg>
+            }
         </div>
-        }
     </div>
-</div>
 </CascadingValue>

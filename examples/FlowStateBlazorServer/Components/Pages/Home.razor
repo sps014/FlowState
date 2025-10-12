@@ -5,13 +5,15 @@
 
 <PageTitle>Home</PageTitle>
 
-<FlowCanvas Height="100vh" Width="100vw" Graph="graph">
+
+<button @onclick="OnOkClicked" style="top:0">Ok</button>
+
+<FlowCanvas Height="95vh" Width="100vw" Graph="graph">
  <BackgroundContent>
         <FlowBackground class="flow-grid-lines"/>
     </BackgroundContent>
     </FlowCanvas>
 
-<button @onclick="OnOkClicked" style="top:-10px">Ok</button>
 
 
 @code
@@ -23,13 +25,13 @@
         base.OnInitialized();
         graph.RegisterNode<InputNode>();
     }
-    private NodeInfo nodeInfo;
+    private NodeInfo fromNodeInfo,toNodeInfo;
     protected override void OnAfterRender(bool firstRender)
     {
         if (firstRender)
         {
-            graph.CreateNode<InputNode>(0,0,[]);
-            nodeInfo = graph.CreateNode<InputNode>(200,200,[]);
+            fromNodeInfo=graph.CreateNode<InputNode>(0,0,[]);
+            toNodeInfo = graph.CreateNode<InputNode>(200,200,[]);
 
             StateHasChanged();
         }
@@ -40,8 +42,7 @@
     {
         //FlowNodeBase c= graph.Nodes.First();
         //Console.WriteLine($"Node count: {c.X},{c.Y}");
-        var id = nodeInfo.Id;
-        await graph.SelectNodesAsync(id);
+        graph.Connect(fromNodeInfo.Id,toNodeInfo.Id,"Output","Input");
         StateHasChanged();
     }
 }

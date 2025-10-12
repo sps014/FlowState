@@ -1,0 +1,46 @@
+@using System.Runtime.CompilerServices
+<path class="edge" style="pointer-events: none; display: none; @Style" @ref="edgeRef" 
+    stroke-width="@StrokeWidth"
+    fill="@Fill" stroke-linecap="@StrokeLineCap" 
+    stroke="@Stroke" @attributes="InputAttributes">
+</path>
+@code
+{
+
+    internal ElementReference edgeRef;
+
+    [Parameter]
+    public string? Style { get; set; }
+
+
+    [EditorRequired]
+    [Parameter]
+    public string Id { get; set; }
+
+    [EditorRequired]
+    [Parameter]
+    public FlowGraph? Graph { get; set; }
+
+    [Parameter]
+    public string Stroke { get; set; } = "#10b981";
+
+    [Parameter]
+    public string Fill { get; set; } = "none";
+
+    [Parameter]
+    public double StrokeWidth { get; set; } = 2.5;
+
+    [EditorRequired]
+    [Parameter]
+    public FlowSocket FromSocket { get; set; }
+
+    [EditorRequired]
+    [Parameter]
+    public FlowSocket ToSocket { get; set; }
+
+    [Parameter]
+    public string StrokeLineCap { get; set; } = "round";
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? InputAttributes { get; set; } = [];
+}

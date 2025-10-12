@@ -80,6 +80,8 @@ namespace FlowState.Components
 
             Graph.Canvas = this;
             Graph.NodeAdded += Refresh;
+            Graph.EdgeAdded += Refresh;
+
             dotnetObjRef = DotNetObjectReference.Create(this);
         }
 
@@ -202,7 +204,10 @@ namespace FlowState.Components
         public async ValueTask DisposeAsync()
         {
             if (Graph != null)
+            {
                 Graph.NodeAdded -= Refresh;
+                Graph.NodeAdded -= Refresh;
+            }
 
             if (module != null)
             {
