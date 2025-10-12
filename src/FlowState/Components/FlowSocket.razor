@@ -1,5 +1,5 @@
-<div class="flow-socket @LayoutClass" type="@Type">
-    <div class="socket-anchor @Class" style="@SocketStyle">
+<div class="flow-socket @LayoutClass" type="@Type.ToString().ToLower()">
+    <div class="socket-anchor @Class" style="@SocketStyle" @ref="anchorRef">
         @ChildContent
     </div>
     @if (ChildContent == null)
@@ -10,6 +10,8 @@
 
 @code
 {
+
+    internal ElementReference anchorRef;
 
     [Parameter]
     public Type T { get; set; } = typeof(object);
@@ -101,11 +103,11 @@
     }
 
 
-    .flow-socket[type="Input"] {
+    .flow-socket[type="input"] {
         flex-direction: row;
     }
 
-    .flow-socket[type="Output"] {
+    .flow-socket[type="output"] {
         flex-direction: row-reverse;
     }
 

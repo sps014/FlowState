@@ -1,8 +1,7 @@
 @using System.Runtime.CompilerServices
-<path class="edge" style="pointer-events: none; display: none; @Style" @ref="edgeRef" 
-    stroke-width="@StrokeWidth"
-    fill="@Fill" stroke-linecap="@StrokeLineCap" 
-    stroke="@Stroke" @attributes="InputAttributes">
+@using Microsoft.JSInterop
+<path class="edge" style="pointer-events: none; @Style" @ref="edgeRef" stroke-width="@StrokeWidth"
+    fill="@Fill" stroke-linecap="@StrokeLineCap" stroke="@Stroke" @attributes="InputAttributes">
 </path>
 @code
 {
@@ -43,4 +42,23 @@
 
     [Parameter(CaptureUnmatchedValues = true)]
     public Dictionary<string, object>? InputAttributes { get; set; } = [];
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (!firstRender)
+            return;
+
+        await UpdatePathAsync();
+
+    }
+
+    public ValueTask UpdatePathAsync()
+    {
+        if(Graph==null || Graph.Canvas==null)
+            return ValueTask.CompletedTask;
+        return Graph.Canvas.JsModule.InvokeVoidAsync("updatePath",FromSocket.anchorRef,ToSocket.anchorRef,edgeRef);
+    }
 }

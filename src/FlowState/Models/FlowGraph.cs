@@ -44,31 +44,40 @@ public class FlowGraph
         return CreateNode(typeof(T), x, y, data);
     }
 
-    public EdgeInfo Connect(FlowSocket from, FlowSocket to)
+    public (EdgeInfo? Edge, string? Error) Connect(FlowSocket from, FlowSocket to)
     {
         return Connect(from.FlowNode!.Id,to.FlowNode!.Id,from.Name,to.Name);
     }
 
 
-    public EdgeInfo Connect(string fromNodeId, string toNodeId, string fromSocketName, string toSocketName)
+    public (EdgeInfo? Edge, string? Error) Connect(string fromNodeId, string toNodeId, string fromSocketName, string toSocketName)
     {
+
+        if (Edges.Any(x => x.FromSocket.Name == fromSocketName && x.ToSocket.Name == toSocketName
+            && x.FromSocket.FlowNode!.Id == fromNodeId && x.ToSocket.FlowNode!.Id == toNodeId))
+
+            return (null, "Already Exists Link");
+
 
         var fromNode = GetNodeById(fromNodeId);
         var toNode = GetNodeById(toNodeId);
 
         if (fromNode == null)
-            throw new Exception("supplied fromNodeId didn't exist: " + fromNodeId);
+            return (null,"supplied fromNodeId didn't exist: " + fromNodeId);
         if (toNode == null)
-            throw new Exception("supplied toNodeId didn't exist: " + toNodeId);
+            return (null,"supplied toNodeId didn't exist: " + toNodeId);
 
         var fromSocket = fromNode.OutputSockets.GetValueOrDefault(fromSocketName);
         var toSocket = toNode.InputSockets.GetValueOrDefault(toSocketName);
 
         if (fromSocket == null)
-            throw new Exception("supplied from socket name didn't exist: " + fromSocketName);
-            
-         if (toSocket==null)
-            throw new Exception("supplied to socket name didn't exist: " + toSocketName);
+            return (null,"supplied from socket name didn't exist: " + fromSocketName);
+
+        if (toSocket == null)
+            return (null,"supplied to socket name didn't exist: " + toSocketName);
+
+        if (fromSocket.Type == toSocket.Type)
+            return(null,"can't connect sockets of same type");
 
 
         var id = Guid.NewGuid().ToString();
@@ -82,7 +91,7 @@ public class FlowGraph
         EdgesInfo.Add(id, new EdgeInfo { Id = id, Component = null, Parameters = data });
         EdgeAdded?.Invoke(this, EventArgs.Empty);
 
-        return EdgesInfo[id];
+        return (EdgesInfo[id],null);
     }
 
     public FlowNodeBase? GetNodeById(string id)

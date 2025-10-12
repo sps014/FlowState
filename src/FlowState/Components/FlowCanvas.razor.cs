@@ -58,7 +58,7 @@ namespace FlowState.Components
         internal ElementReference gridRef;
 
 #nullable disable
-        private IJSObjectReference module;
+        internal IJSObjectReference JsModule;
 #nullable restore
 
         private DotNetObjectReference<FlowCanvas>? dotnetObjRef;
@@ -95,9 +95,9 @@ namespace FlowState.Components
             if (BackgroundContent == null)
                 throw new Exception("Flow Canvas Background is null");
 
-            module = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowCanvas.js");
-            await module.InvokeVoidAsync("setComponentProperties", NodeSelectionClass);
-            await module.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef,flowContentRef, dotnetObjRef);
+            JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowCanvas.js");
+            await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass);
+            await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef,flowContentRef, dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
         }
 
@@ -108,21 +108,21 @@ namespace FlowState.Components
 
         public ValueTask SetViewportPropertiesAsync(CanvasProperties canvasProperties)
         {
-            return module.InvokeVoidAsync("setCanvasProperties", canvasProperties);
+            return JsModule.InvokeVoidAsync("setCanvasProperties", canvasProperties);
         }
 
         public ValueTask<CanvasProperties> GetViewportPropertiesAsync()
         {
-            return module.InvokeAsync<CanvasProperties>("getCanvasProperties");
+            return JsModule.InvokeAsync<CanvasProperties>("getCanvasProperties");
         }
         public ValueTask SetOffsetAsync(int offsetX, int offsetY)
         {
-            return module.InvokeVoidAsync("setOffset", offsetX, offsetY);
+            return JsModule.InvokeVoidAsync("setOffset", offsetX, offsetY);
         }
 
         public ValueTask SetZoomAsync(double zoom)
         {
-            return module.InvokeVoidAsync("setZoom", zoom);
+            return JsModule.InvokeVoidAsync("setZoom", zoom);
         }
 
         public ValueTask SelectNodesAsync(params string[] nodeIds)
@@ -140,7 +140,7 @@ namespace FlowState.Components
                 nodesEls.Add(node.DomElement.nodeRef);
             }
 
-            return module.InvokeVoidAsync("selectNodes", nodesEls);
+            return JsModule.InvokeVoidAsync("selectNodes", nodesEls);
         }
 
         public ValueTask ClearNodeSelectionAsync()
@@ -148,7 +148,7 @@ namespace FlowState.Components
             if (Graph == null)
                 return ValueTask.CompletedTask;
 
-            return module.InvokeVoidAsync("clearSelection");
+            return JsModule.InvokeVoidAsync("clearSelection");
         }
 
         [JSInvokable]
@@ -209,11 +209,11 @@ namespace FlowState.Components
                 Graph.NodeAdded -= Refresh;
             }
 
-            if (module != null)
+            if (JsModule != null)
             {
-                await module.InvokeVoidAsync("removeCanvasEvents", canvasRef);
+                await JsModule.InvokeVoidAsync("removeCanvasEvents", canvasRef);
                 dotnetObjRef?.Dispose();
-                await module.DisposeAsync();
+                await JsModule.DisposeAsync();
             }
         }
     }

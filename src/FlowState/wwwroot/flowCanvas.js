@@ -391,3 +391,66 @@ export function setZoom(z) {
   zoom = clamp(z, minZoom, maxZoom);
   updateTransforms();
 }
+
+
+// edge logic
+
+
+export function getSocketPosition(socketEl)
+{
+  if (!socketEl) return { x: 0, y: 0 };
+    
+    const rect = socketEl.getBoundingClientRect();
+    const surfaceRect = gridEl.getBoundingClientRect();
+    
+    // Offset by socket width based on type
+    let xOffset = rect.width / 2;
+    if (socketEl.type === 'output') {
+      xOffset = rect.width / 2; // +width/2 for output sockets
+    } else if (socketEl.type === 'input') {
+      xOffset = -rect.width / 2; // -width/2 for input sockets
+    }
+    
+    const x = (rect.left + rect.width / 2 + xOffset - surfaceRect.left - offsetX) / zoom;
+    const y = (rect.top + rect.height / 2 - surfaceRect.top - offsetY) / zoom;
+    
+    return { x, y };
+}
+
+export function updatePath(fromSocketEl,toSocketEl,edgeEl) {
+    if (!fromSocketEl || !toSocketEl || !edgeEl) return;
+    
+    const fromPos = getSocketPosition(fromSocketEl);
+    const toPos = getSocketPosition(toSocketEl);
+    
+    const path = createCubicPath(fromPos, toPos, fromSocketEl, toSocketEl);
+    
+    edgeEl.setAttribute('d', path);
+
+  }
+
+  function createCubicPath(from, to, fromSocket = null) {
+
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const dist = Math.hypot(dx, dy);
+    const offset = Math.min(200, dist * 0.5);
+    
+    let c1, c2;
+    
+    if (fromSocket) {
+      const isOutput = fromSocket.type === 'output';
+      if (isOutput) {
+        c1 = { x: from.x + offset, y: from.y };
+        c2 = { x: to.x - offset, y: to.y };
+      } else {
+        c1 = { x: from.x - offset, y: from.y };
+        c2 = { x: to.x + offset, y: to.y };
+      }
+    } else {
+      c1 = { x: from.x + offset, y: from.y };
+      c2 = { x: to.x - offset, y: to.y };
+    }
+    
+    return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
+  }
