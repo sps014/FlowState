@@ -6,7 +6,8 @@ namespace FlowState.Models;
 
 public class FlowGraph
 {
-    public FlowNodeRegistry nodeRegistry { get; } = new FlowNodeRegistry();
+    public FlowNodeRegistry NodeRegistry { get; } = new FlowNodeRegistry();
+    public TypeCompatibiltyRegistry TypeCompatibiltyRegistry { get; } = new TypeCompatibiltyRegistry();
     internal Dictionary<string, NodeInfo> NodesInfo { get; } = new();
     internal Dictionary<string, EdgeInfo> EdgesInfo { get; } = new();
 
@@ -18,7 +19,7 @@ public class FlowGraph
 
     public void RegisterNode<T>() where T : FlowNodeBase
     {
-        nodeRegistry.Register<T>();
+        NodeRegistry.Register<T>();
     }
 
     public NodeInfo CreateNode(Type type, double x, double y, Dictionary<string, object> data)
@@ -100,6 +101,9 @@ public class FlowGraph
     private bool IsDataTypeCompatibile(FlowSocket fromSocket,FlowSocket toSocket)
     {
         if (toSocket.T == typeof(object))
+            return true;
+
+        if(TypeCompatibiltyRegistry.IsCompatible(fromSocket.T,toSocket.T))
             return true;
 
         return toSocket.T == fromSocket.T;

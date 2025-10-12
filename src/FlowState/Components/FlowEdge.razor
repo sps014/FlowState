@@ -2,6 +2,7 @@
 @implements IAsyncDisposable
 
 @using Microsoft.JSInterop
+@using System.Diagnostics
 <path class="edge" style="pointer-events: none; @Style" @ref="edgeRef" stroke-width="@StrokeWidth" fill="@Fill"
     stroke-linecap="@StrokeLineCap" stroke="@Stroke" @attributes="InputAttributes">
 </path>
@@ -59,7 +60,7 @@
             return;
 
 
-        if (!IsTempEdge && FromSocket!=null && ToSocket!=null)
+        if (!IsTempEdge && FromSocket != null && ToSocket != null)
         {
             await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, FromSocket.FlowNode!);
             await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, ToSocket.FlowNode!);
@@ -70,7 +71,7 @@
 
     public ValueTask UpdatePathAsync()
     {
-        if (Graph == null || Graph.Canvas == null || FromSocket==null || ToSocket==null)
+        if (Graph == null || Graph.Canvas == null || FromSocket == null || ToSocket == null)
             return ValueTask.CompletedTask;
         return Graph.Canvas.JsModule.InvokeVoidAsync("updatePath", ToSocket.anchorRef, FromSocket.anchorRef, edgeRef);
     }
@@ -98,7 +99,15 @@
         if (Graph == null || Graph.Canvas == null || IsTempEdge)
             return;
 
-        await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, FromSocket?.FlowNode!);
-        await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, ToSocket?.FlowNode!);
+        try
+        {
+
+            await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, FromSocket?.FlowNode!);
+            await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, ToSocket?.FlowNode!);
+        }
+        catch
+        {
+            Debug.Write("Failed to dispose");
+        }
     }
 }

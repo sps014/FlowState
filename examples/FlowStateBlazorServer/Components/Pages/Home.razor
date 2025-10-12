@@ -29,6 +29,8 @@
 
     private async Task OnLoaded()
     {
+
+        graph.TypeCompatibiltyRegistry.Register<float>(typeof(int));
         //FlowNodeBase c= graph.Nodes.First();
         //Console.WriteLine($"Node count: {c.X},{c.Y}");
         fromNodeInfo=graph.CreateNode<InputNode>(0,0,[]);
