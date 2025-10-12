@@ -8,6 +8,8 @@
 <PageTitle>Home</PageTitle>
 
 
+<button @onclick="SaveGraph">Save Graph</button>
+
 <FlowCanvas Height="100vh" Width="100vw" Graph="graph" OnCanvasLoaded="OnLoaded">
  <BackgroundContent>
         <FlowBackground class="flow-grid-lines"/>
@@ -43,9 +45,11 @@
         StateHasChanged();
     }
 
-    private async Task EdgeConnectRequest(ConnectRequestArgs e)
+
+    private async Task SaveGraph()
     {
-        e.Handled = true;
+        var data = await graph.GetSerializableObjectAsync();
+        Console.WriteLine(data);
     }
 }
 

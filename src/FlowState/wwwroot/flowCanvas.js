@@ -369,9 +369,6 @@ function scaleBackgroundSize() {
 }
 
 function panBackgroundPosition() {
-  const gridBackgroundSize = { width: 32, height: 32 };
-  //gridEl.style.backgroundPosition = `${offsetX % (gridBackgroundSize.width * zoom)}px ${offsetY % (gridBackgroundSize.height * zoom)}px`;
-
   let gridSizeMatrix = getBackgroundSizesMatrix();
   let positions = [];
   for (let row of gridSizeMatrix) {
@@ -560,9 +557,11 @@ export function getTransformPosition(nodeEl) {
 function updateTempConnection(e) {
   if (tempEdgeStartPosition == null && tempEdgeStopPosition == null) return;
 
+  const containerRect = flowContentEl.getBoundingClientRect();
+
   let currentCursorPos = {
-    x: (e.clientX - offsetX) / zoom,
-    y: (e.clientY - offsetY) / zoom,
+    x: (e.clientX - offsetX - containerRect.left) / zoom,
+    y: (e.clientY - offsetY - containerRect.top) / zoom,
   };
 
   let path;

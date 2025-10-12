@@ -1,12 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
 using FlowState.Models;
+using FlowState.Models.Serializable;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.JSInterop;
 
 namespace FlowState.Components;
 
-public abstract class FlowNodeBase : ComponentBase, IDisposable
+public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<NodeProperties>
 {
     [Parameter]
     public double X { get; set; }
@@ -57,6 +58,20 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable
             }
         }
     }
+
+    public ValueTask<NodeProperties> GetSerializableObjectAsync()
+    {
+        //all [Parameter] properties, except Graph
+        var properties = this.GetType().GetProperties();
+        var parameterProperties = properties.Where(p => p.GetCustomAttributes(typeof(ParameterAttribute), false).Any()).ToList();
+        var parameterValues = parameterProperties.ToDictionary(p => p.Name, p => p.GetValue(this));
+        parameterValues ??= new();
+        parameterValues.Remove(nameof(Graph));
+
+        return ValueTask.FromResult(new NodeProperties(this.GetType().Name, Id, X, Y, parameterValues));
+    }
+
+    
     public void Dispose()
     {
 

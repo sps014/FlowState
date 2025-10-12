@@ -9,7 +9,7 @@ using Microsoft.JSInterop;
 
 namespace FlowState.Components
 {
-    public partial class FlowCanvas : IAsyncDisposable
+    public partial class FlowCanvas : IAsyncDisposable, ISerializable<CanvasProperties>
     {
 
         [EditorRequired]
@@ -268,6 +268,11 @@ namespace FlowState.Components
 
                 }
             }
+        }
+
+        public ValueTask<CanvasProperties> GetSerializableObjectAsync()
+        {
+            return GetViewportPropertiesAsync();
         }
     }
 }

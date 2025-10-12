@@ -1,10 +1,11 @@
 using System.Collections.ObjectModel;
 using FlowState.Components;
+using FlowState.Models.Serializable;
 using Microsoft.AspNetCore.Components;
 
 namespace FlowState.Models;
 
-public class FlowGraph
+public class FlowGraph : ISerializable<GraphData>
 {
     public FlowNodeRegistry NodeRegistry { get; } = new FlowNodeRegistry();
     public TypeCompatibiltyRegistry TypeCompatibiltyRegistry { get; } = new TypeCompatibiltyRegistry();
@@ -131,7 +132,28 @@ public class FlowGraph
         return Canvas.ClearNodeSelectionAsync();
     }
 
+    public async ValueTask<GraphData> GetSerializableObjectAsync()
+    {
+        if(Canvas==null)
+            throw new Exception("Canvas is not set");
+        var canvas = await Canvas.GetViewportPropertiesAsync();
 
+        var nodesProperties = new List<NodeProperties>();
+        var edgesProperties = new List<EdgeProperties>();
+
+        foreach(var node in Nodes)
+        {
+            var nodeProperties = await node.GetSerializableObjectAsync();
+            nodesProperties.Add(nodeProperties);
+        }
+
+        foreach(var edge in Edges)
+        {
+            var edgeProperties = await edge.GetSerializableObjectAsync();
+            edgesProperties.Add(edgeProperties);
+        }
+        return new GraphData { Canvas = canvas, Nodes = nodesProperties, Edges = edgesProperties };
+    }
 
     public EventHandler? NodeAdded;
     public EventHandler? EdgeAdded;
