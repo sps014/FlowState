@@ -65,8 +65,6 @@
             await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, ToSocket.FlowNode!);
             await UpdatePathAsync();
         }
-        else
-            await SetTempEdgeElementAsync();
 
     }
 
@@ -77,12 +75,17 @@
         return Graph.Canvas.JsModule.InvokeVoidAsync("updatePath", ToSocket.anchorRef, FromSocket.anchorRef, edgeRef);
     }
 
-    private ValueTask SetTempEdgeElementAsync()
+    public ValueTask SetTempEdgeElementAsync()
     {
         if (Graph == null || Graph.Canvas == null)
             return ValueTask.CompletedTask;
 
         return Graph.Canvas.JsModule.InvokeVoidAsync("setTempEdgeElement", edgeRef);
+    }
+
+    public void SetGraph(FlowGraph flowGraph)
+    {
+        Graph = flowGraph;
     }
 
     public void Refresh()

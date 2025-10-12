@@ -106,6 +106,12 @@ namespace FlowState.Components
             await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef,flowContentRef, dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
 
+            if (TempEdge != null)
+            {
+                TempEdge.SetGraph(Graph);
+                await TempEdge.SetTempEdgeElementAsync();
+            }
+
             if (OnCanvasLoaded.HasDelegate)
                 await OnCanvasLoaded.InvokeAsync();
         }

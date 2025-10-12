@@ -83,12 +83,9 @@ function pointerdown(e) {
     else
       tempEdgeStartPosition = getSocketPosition(socket);
 
-    console.log(tempEdgeStartPosition,tempEdgeStopPosition,socket);
-
   } else if (node) {
     handleNodeSelection(node, e);
     dragNodeStart(e, node);
-    return;
   } else {
     // Clear all selections if clicked on empty space
     if (selectedNodes.size > 0) {
@@ -96,9 +93,9 @@ function pointerdown(e) {
       clearSelection();
       dotnetRef.invokeMethodAsync("NotifyNodesCleared", deselected);
     }
-  }
+      panStart(e);
 
-  panStart(e);
+  }
 }
 
 function pointermove(e) {
@@ -115,15 +112,27 @@ function pointermove(e) {
 }
 
 function pointerup(e) {
+
+  if(isConnectingNodes)
+  {
+    stopTempConnection(e);
+  }
   if (isNodeDragging) {
     dragNodeStop(e);
-    return;
   }
-  panEnd(e);
+  else{
+    panEnd(e);
+  }
 }
 
 function pointerleave(e) {
+
   panEnd(e);
+}
+
+function stopTempConnection(e) {
+  if (tempEdgeElement) tempEdgeElement.setAttribute('d','');
+  isConnectingNodes = false;
 }
 
 // =================== Node Selection ====================
@@ -514,7 +523,7 @@ function updateTempConnection(e)
   if(tempEdgeStartPosition==null && tempEdgeStopPosition==null)
     return;
 
-  let currentCursorPos = {x:e.clientX,y:e.clientY};
+  let currentCursorPos = {x:(e.clientX-offsetX)/zoom,y:(e.clientY-offsetY)/zoom};
 
   let path;
 
@@ -530,5 +539,4 @@ function updateTempConnection(e)
 export function setTempEdgeElement(el)
 {
   tempEdgeElement = el;
-  console.log(el)
 }
