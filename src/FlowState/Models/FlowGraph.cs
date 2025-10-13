@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Newtonsoft.Json;
 using FlowState.Components;
 using FlowState.Models.Serializable;
+using FlowState.Models.Events;
 using Microsoft.AspNetCore.Components;
 
 namespace FlowState.Models;
@@ -41,7 +42,13 @@ public class FlowGraph : ISerializable<GraphData>
         NodesInfo.Add(id, new NodeInfo { Id = id, NodeType = type, Component = null, Parameters = data });
 
         if(!supressEvent)
-            NodeAdded?.Invoke(this, EventArgs.Empty);
+            NodeAdded?.Invoke(this, new NodeAddedEventArgs 
+            { 
+                NodeId = id, 
+                NodeType = type, 
+                X = x, 
+                Y = y 
+            });
 
         return NodesInfo[id];
     }
@@ -77,23 +84,41 @@ public class FlowGraph : ISerializable<GraphData>
         }
 
         NodesInfo.Remove(id);
-        NodeRemoved?.Invoke(this, EventArgs.Empty);
+        NodeRemoved?.Invoke(this, new NodeRemovedEventArgs { NodeId = id });
     }
     public void RemoveEdge(string id)
     {
+        if (!EdgesInfo.ContainsKey(id))
+            return;
+            
         EdgesInfo.Remove(id);
-        EdgeRemoved?.Invoke(this, EventArgs.Empty);
+        EdgeRemoved?.Invoke(this, new EdgeRemovedEventArgs { EdgeId = id });
     }
 
     public void RemoveAllEdges()
     {
+        if (EdgesInfo.Count == 0)
+            return;
+            
+        var edgeIds = new string[EdgesInfo.Count];
+        EdgesInfo.Keys.CopyTo(edgeIds, 0);
+        
         EdgesInfo.Clear();
-        EdgeRemoved?.Invoke(this, EventArgs.Empty);
+        
+        AllEdgesCleared?.Invoke(this, EventArgs.Empty);
     }
+    
     public void RemoveAllNodes()
     {
+        if (NodesInfo.Count == 0)
+            return;
+            
+        var nodeIds = new string[NodesInfo.Count];
+        NodesInfo.Keys.CopyTo(nodeIds, 0);
+        
         NodesInfo.Clear();
-        NodeRemoved?.Invoke(this, EventArgs.Empty);
+        
+        AllNodesCleared?.Invoke(this, EventArgs.Empty);
     }
 
     public (EdgeInfo? Edge, string? Error) Connect(FlowSocket from, FlowSocket to,bool checkDataType = false)
@@ -144,7 +169,14 @@ public class FlowGraph : ISerializable<GraphData>
         data[nameof(FlowEdge.ToSocket)] = toSocket;
 
         EdgesInfo.Add(id, new EdgeInfo { Id = id, Component = null, Parameters = data });
-        EdgeAdded?.Invoke(this, EventArgs.Empty);
+        EdgeAdded?.Invoke(this, new EdgeAddedEventArgs 
+        { 
+            EdgeId = id, 
+            FromNodeId = fromNodeId, 
+            ToNodeId = toNodeId,
+            FromSocketName = fromSocketName,
+            ToSocketName = toSocketName
+        });
 
         return (EdgesInfo[id], null);
     }
@@ -234,15 +266,17 @@ public class FlowGraph : ISerializable<GraphData>
             _ = CreateNode(type, node.X, node.Y, node.Data ?? []);
         }
 
-        NodeAdded?.Invoke(this,EventArgs.Empty);
+        ForcedRequestDomStateChanged?.Invoke(this,EventArgs.Empty);
 
 
         await Task.Delay(100); // wait for the nodes to be created
 
-        foreach(var edge in graphData.Edges)
+        foreach (var edge in graphData.Edges)
         {
             _ = Connect(edge.FromNodeId, edge.ToNodeId, edge.FromSocketName, edge.ToSocketName);
         }
+
+        OnDeserialzed?.Invoke(this, EventArgs.Empty);
 
     }
 
@@ -261,10 +295,13 @@ public class FlowGraph : ISerializable<GraphData>
     }
     
 
-    public EventHandler? NodeAdded;
-    public EventHandler? EdgeAdded;
-
-    public EventHandler? NodeRemoved;
-    public EventHandler? EdgeRemoved;
+    public event EventHandler<NodeAddedEventArgs>? NodeAdded;
+    public event EventHandler<EdgeAddedEventArgs>? EdgeAdded;
+    public event EventHandler<NodeRemovedEventArgs>? NodeRemoved;
+    public event EventHandler<EdgeRemovedEventArgs>? EdgeRemoved;
+    public event EventHandler? AllNodesCleared;
+    public event EventHandler? AllEdgesCleared;
+    public event EventHandler? ForcedRequestDomStateChanged;
+    public event EventHandler? OnDeserialzed;
 
 }

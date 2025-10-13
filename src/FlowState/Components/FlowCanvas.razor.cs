@@ -42,15 +42,14 @@ namespace FlowState.Components
 
         [Parameter] public bool EdgeShouldMatchDataType { get; set; } = true;
         [Parameter] public EventCallback<PanEventArgs> OnPanned { get; set; }
-        [Parameter] public EventCallback<double> OnZoomed { get; set; }
+        [Parameter] public EventCallback<ZoomEventArgs> OnZoomed { get; set; }
         [Parameter] public EventCallback<NodeMovedArgs> OnNodeMoved { get; set; }
 
-        [Parameter] public EventCallback<string> OnNodeSelected { get; set; }
-        [Parameter] public EventCallback<string> OnNodeDeselected { get; set; }
-        // Selection changed sends an array of selected node IDs
-        [Parameter] public EventCallback<string[]> OnSelectionChanged { get; set; }
+        [Parameter] public EventCallback<NodeSelectedEventArgs> OnNodeSelected { get; set; }
+        [Parameter] public EventCallback<NodeDeselectedEventArgs> OnNodeDeselected { get; set; }
+        [Parameter] public EventCallback<SelectionChangedEventArgs> OnSelectionChanged { get; set; }
 
-        [Parameter] public EventCallback OnNotifyNodesCleared { get; set; }
+        [Parameter] public EventCallback<NodesClearedEventArgs> OnNotifyNodesCleared { get; set; }
 
         [Parameter] public EventCallback<ConnectRequestArgs> OnEdgeConnectRequest { get; set; }
 
@@ -58,7 +57,7 @@ namespace FlowState.Components
         private FlowEdge? TempEdge = null;
 
         [Parameter]
-        public EventCallback OnCanvasLoaded { get; set; }
+        public EventCallback<CanvasLoadedEventArgs> OnCanvasLoaded { get; set; }
 
 
         /// <summary>
@@ -92,10 +91,15 @@ namespace FlowState.Components
                 throw new InvalidOperationException("FlowCanvas requires a valid FlowGraph instance.");
 
             Graph.Canvas = this;
-            Graph.NodeAdded += Refresh;
-            Graph.EdgeAdded += Refresh;
-            Graph.NodeRemoved += Refresh;
-            Graph.EdgeRemoved += Refresh;
+            Graph.NodeAdded += RefreshOnNodeAdded;
+            Graph.EdgeAdded += RefreshOnEdgeAdded;
+            Graph.NodeRemoved += RefreshOnNodeRemoved;
+            Graph.EdgeRemoved += RefreshOnEdgeRemoved;
+            Graph.AllNodesCleared += RefreshOnAllNodesCleared;
+            Graph.AllEdgesCleared += RefreshOnAllEdgesCleared;
+            Graph.OnDeserialzed += OnDeserialzed;
+            Graph.ForcedRequestDomStateChanged += ForcedRequestDomStateChanged;
+
 
             dotnetObjRef = DotNetObjectReference.Create(this);
         }
@@ -112,7 +116,7 @@ namespace FlowState.Components
 
 
             JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowCanvas.js");
-            await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass,AutoUpdateSocketColors);
+            await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass, AutoUpdateSocketColors);
             await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef, flowContentRef, dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
 
@@ -123,10 +127,50 @@ namespace FlowState.Components
             }
 
             if (OnCanvasLoaded.HasDelegate)
-                await OnCanvasLoaded.InvokeAsync();
+                await OnCanvasLoaded.InvokeAsync(new CanvasLoadedEventArgs
+                {
+                    Zoom = Zoom,
+                    MinZoom = MinZoom,
+                    MaxZoom = MaxZoom
+                });
         }
 
-        private void Refresh(object? _, EventArgs e)
+        private void ForcedRequestDomStateChanged(object? _,EventArgs e)
+        {
+            StateHasChanged();
+        }
+        
+        private void RefreshOnAllEdgesCleared(object? _,EventArgs e)
+        {
+            StateHasChanged();
+        }
+
+        private void RefreshOnNodeAdded(object? _, NodeAddedEventArgs e)
+        {
+            StateHasChanged();
+        }
+        
+        private void RefreshOnNodeRemoved(object? _, NodeRemovedEventArgs e)
+        {
+            StateHasChanged();
+        }
+        
+        private void RefreshOnEdgeAdded(object? _, EdgeAddedEventArgs e)
+        {
+            StateHasChanged();
+        }
+        
+        private void RefreshOnEdgeRemoved(object? _, EdgeRemovedEventArgs e)
+        {
+            StateHasChanged();
+        }
+        
+        private void RefreshOnAllNodesCleared(object? _, EventArgs e)
+        {
+            StateHasChanged();
+        }
+        
+        private void OnDeserialzed(object? _, EventArgs e)
         {
             StateHasChanged();
         }
@@ -217,7 +261,7 @@ namespace FlowState.Components
         public async Task NotifyZoomed(double zoom)
         {
             if (OnZoomed.HasDelegate)
-                await OnZoomed.InvokeAsync(zoom);
+                await OnZoomed.InvokeAsync(new ZoomEventArgs { Zoom = zoom });
         }
 
         [JSInvokable]
@@ -231,28 +275,28 @@ namespace FlowState.Components
         public async Task NotifyNodeSelected(string nodeId)
         {
             if (OnNodeSelected.HasDelegate)
-                await OnNodeSelected.InvokeAsync(nodeId);
+                await OnNodeSelected.InvokeAsync(new NodeSelectedEventArgs { NodeId = nodeId });
         }
 
         [JSInvokable]
         public async Task NotifyNodeDeselected(string nodeId)
         {
             if (OnNodeDeselected.HasDelegate)
-                await OnNodeDeselected.InvokeAsync(nodeId);
+                await OnNodeDeselected.InvokeAsync(new NodeDeselectedEventArgs { NodeId = nodeId });
         }
 
         [JSInvokable]
         public async Task NotifySelectionChanged(string[] nodeIds)
         {
             if (OnSelectionChanged.HasDelegate)
-                await OnSelectionChanged.InvokeAsync(nodeIds);
+                await OnSelectionChanged.InvokeAsync(new SelectionChangedEventArgs { SelectedNodeIds = nodeIds });
         }
 
         [JSInvokable]
         public async Task NotifyNodesCleared()
         {
             if (OnNotifyNodesCleared.HasDelegate)
-                await OnNotifyNodesCleared.InvokeAsync();
+                await OnNotifyNodesCleared.InvokeAsync(new NodesClearedEventArgs { ClearedCount = Graph.Nodes.Count });
         }
 
         [JSInvokable]
@@ -276,10 +320,15 @@ namespace FlowState.Components
         {
             if (Graph != null)
             {
-                Graph.NodeAdded -= Refresh;
-                Graph.EdgeAdded -= Refresh;
-                Graph.NodeRemoved -= Refresh;
-                Graph.EdgeRemoved -= Refresh;
+                Graph.NodeAdded -= RefreshOnNodeAdded;
+                Graph.EdgeAdded -= RefreshOnEdgeAdded;
+                Graph.NodeRemoved -= RefreshOnNodeRemoved;
+                Graph.EdgeRemoved -= RefreshOnEdgeRemoved;
+                Graph.AllNodesCleared -= RefreshOnAllNodesCleared;
+                Graph.AllEdgesCleared -= RefreshOnAllEdgesCleared;
+                Graph.OnDeserialzed -= OnDeserialzed;
+                Graph.ForcedRequestDomStateChanged -= ForcedRequestDomStateChanged;
+
             }
 
             if (JsModule != null)

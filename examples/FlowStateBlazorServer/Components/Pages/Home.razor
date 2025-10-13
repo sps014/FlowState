@@ -66,9 +66,9 @@
     }
 
     private string[] selection=[];
-    private void NodesSelected(string[] selectedNodes)
+    private void NodesSelected(SelectionChangedEventArgs e)
     {
-        selection = selectedNodes;
+        selection = e.SelectedNodeIds;
     }
     private async Task RemoveNode()
     {
