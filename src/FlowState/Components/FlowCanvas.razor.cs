@@ -194,6 +194,15 @@ namespace FlowState.Components
             return JsModule.InvokeVoidAsync("deleteEdgeFromMap", edge.edgeRef, node.DomElement?.nodeRef);
         }
 
+        /// <summary>
+        /// Get the IDs of the currently selected nodes
+        /// </summary>
+        /// <returns>An array of the IDs of the currently selected nodes</returns>
+        public ValueTask<string[]> GetSelectedNodesAsync()
+        {
+            return JsModule.InvokeAsync<string[]>("getSelectedNodes");
+        }
+
         [JSInvokable]
         public async Task NotifyPanned(double offsetX, double offsetY)
         {

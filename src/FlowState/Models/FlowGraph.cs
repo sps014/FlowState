@@ -244,7 +244,13 @@ public class FlowGraph : ISerializable<GraphData>
             _ = Connect(edge.FromNodeId, edge.ToNodeId, edge.FromSocketName, edge.ToSocketName);
         }
 
+    }
 
+    public ValueTask<string[]> GetSelectedNodesAsync()
+    {
+        if (Canvas == null)
+            throw new Exception("Canvas is not set");
+        return Canvas.GetSelectedNodesAsync();
     }
 
     public ValueTask ClearAsync()

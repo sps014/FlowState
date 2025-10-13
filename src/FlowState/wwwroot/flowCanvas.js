@@ -576,3 +576,9 @@ function updateTempConnection(e) {
 export function setTempEdgeElement(el) {
   tempEdgeElement = el;
 }
+
+export function  getSelectedNodes() {
+
+  let ids = [...selectedNodes].map((n) => n.id);
+  return ids;
+}

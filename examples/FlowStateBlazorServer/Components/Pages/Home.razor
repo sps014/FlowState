@@ -12,7 +12,6 @@
 <button @onclick="ClearGraph">Clear Graph</button>
 <button @onclick="LoadGraph">Load Graph</button>
 <button @onclick="RemoveNode">Remove Node</button>
-<button @onclick="RemoveEdge">Remove Edge</button>
 
 <FlowCanvas Height="100vh" Width="100vw" Graph="graph" OnCanvasLoaded="OnLoaded">
  <BackgroundContent>
@@ -65,13 +64,13 @@
     {
         await graph.DeserializeAsync(data);
     }
-    private void RemoveNode()
+    private async Task RemoveNode()
     {
-        graph.RemoveNode(fromNodeInfo.Id);
+        var selectedNodes = await graph.GetSelectedNodesAsync();
+        graph.RemoveNode(selectedNodes.First());
     }
     private void RemoveEdge()
     {
-        Console.WriteLine(edgeInfo.Id);
         graph.RemoveEdge(edgeInfo.Id);
     }
 }
