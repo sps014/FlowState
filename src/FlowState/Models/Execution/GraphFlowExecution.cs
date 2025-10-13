@@ -355,10 +355,30 @@ public class GraphFlowExecution
     }
 
     // Events
+
+    /// <summary>
+    /// Fired when execution starts
+    /// </summary>
     public event EventHandler<ExecutionEventArgs>? OnExecutionStarted;
+
+    /// <summary>
+    /// Fired when execution completes (successful or with error)
+    /// </summary>
     public event EventHandler<ExecutionCompletedEventArgs>? OnExecutionCompleted;
+
+    /// <summary>
+    /// Fired before a node begins execution
+    /// </summary>
     public event EventHandler<NodeExecutionEventArgs>? OnNodeExecutionStarted;
+
+    /// <summary>
+    /// Fired after a node successfully completes execution
+    /// </summary>
     public event EventHandler<NodeExecutionEventArgs>? OnNodeExecutionCompleted;
+
+    /// <summary>
+    /// Fired when a node encounters an error during execution
+    /// </summary>
     public event EventHandler<NodeExecutionErrorEventArgs>? OnNodeExecutionError;
 }
 

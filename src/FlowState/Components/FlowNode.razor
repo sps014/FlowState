@@ -4,60 +4,7 @@
 </div>
 
 
-@code
-{
-    [Parameter]
-    public RenderFragment? ChildContent { get; set; }
 
-    [CascadingParameter]
-    public FlowNodeBase? Node { get; set; } //get the actual base node
-
-    internal ElementReference nodeRef;
-
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        await base.OnAfterRenderAsync(firstRender);
-
-        if(!firstRender)
-            return;
-
-        if(Node!=null && Node.Graph!=null)
-        {
-            Node.DomElement =  this;
-            await MoveNodeAsync(Node.X, Node.Y);
-        }
-        else
-        {
-            throw new Exception("Error rendering the node");
-        }
-
-        
-
-    }
-
-    public ValueTask MoveNodeAsync(double x, double y)
-    {
-        if (Node !=null && Node.Graph!=null && Node.Graph.Canvas!=null && Node.Graph.Canvas.JsModule!=null)
-            return Node.Graph.Canvas.JsModule.InvokeVoidAsync("moveNode", nodeRef, x, y);
-            
-        return ValueTask.CompletedTask;
-    }
-    public ValueTask<DomPoint> GetTransformPositionAsync()
-    {
-        if (Node !=null && Node.Graph!=null && Node.Graph.Canvas!=null && Node.Graph.Canvas.JsModule!=null)
-        {
-            return Node.Graph.Canvas.JsModule.InvokeAsync<DomPoint>("getTransformPosition",nodeRef);
-        }
-
-        return ValueTask.FromResult(new DomPoint());
-    }
-
-}
 <style>
     .flow-node.selected {
         box-shadow:

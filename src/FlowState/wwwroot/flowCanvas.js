@@ -1,58 +1,65 @@
+// =================== Global State Variables ===================
+
+// DOM Elements
 let canvasEl = null;
 let gridEl = null;
 let flowContentEl = null;
+let dotnetRef = null;
 
+// Canvas State
 let offsetX = 0;
 let offsetY = 0;
 let zoom = 1;
 let minZoom = 0.2;
 let maxZoom = 2.0;
 
-let dotnetRef = null;
-
-// --- State
+// Interaction State
 let isPanning = false;
 let isNodeDragging = false;
 let isConnectingNodes = false;
 
-let tempEdgeStartPosition = null;
-let tempEdgeStopPosition = null;
-let tempSocket = null;
-
+// Panning State
 let startX = 0;
 let startY = 0;
 let lastOffsetX = 0;
 let lastOffsetY = 0;
 
+// Node Dragging State
 let selectedNodes = new Set();
 let dragStartPositions = new Map();
 let lastMouseX = 0;
 let lastMouseY = 0;
 
-let nodeSelectionClass = "selected";
+// Edge Connection State
+let tempEdgeStartPosition = null;
+let tempEdgeStopPosition = null;
+let tempSocket = null;
+let tempEdgeElement = null;
 
+// Edge Management
+let nodeEdgeMap = new Map(); // Map<NodeEl, Edges[]>
+let edgeSocketsMap = new Map(); // Map<EdgeEl, {to: SocketEl, from: SocketEl}>
+
+// Configuration
+let nodeSelectionClass = "selected";
+let autoUpdateSocketColors = false;
+
+// Cache
 let cacheGridBackgroundSize = null;
 let cacheGridSizeMatrix = null;
 
-let nodeEdgeMap = new Map(); // Map<NodeEl,Edges>
-let edgeSocketsMap = new Map(); // Map<NodeEl,{to:SocketEl,from:SocketEl}
-let tempEdgeElement = null;
+// =================== Initialization & Cleanup ===================
 
-let autoUpdateSocketColors = false;
-
-export function setupCanvasEvents(
-  el,
-  gridElement,
-  flowContentElement,
-  dotnetReference
-) {
+/**
+ * Sets up canvas event listeners and initializes the canvas
+ */
+export function setupCanvasEvents(el, gridElement, flowContentElement, dotnetReference) {
   canvasEl = el;
   flowContentEl = flowContentElement;
   gridEl = gridElement;
-
   dotnetRef = dotnetReference;
-  const style = window.getComputedStyle(gridEl);
 
+  const style = window.getComputedStyle(gridEl);
   cacheGridBackgroundSize = style.backgroundSize;
 
   el.addEventListener("pointerdown", pointerdown);
@@ -62,14 +69,26 @@ export function setupCanvasEvents(
   el.addEventListener("wheel", onWheel);
 }
 
+/**
+ * Removes canvas event listeners
+ */
 export function removeCanvasEvents(el) {
   el.removeEventListener("pointerdown", pointerdown);
   el.removeEventListener("pointermove", pointermove);
   el.removeEventListener("pointerup", pointerup);
   el.removeEventListener("pointerleave", pointerleave);
+  el.removeEventListener("wheel", onWheel);
 }
 
-// =================== Pointer Handling ====================
+/**
+ * Sets component-level properties
+ */
+export function setComponentProperties(nodeSelectionClassParam, autoUpdateSocketColorsParam) {
+  nodeSelectionClass = nodeSelectionClassParam;
+  autoUpdateSocketColors = autoUpdateSocketColorsParam;
+}
+
+// =================== Pointer Event Handlers ===================
 
 function pointerdown(e) {
   const socket = getClickedSocket(e);
@@ -77,12 +96,11 @@ function pointerdown(e) {
 
   if (socket) {
     tempSocket = socket;
-    startTempConnection(e,socket);
+    startTempConnection(e, socket);
   } else if (node) {
     handleNodeSelection(node, e);
     dragNodeStart(e, node);
   } else {
-    // Clear all selections if clicked on empty space
     if (selectedNodes.size > 0) {
       const deselected = [...selectedNodes].map((n) => n.id);
       clearSelection();
@@ -119,71 +137,90 @@ function pointerleave(e) {
   panEnd(e);
 }
 
-function startTempConnection(e,socket) {
+// =================== Edge Connection (Temp Edge) ===================
+
+function startTempConnection(e, socket) {
   isConnectingNodes = true;
   tempEdgeStartPosition = null;
   tempEdgeStopPosition = null;
 
-  if (socket.getAttribute("type") == "input")
+  if (socket.getAttribute("type") == "input") {
     tempEdgeStopPosition = getSocketPosition(socket);
-  else tempEdgeStartPosition = getSocketPosition(socket);
+  } else {
+    tempEdgeStartPosition = getSocketPosition(socket);
+  }
 
-  if(autoUpdateSocketColors)
-  {
-    const color = socket.getAttribute('innercolor');
-    tempEdgeElement.setAttribute('stroke',color);
+  if (autoUpdateSocketColors) {
+    const color = socket.getAttribute("innercolor");
+    tempEdgeElement.setAttribute("stroke", color);
   }
 }
 
+function updateTempConnection(e) {
+  if (tempEdgeStartPosition == null && tempEdgeStopPosition == null) return;
+
+  const containerRect = flowContentEl.getBoundingClientRect();
+
+  let currentCursorPos = {
+    x: (e.clientX - containerRect.left) / zoom,
+    y: (e.clientY - containerRect.top) / zoom,
+  };
+
+  let path;
+
+  if (tempEdgeStartPosition) {
+    path = createCubicPath(tempEdgeStartPosition, currentCursorPos);
+  } else {
+    path = createCubicPath(currentCursorPos, tempEdgeStopPosition);
+  }
+
+  tempEdgeElement.setAttribute("d", path);
+}
+
 function stopTempConnection(e) {
+  if (tempSocket) {
+    let targetSocket = e.target.closest(".socket-anchor");
+    let tempSocketType = tempSocket.getAttribute("type");
 
-  if(tempSocket)
-  {
-    let targetSocket = e.target.closest('.socket-anchor');
-    let tempSocketType = tempSocket.getAttribute('type');
-
-    if(targetSocket && tempSocket!==targetSocket && tempSocket.getAttribute('type')!=targetSocket.getAttribute('type'))
-    {
-
+    if (
+      targetSocket &&
+      tempSocket !== targetSocket &&
+      tempSocket.getAttribute("type") != targetSocket.getAttribute("type")
+    ) {
       let fromNodeId;
       let toNodeId;
-
       let fromSocketName;
       let toSocketName;
 
-      if(tempSocketType==='input') // its input then 'to'
-      {
-        toNodeId = tempSocket.getAttribute('node-id');
-        fromNodeId = targetSocket.getAttribute('node-id');
-
-        toSocketName = tempSocket.getAttribute('name');
-        fromSocketName = targetSocket.getAttribute('name');
-      }
-      else // its output then 'from'
-      {
-        toNodeId = targetSocket.getAttribute('node-id');
-        fromNodeId = tempSocket.getAttribute('node-id');
-
-        toSocketName = targetSocket.getAttribute('name');
-        fromSocketName = tempSocket.getAttribute('name');
+      if (tempSocketType === "input") {
+        toNodeId = tempSocket.getAttribute("node-id");
+        fromNodeId = targetSocket.getAttribute("node-id");
+        toSocketName = tempSocket.getAttribute("name");
+        fromSocketName = targetSocket.getAttribute("name");
+      } else {
+        toNodeId = targetSocket.getAttribute("node-id");
+        fromNodeId = tempSocket.getAttribute("node-id");
+        toSocketName = targetSocket.getAttribute("name");
+        fromSocketName = tempSocket.getAttribute("name");
       }
 
-      connectRequest(fromNodeId,toNodeId,fromSocketName,toSocketName);
+      connectRequest(fromNodeId, toNodeId, fromSocketName, toSocketName);
     }
   }
-  if (tempEdgeElement) tempEdgeElement.setAttribute("d", "");
+
+  if (tempEdgeElement) {
+    tempEdgeElement.setAttribute("d", "");
+  }
 
   tempSocket = null;
   isConnectingNodes = false;
 }
 
-
-function connectRequest(fromNodeId,toNodeId,fromSocketName,toSocketName)
-{
-  dotnetRef.invokeMethodAsync("EdgeConnectRequest",fromNodeId,toNodeId,fromSocketName,toSocketName);
+function connectRequest(fromNodeId, toNodeId, fromSocketName, toSocketName) {
+  dotnetRef.invokeMethodAsync("EdgeConnectRequest", fromNodeId, toNodeId, fromSocketName, toSocketName);
 }
 
-// =================== Node Selection ====================
+// =================== Node Selection ===================
 
 function handleNodeSelection(node, e) {
   if (e.ctrlKey || e.metaKey) {
@@ -197,19 +234,22 @@ function handleNodeSelection(node, e) {
       dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
     }
   } else {
-    // Replace current selection
-    for (const n of selectedNodes) n.classList.remove(nodeSelectionClass);
+    for (const n of selectedNodes) {
+      n.classList.remove(nodeSelectionClass);
+    }
     selectedNodes.clear();
     node.classList.add(nodeSelectionClass);
     selectedNodes.add(node);
     dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
   }
 
-  // --- invoke selection changed with all currently selected node IDs
   const selectedIds = [...selectedNodes].map((n) => n.id);
   dotnetRef.invokeMethodAsync("NotifySelectionChanged", selectedIds);
 }
 
+/**
+ * Selects nodes programmatically
+ */
 export function selectNodes(nodesEl) {
   clearSelection();
   for (let node of nodesEl) {
@@ -219,6 +259,9 @@ export function selectNodes(nodesEl) {
   }
 }
 
+/**
+ * Clears all node selections
+ */
 export function clearSelection() {
   for (const n of selectedNodes) {
     n.classList.remove(nodeSelectionClass);
@@ -226,7 +269,15 @@ export function clearSelection() {
   selectedNodes.clear();
 }
 
-// =================== Node Dragging ====================
+/**
+ * Gets the IDs of currently selected nodes
+ */
+export function getSelectedNodes() {
+  let ids = [...selectedNodes].map((n) => n.id);
+  return ids;
+}
+
+// =================== Node Dragging ===================
 
 function dragNodeStart(e, node) {
   if (selectedNodes.size === 0) {
@@ -247,7 +298,6 @@ function dragNodeStart(e, node) {
   }
 
   e.stopPropagation();
-  //e.preventDefault();
 }
 
 function dragNodeMove(e) {
@@ -276,7 +326,6 @@ function dragNodeStop(e) {
 
   isNodeDragging = false;
 
-  // Notify all moved nodes
   for (const n of selectedNodes) {
     const pos = dragStartPositions.get(n);
     if (pos) {
@@ -288,7 +337,7 @@ function dragNodeStop(e) {
   e.stopPropagation();
 }
 
-// =================== Panning & Zoom ====================
+// =================== Canvas Panning ===================
 
 function panStart(e) {
   isPanning = true;
@@ -315,11 +364,15 @@ function panMove(e) {
 
 function panEnd(e) {
   if (!isPanning) return;
+
   isPanning = false;
   dotnetRef.invokeMethodAsync("NotifyPanned", offsetX, offsetY);
+
   e.stopPropagation();
   e.preventDefault();
 }
+
+// =================== Canvas Zoom ===================
 
 function onWheel(e) {
   const delta = e.deltaY < 0 ? 0.02 : -0.02;
@@ -342,7 +395,7 @@ function onWheel(e) {
   e.preventDefault();
 }
 
-// =================== Helpers ====================
+// =================== Transform & Background Updates ===================
 
 function updateTransforms() {
   flowContentEl.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0px) scale(${zoom})`;
@@ -351,13 +404,11 @@ function updateTransforms() {
 }
 
 function scaleBackgroundSize() {
-  const bgSizes = cacheGridBackgroundSize.split(","); // split by layer
+  const bgSizes = cacheGridBackgroundSize.split(",");
 
   const scaledSizes = bgSizes.map((size) => {
-    // Trim and split "32px 32px" → ["32px", "32px"]
     const parts = size.trim().split(/\s+/);
 
-    // Only scale numeric px values
     const scaled = parts.map((val) => {
       const match = val.match(/^([\d.]+)([a-z%]*)$/i);
       if (match) {
@@ -365,26 +416,26 @@ function scaleBackgroundSize() {
         const scaledNum = parseFloat(num) * zoom;
         return `${scaledNum}${unit}`;
       }
-      // Keep keywords like 'auto', 'cover', 'contain'
       return val;
     });
 
     return scaled.join(" ");
   });
 
-  // Reapply efficiently
   gridEl.style.backgroundSize = scaledSizes.join(", ");
 }
 
 function panBackgroundPosition() {
   let gridSizeMatrix = getBackgroundSizesMatrix();
   let positions = [];
+
   for (let row of gridSizeMatrix) {
     const computed = `${offsetX % (row[0].number * zoom)}${row[0].unit} ${
       offsetY % (row[1].number * zoom)
     }${row[1].unit}`;
     positions.push(computed);
   }
+
   const backgroundPos = positions.join(",");
   gridEl.style.backgroundPosition = backgroundPos;
 }
@@ -406,109 +457,26 @@ function getBackgroundSizesMatrix() {
 
   return cacheGridSizeMatrix;
 }
-function splitNumberAndUnit(input) {
-  const match = input.match(/^(-?\d*\.?\d+)([a-z%]*)$/i);
-  if (!match) return { number: 0, unit: "px" };
-  return {
-    number: parseFloat(match[1]),
-    unit: match[2] || "",
-  };
-}
 
-function getClickedNode(e) {
-  return e.target.closest(".flow-node");
-}
+// =================== Edge Management ===================
 
-function getClickedSocket(e) {
-  return e.target.closest(".socket-anchor");
-}
-
-function clamp(v, min, max) {
-  return Math.min(Math.max(v, min), max);
-}
-
-// =================== Public API ====================
-
-export function setComponentProperties(nodeSelectionClassParam,autoUpdateSocketColorsParam) {
-  nodeSelectionClass = nodeSelectionClassParam;
-  autoUpdateSocketColors = autoUpdateSocketColorsParam;
-}
-
-export function setCanvasProperties(props) {
-  offsetX = props.offsetX;
-  offsetY = props.offsetY;
-  minZoom = props.minZoom || 0.1;
-  maxZoom = props.maxZoom || 2.0;
-  zoom = clamp(props.zoom, minZoom, maxZoom);
-  updateTransforms();
-}
-
-export function getCanvasProperties() {
-  return { offsetX, offsetY, zoom, minZoom, maxZoom };
-}
-
-export function setOffset(x, y) {
-  offsetX = x;
-  offsetY = y;
-  updateTransforms();
-}
-
-export function setZoom(z) {
-  zoom = clamp(z, minZoom, maxZoom);
-  updateTransforms();
-}
-
-// edge logic
-
-export function getSocketPosition(socketEl) {
-  if (!socketEl) return { x: 0, y: 0 };
-
-  const rect = socketEl.getBoundingClientRect();
-  const surfaceRect = flowContentEl.getBoundingClientRect();
-
-  const x = (rect.left + rect.width / 2 - surfaceRect.left) / zoom;
-  const y = (rect.top + rect.height / 2 - surfaceRect.top) / zoom;
-
-  return { x, y };
-}
-
+/**
+ * Updates the path of an edge between two sockets
+ */
 export function updatePath(outputSocketEl, inputSocketEl, edgeEl) {
   if (!outputSocketEl || !inputSocketEl || !edgeEl) return;
 
-  const fromPos = getSocketPosition(outputSocketEl); // Output is the start
-  const toPos = getSocketPosition(inputSocketEl); // Input is the end
+  const fromPos = getSocketPosition(outputSocketEl);
+  const toPos = getSocketPosition(inputSocketEl);
 
   const path = createCubicPath(fromPos, toPos, outputSocketEl, inputSocketEl);
 
   edgeEl.setAttribute("d", path);
 }
-function createCubicPath(from, to, fromSocket = null) {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  const dist = Math.hypot(dx, dy);
-  const offset = Math.min(200, dist * 0.5);
 
-  let c1, c2;
-
-  if (fromSocket) {
-    const isOutput = fromSocket.getAttribute("type") === "output";
-    if (isOutput) {
-      // Output socket: curve goes right from start, left into end
-      c1 = { x: from.x + offset, y: from.y };
-      c2 = { x: to.x - offset, y: to.y };
-    } else {
-      // Input socket: curve goes left from start, right into end
-      c1 = { x: from.x - offset, y: from.y };
-      c2 = { x: to.x + offset, y: to.y };
-    }
-  } else {
-    c1 = { x: from.x + offset, y: from.y };
-    c2 = { x: to.x - offset, y: to.y };
-  }
-
-  return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
-}
-
+/**
+ * Adds or updates an edge in the node-edge map
+ */
 export function addUpdateEdgeMap(edgeEl, nodeEl, fromSocketEl, toSocketEl) {
   if (nodeEdgeMap.has(nodeEl)) {
     nodeEdgeMap.get(nodeEl).push(edgeEl);
@@ -519,11 +487,21 @@ export function addUpdateEdgeMap(edgeEl, nodeEl, fromSocketEl, toSocketEl) {
   edgeSocketsMap.set(edgeEl, { to: toSocketEl, from: fromSocketEl });
 }
 
+/**
+ * Removes an edge from the node-edge map
+ */
 export function deleteEdgeFromMap(edgeEl, nodeEl) {
   if (nodeEdgeMap.has(nodeEl)) {
     nodeEdgeMap.get(nodeEl).delete(edgeEl);
   }
   edgeSocketsMap.delete(edgeEl);
+}
+
+/**
+ * Sets the temporary edge element for connection dragging
+ */
+export function setTempEdgeElement(el) {
+  tempEdgeElement = el;
 }
 
 function updateEdges(nodesEl) {
@@ -550,12 +528,44 @@ function getEdgesElementsToBeUpdated(nodesEl) {
   return edgesElements;
 }
 
-/* Node Element*/
+function createCubicPath(from, to, fromSocket = null) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dist = Math.hypot(dx, dy);
+  const offset = Math.min(200, dist * 0.5);
+
+  let c1, c2;
+
+  if (fromSocket) {
+    const isOutput = fromSocket.getAttribute("type") === "output";
+    if (isOutput) {
+      c1 = { x: from.x + offset, y: from.y };
+      c2 = { x: to.x - offset, y: to.y };
+    } else {
+      c1 = { x: from.x - offset, y: from.y };
+      c2 = { x: to.x + offset, y: to.y };
+    }
+  } else {
+    c1 = { x: from.x + offset, y: from.y };
+    c2 = { x: to.x - offset, y: to.y };
+  }
+
+  return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
+}
+
+// =================== Node Management ===================
+
+/**
+ * Moves a node to the specified position
+ */
 export function moveNode(nodeEl, x, y) {
   nodeEl.style.transform = `translate3d(${x}px, ${y}px, 0px)`;
   updateEdges([nodeEl]);
 }
 
+/**
+ * Gets the transform position of a node
+ */
 export function getTransformPosition(nodeEl) {
   const style = window.getComputedStyle(nodeEl);
   const matrix = new DOMMatrixReadOnly(style.transform);
@@ -563,31 +573,75 @@ export function getTransformPosition(nodeEl) {
   return { x: matrix.m41, y: matrix.m42 };
 }
 
-function updateTempConnection(e) {
-  if (tempEdgeStartPosition == null && tempEdgeStopPosition == null) return;
+// =================== Canvas Property Management ===================
 
-  const containerRect = flowContentEl.getBoundingClientRect();
+/**
+ * Sets canvas properties including zoom and offsets
+ */
+export function setCanvasProperties(props) {
+  offsetX = props.offsetX;
+  offsetY = props.offsetY;
+  minZoom = props.minZoom || 0.1;
+  maxZoom = props.maxZoom || 2.0;
+  zoom = clamp(props.zoom, minZoom, maxZoom);
+  updateTransforms();
+}
 
-  let currentCursorPos = {
-    x: (e.clientX - containerRect.left) / zoom,
-    y: (e.clientY  - containerRect.top) / zoom,
+/**
+ * Gets current canvas properties
+ */
+export function getCanvasProperties() {
+  return { offsetX, offsetY, zoom, minZoom, maxZoom };
+}
+
+/**
+ * Sets the canvas offset
+ */
+export function setOffset(x, y) {
+  offsetX = x;
+  offsetY = y;
+  updateTransforms();
+}
+
+/**
+ * Sets the canvas zoom level
+ */
+export function setZoom(z) {
+  zoom = clamp(z, minZoom, maxZoom);
+  updateTransforms();
+}
+
+// =================== Utility Functions ===================
+
+function getSocketPosition(socketEl) {
+  if (!socketEl) return { x: 0, y: 0 };
+
+  const rect = socketEl.getBoundingClientRect();
+  const surfaceRect = flowContentEl.getBoundingClientRect();
+
+  const x = (rect.left + rect.width / 2 - surfaceRect.left) / zoom;
+  const y = (rect.top + rect.height / 2 - surfaceRect.top) / zoom;
+
+  return { x, y };
+}
+
+function getClickedNode(e) {
+  return e.target.closest(".flow-node");
+}
+
+function getClickedSocket(e) {
+  return e.target.closest(".socket-anchor");
+}
+
+function clamp(v, min, max) {
+  return Math.min(Math.max(v, min), max);
+}
+
+function splitNumberAndUnit(input) {
+  const match = input.match(/^(-?\d*\.?\d+)([a-z%]*)$/i);
+  if (!match) return { number: 0, unit: "px" };
+  return {
+    number: parseFloat(match[1]),
+    unit: match[2] || "",
   };
-
-  let path;
-
-  if (tempEdgeStartPosition)
-    path = createCubicPath(tempEdgeStartPosition, currentCursorPos);
-  else path = createCubicPath(currentCursorPos, tempEdgeStopPosition);
-
-  tempEdgeElement.setAttribute("d", path);
-}
-
-export function setTempEdgeElement(el) {
-  tempEdgeElement = el;
-}
-
-export function  getSelectedNodes() {
-
-  let ids = [...selectedNodes].map((n) => n.id);
-  return ids;
 }
