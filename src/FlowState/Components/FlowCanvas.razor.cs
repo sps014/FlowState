@@ -147,13 +147,15 @@ namespace FlowState.Components
             return JsModule.InvokeVoidAsync("setZoom", zoom);
         }
 
-        public void Clear()
+        public ValueTask ClearAsync()
         {
             if (Graph == null)
-                return;
+                return ValueTask.CompletedTask;
 
             Graph.NodesInfo.Clear();
             Graph.EdgesInfo.Clear();
+
+            return SetViewportPropertiesAsync(new CanvasProperties { Zoom = 1.0, MinZoom = MinZoom, MaxZoom = MaxZoom,OffsetX =0,OffsetY=0 });
 
         }
 

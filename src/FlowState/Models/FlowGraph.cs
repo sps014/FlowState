@@ -33,7 +33,7 @@ public class FlowGraph : ISerializable<GraphData>
         if (!data.ContainsKey(nameof(FlowNodeBase.Id)))
             data[nameof(FlowNodeBase.Id)] = id;
 
-        id = data[nameof(FlowNodeBase.Id)]!.ToString();
+        id = data[nameof(FlowNodeBase.Id)]!.ToString()!;
 
         data[nameof(FlowNodeBase.X)] = x;
         data[nameof(FlowNodeBase.Y)] = y;
@@ -62,6 +62,20 @@ public class FlowGraph : ISerializable<GraphData>
 
     public void RemoveNode(string id)
     {
+        var node = GetNodeById(id);
+
+        if (node == null)
+            return;
+
+        var edges = EdgesInfo.Where(x => x.Value.Instance != null
+            && (x.Value.Instance.ToSocket?.FlowNode == node
+            || x.Value.Instance.FromSocket?.FlowNode == node));
+
+        foreach(var edge in edges)
+        {
+            RemoveEdge(edge.Key);
+        }
+
         NodesInfo.Remove(id);
         NodeRemoved?.Invoke(this, EventArgs.Empty);
     }
@@ -94,7 +108,7 @@ public class FlowGraph : ISerializable<GraphData>
         if (Edges.Any(x => x.FromSocket?.Name == fromSocketName && x.ToSocket?.Name == toSocketName
             && x.FromSocket.FlowNode!.Id == fromNodeId && x.ToSocket.FlowNode!.Id == toNodeId))
 
-            return (null, "Already Exists Link");
+            return (null, "Link already Exists");
 
 
         var fromNode = GetNodeById(fromNodeId);
@@ -210,7 +224,7 @@ public class FlowGraph : ISerializable<GraphData>
         if (Canvas == null)
             throw new Exception("Canvas is not set");
 
-        Clear();
+        await ClearAsync();
 
         await Canvas.SetViewportPropertiesAsync(graphData.Canvas);
 
@@ -233,11 +247,11 @@ public class FlowGraph : ISerializable<GraphData>
 
     }
 
-    public void Clear()
+    public ValueTask ClearAsync()
     {
         if (Canvas == null)
             throw new Exception("Canvas is not set");
-        Canvas.Clear();
+        return Canvas.ClearAsync();
     }
     
 

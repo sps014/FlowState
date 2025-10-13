@@ -11,6 +11,8 @@
 <button @onclick="SaveGraph">Save Graph</button>
 <button @onclick="ClearGraph">Clear Graph</button>
 <button @onclick="LoadGraph">Load Graph</button>
+<button @onclick="RemoveNode">Remove Node</button>
+<button @onclick="RemoveEdge">Remove Edge</button>
 
 <FlowCanvas Height="100vh" Width="100vw" Graph="graph" OnCanvasLoaded="OnLoaded">
  <BackgroundContent>
@@ -31,6 +33,7 @@
         graph.RegisterNode<InputNode>();
     }
     private NodeInfo? fromNodeInfo,toNodeInfo;
+    private EdgeInfo? edgeInfo;
 
     private async Task OnLoaded()
     {
@@ -43,9 +46,8 @@
 
         await Task.Delay(100);
 
-        //var data = graph.Connect(fromNodeInfo.Id,toNodeInfo.Id,"Output","Input");
+        edgeInfo = graph.Connect(fromNodeInfo.Id,toNodeInfo.Id,"Output","Input").Edge;
         //Console.WriteLine(data.Error);
-        StateHasChanged();
     }
 
 
@@ -54,14 +56,23 @@
         data = await graph.SerializeAsync();
     }
 
-    private void ClearGraph()
+    private async Task ClearGraph()
     {
-        graph.Clear();
+        await graph.ClearAsync();
     }
 
     private async Task LoadGraph()
     {
         await graph.DeserializeAsync(data);
+    }
+    private void RemoveNode()
+    {
+        graph.RemoveNode(fromNodeInfo.Id);
+    }
+    private void RemoveEdge()
+    {
+        Console.WriteLine(edgeInfo.Id);
+        graph.RemoveEdge(edgeInfo.Id);
     }
 }
 
