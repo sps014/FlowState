@@ -13,7 +13,7 @@
 <button @onclick="LoadGraph">Load Graph</button>
 <button @onclick="RemoveNode">Remove Node</button>
 
-<FlowCanvas Height="100vh" Width="100vw" Graph="graph" OnCanvasLoaded="OnLoaded">
+<FlowCanvas Height="100vh" Width="100vw" Graph="graph" OnCanvasLoaded="OnLoaded" OnSelectionChanged="NodesSelected">
  <BackgroundContent>
         <FlowBackground class="flow-grid-lines"/>
     </BackgroundContent>
@@ -64,10 +64,17 @@
     {
         await graph.DeserializeAsync(data);
     }
+
+    private string[] selection=[];
+    private void NodesSelected(string[] selectedNodes)
+    {
+        selection = selectedNodes;
+
+        Console.WriteLine($"Selected nodes: {string.Join(",", selectedNodes)}");
+    }
     private async Task RemoveNode()
     {
-        var selectedNodes = await graph.GetSelectedNodesAsync();
-        graph.RemoveNode(selectedNodes.First());
+        graph.RemoveNode(selection.First());
     }
     private void RemoveEdge()
     {

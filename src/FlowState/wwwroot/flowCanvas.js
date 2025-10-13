@@ -38,6 +38,8 @@ let nodeEdgeMap = new Map(); // Map<NodeEl,Edges>
 let edgeSocketsMap = new Map(); // Map<NodeEl,{to:SocketEl,from:SocketEl}
 let tempEdgeElement = null;
 
+let autoUpdateSocketColors = false;
+
 export function setupCanvasEvents(
   el,
   gridElement,
@@ -421,8 +423,9 @@ function clamp(v, min, max) {
 
 // =================== Public API ====================
 
-export function setComponentProperties(nodeSelectionClassParam) {
+export function setComponentProperties(nodeSelectionClassParam,autoUpdateSocketColorsParam) {
   nodeSelectionClass = nodeSelectionClassParam;
+  autoUpdateSocketColors = autoUpdateSocketColorsParam;
 }
 
 export function setCanvasProperties(props) {

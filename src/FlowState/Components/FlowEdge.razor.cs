@@ -26,6 +26,8 @@ namespace FlowState.Components
         [Parameter]
         public string Stroke { get; set; } = "#10b981";
 
+        private string? strokeColorCopy;
+
         [Parameter]
         public string Fill { get; set; } = "none";
 
@@ -59,12 +61,24 @@ namespace FlowState.Components
             if (Graph == null || Graph.Canvas == null)
                 return;
 
+            strokeColorCopy = Stroke;
 
             if (!IsTempEdge && FromSocket != null && ToSocket != null)
             {
                 await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, FromSocket.FlowNode!);
                 await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, ToSocket.FlowNode!);
                 await UpdatePathAsync();
+            }
+
+            if(Graph.Canvas.AutoUpdateSocketColors && FromSocket!=null)
+            {
+                Stroke = FromSocket.InnerColor;
+
+                if (ToSocket != null)
+                    ToSocket.AutoUpdateSocketColor(FromSocket.InnerColor, FromSocket.OuterColor);
+                    
+                StateHasChanged();
+
             }
 
         }
@@ -98,6 +112,11 @@ namespace FlowState.Components
         {
             if (Graph == null || Graph.Canvas == null || IsTempEdge)
                 return;
+
+            if(ToSocket!=null && Graph.Canvas.AutoUpdateSocketColors)
+            {
+                ToSocket.ResetColor();
+            }
 
             try
             {

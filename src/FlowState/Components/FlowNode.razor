@@ -1,5 +1,5 @@
 @using Microsoft.JSInterop
-<div class="flow-node" id="@Node?.Id" @ref="nodeRef">
+<div class="flow-node" id="@Node?.Id" @ref="nodeRef" @key="Node?.Id">
     @ChildContent
 </div>
 

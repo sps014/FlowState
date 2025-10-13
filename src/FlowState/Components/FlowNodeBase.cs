@@ -47,14 +47,14 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         {
             if (!inputSockets.TryAdd(flowSocket.Name, flowSocket))
             {
-                throw new Exception("Alreafy a Socket[type=Input] exists with the same name : " + flowSocket.Name);
+                throw new Exception("Already a Socket[type=Input] exists with the same name : " + flowSocket.Name);
             }
         }
         else
         {
             if (!outputSockets.TryAdd(flowSocket.Name, flowSocket))
             {
-                throw new Exception("Alreafy a Socket[type=Output] exists with the same name : " + flowSocket.Name);
+                throw new Exception("Already a Socket[type=Output] exists with the same name : " + flowSocket.Name);
             }
         }
     }
@@ -78,6 +78,7 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     
     public void Dispose()
     {
-
+        inputSockets.Clear();
+        outputSockets.Clear();
     }
 }

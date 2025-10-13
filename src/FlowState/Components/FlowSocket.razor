@@ -33,8 +33,12 @@
     [Parameter]
     public string InnerColor { get; set; } = "#10b981"; // customizable inner color
 
+    private string? innerSocketColorCopy;
+
     [Parameter]
     public string OuterColor { get; set; } = "#065f46"; // customizable border
+
+    protected string? outerSocketColorCopy;
 
     [CascadingParameter]
     public FlowNodeBase? FlowNode { get; set; }
@@ -56,8 +60,29 @@
 
         if (!firstRender)
             return;
+
         if (FlowNode != null)
             FlowNode.AddSocket(this);
+
+        innerSocketColorCopy = InnerColor;
+        outerSocketColorCopy = OuterColor;
+
+    }
+
+    public void AutoUpdateSocketColor(string innerColor,string outerColor)
+    {
+        InnerColor = innerColor;
+        OuterColor = outerColor;
+        StateHasChanged();
+    }
+
+    public void ResetColor()
+    {
+        if(innerSocketColorCopy!=null && outerSocketColorCopy!=null){
+            InnerColor = innerSocketColorCopy;
+            OuterColor = outerSocketColorCopy;
+            StateHasChanged();
+        }
     }
 }
 

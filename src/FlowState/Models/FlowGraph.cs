@@ -26,7 +26,7 @@ public class FlowGraph : ISerializable<GraphData>
 
     public NodeInfo CreateNode(Type type, double x, double y, Dictionary<string, object?> data,bool supressEvent=false)
     {
-        var id = Guid.NewGuid().ToString();
+        var id = Guid.CreateVersion7().ToString();
 
         data[nameof(FlowNodeBase.Graph)] = this;
 

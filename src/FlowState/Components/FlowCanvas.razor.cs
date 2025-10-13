@@ -24,10 +24,13 @@ namespace FlowState.Components
         [EditorRequired]
         [Parameter]
         public string Width { get; set; } = "100%";
+
         [EditorRequired]
         [Parameter]
         public string Height { get; set; } = "100%";
         [Parameter] public string Style { get; set; } = string.Empty;
+
+        [Parameter] public bool AutoUpdateSocketColors { get; set; } = true;
 
         [Parameter] public string NodeSelectionClass { get; set; } = "selected";
         [Parameter] public string Class { get; set; } = "flow-canvas";
@@ -109,7 +112,7 @@ namespace FlowState.Components
 
 
             JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowCanvas.js");
-            await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass);
+            await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass,AutoUpdateSocketColors);
             await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef, flowContentRef, dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
 
@@ -193,7 +196,7 @@ namespace FlowState.Components
         {
             return JsModule.InvokeVoidAsync("deleteEdgeFromMap", edge.edgeRef, node.DomElement?.nodeRef);
         }
-
+        
         /// <summary>
         /// Get the IDs of the currently selected nodes
         /// </summary>

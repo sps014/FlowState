@@ -19,7 +19,7 @@
                 <div class="nodes">
                     @foreach (var nodeInfo in Graph.NodesInfo)
                     {
-                        <CascadingValue TValue="FlowNodeBase" Value="@nodeInfo.Value.Instance">
+                        <CascadingValue TValue="FlowNodeBase" Value="@nodeInfo.Value.Instance" @key="nodeInfo.Key">
                             <DynamicComponent Type="nodeInfo.Value.NodeType" @ref="nodeInfo.Value.Component"
                                 Parameters="nodeInfo.Value.Parameters" />
                         </CascadingValue>
@@ -30,7 +30,7 @@
                 <FlowEdge IsTempEdge="true" Id="tempEdge" Graph="Graph" @ref="TempEdge"/>
                 @foreach(var edgeInfo in Graph.EdgesInfo)
                 {
-                    <DynamicComponent Type="typeof(FlowEdge)" @ref="edgeInfo.Value.Component"
+                    <DynamicComponent Type="typeof(FlowEdge)" @ref="edgeInfo.Value.Component" @key="edgeInfo.Key"
                          Parameters="edgeInfo.Value.Parameters"/>
                 }
                 </svg>
