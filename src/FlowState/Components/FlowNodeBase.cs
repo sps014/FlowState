@@ -59,7 +59,7 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         }
     }
 
-    public ValueTask<NodeProperties> GetSerializableObjectAsync()
+    public async ValueTask<NodeProperties> GetSerializableObjectAsync()
     {
         //all [Parameter] properties, except Graph
         var properties = this.GetType().GetProperties();
@@ -68,7 +68,11 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         parameterValues ??= new();
         parameterValues.Remove(nameof(Graph));
 
-        return ValueTask.FromResult(new NodeProperties(this.GetType().AssemblyQualifiedName!, Id, X, Y, parameterValues));
+        var position = await DomElement!.GetTransformPositionAsync();
+        parameterValues[nameof(X)] = position.X;
+        parameterValues[nameof(Y)] = position.Y;
+
+        return new  NodeProperties(GetType().AssemblyQualifiedName!, Id, parameterValues);
     }
 
     

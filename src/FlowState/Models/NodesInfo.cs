@@ -22,5 +22,5 @@ public record NodeInfo
         }
     }
 
-    public Dictionary<string, object> Parameters { get; init; } = new Dictionary<string, object>();
+    public Dictionary<string, object?> Parameters { get; init; } = new();
 }

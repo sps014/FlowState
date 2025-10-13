@@ -1,5 +1,5 @@
 using System.Collections.ObjectModel;
-using System.Text.Json;
+using Newtonsoft.Json;
 using FlowState.Components;
 using FlowState.Models.Serializable;
 using Microsoft.AspNetCore.Components;
@@ -24,7 +24,7 @@ public class FlowGraph : ISerializable<GraphData>
         NodeRegistry.Register<T>();
     }
 
-    public NodeInfo CreateNode(Type type, double x, double y, Dictionary<string, object> data)
+    public NodeInfo CreateNode(Type type, double x, double y, Dictionary<string, object?> data,bool supressEvent=false)
     {
         var id = Guid.NewGuid().ToString();
 
@@ -33,27 +33,31 @@ public class FlowGraph : ISerializable<GraphData>
         if (!data.ContainsKey(nameof(FlowNodeBase.Id)))
             data[nameof(FlowNodeBase.Id)] = id;
 
+        id = data[nameof(FlowNodeBase.Id)]!.ToString();
+
         data[nameof(FlowNodeBase.X)] = x;
         data[nameof(FlowNodeBase.Y)] = y;
 
         NodesInfo.Add(id, new NodeInfo { Id = id, NodeType = type, Component = null, Parameters = data });
-        NodeAdded?.Invoke(this, EventArgs.Empty);
+
+        if(!supressEvent)
+            NodeAdded?.Invoke(this, EventArgs.Empty);
 
         return NodesInfo[id];
     }
 
-    public NodeInfo CreateNode(string type, double x, double y, Dictionary<string, object> data)
+    public NodeInfo CreateNode(string type, double x, double y, Dictionary<string, object?> data,bool supressEvent=false)
     {
         var parsedType = Type.GetType(type);
         if(parsedType==null)
             throw new Exception("Invalid type: " + type);
             
-        return CreateNode(parsedType, x, y, data);
+        return CreateNode(parsedType, x, y, data,supressEvent);
     }
 
-    public NodeInfo CreateNode<T>(double x, double y, Dictionary<string, object> data) where T : FlowNodeBase
+    public NodeInfo CreateNode<T>(double x, double y, Dictionary<string, object?> data,bool supressEvent=false) where T : FlowNodeBase
     {
-        return CreateNode(typeof(T), x, y, data);
+        return CreateNode(typeof(T), x, y, data,supressEvent);
     }
 
     public void RemoveNode(string id)
@@ -190,12 +194,12 @@ public class FlowGraph : ISerializable<GraphData>
     public async ValueTask<string> SerializeAsync()
     {
         var data = await GetSerializableObjectAsync();
-        return JsonSerializer.Serialize(data);
+        return JsonConvert.SerializeObject(data);
     }
 
     public ValueTask DeserializeAsync(string data)
     {
-        var graphData = JsonSerializer.Deserialize<GraphData>(data);
+        var graphData = JsonConvert.DeserializeObject<GraphData>(data);
         if(graphData==null)
             throw new Exception("Invalid graph data");
         return DeserializeAsync(graphData);
@@ -213,14 +217,17 @@ public class FlowGraph : ISerializable<GraphData>
         foreach (var node in graphData.Nodes)
         {
             var type = Type.GetType(node.Type)!;
-            CreateNode(type, node.X, node.Y, node.Data ?? new());
+            _ = CreateNode(type, node.X, node.Y, node.Data ?? []);
         }
+
+        NodeAdded?.Invoke(this,EventArgs.Empty);
+
 
         await Task.Delay(100); // wait for the nodes to be created
 
         foreach(var edge in graphData.Edges)
         {
-            Connect(edge.FromNodeId, edge.ToNodeId, edge.FromSocketName, edge.ToSocketName);
+            _ = Connect(edge.FromNodeId, edge.ToNodeId, edge.FromSocketName, edge.ToSocketName);
         }
 
 

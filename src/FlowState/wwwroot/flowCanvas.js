@@ -560,8 +560,8 @@ function updateTempConnection(e) {
   const containerRect = flowContentEl.getBoundingClientRect();
 
   let currentCursorPos = {
-    x: (e.clientX - offsetX - containerRect.left) / zoom,
-    y: (e.clientY - offsetY - containerRect.top) / zoom,
+    x: (e.clientX - containerRect.left) / zoom,
+    y: (e.clientY  - containerRect.top) / zoom,
   };
 
   let path;
