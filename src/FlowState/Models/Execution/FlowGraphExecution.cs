@@ -60,6 +60,12 @@ public class FlowGraphExecution
         // Clear previous execution state
         ClearBranchTracking();
         
+        // Call BeforeGraphExecutionAsync on all nodes to allow them to reset state
+        foreach (var node in Graph.Nodes)
+        {
+            await node.BeforeGraphExecutionAsync();
+        }
+        
         // Get execution order based on dependencies
         var executionOrder = GetExecutionOrder();
         

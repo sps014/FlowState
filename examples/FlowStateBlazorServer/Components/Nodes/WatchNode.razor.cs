@@ -12,6 +12,16 @@ public partial class WatchNode
 {
     private string displayValue = "No value";
 
+    /// <summary>
+    /// Reset the display value before each graph execution
+    /// </summary>
+    public override ValueTask BeforeGraphExecutionAsync()
+    {
+        displayValue = "No value";
+        StateHasChanged();
+        return ValueTask.CompletedTask;
+    }
+
     public override ValueTask ExecuteAsync(FlowExecutionContext context)
     {
         // Get input value using context API

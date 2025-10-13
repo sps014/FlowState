@@ -68,6 +68,16 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     /// <returns>A task representing the asynchronous operation</returns>
     public abstract ValueTask ExecuteAsync(FlowExecutionContext context);
 
+    /// <summary>
+    /// Called before graph execution starts for all nodes.
+    /// Override this method to reset node state, clear cached data, or prepare for execution.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation</returns>
+    public virtual ValueTask BeforeGraphExecutionAsync()
+    {
+        return ValueTask.CompletedTask;
+    }
+
     // Public Methods
 
     /// <summary>
