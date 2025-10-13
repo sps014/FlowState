@@ -67,6 +67,8 @@ namespace FlowState.Components
             {
                 await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, FromSocket.FlowNode!);
                 await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, ToSocket.FlowNode!);
+                ToSocket.Connections++;
+                FromSocket.Connections++;
                 await UpdatePathAsync();
             }
 
@@ -120,9 +122,15 @@ namespace FlowState.Components
 
             try
             {
-
-                await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, FromSocket?.FlowNode!);
-                await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, ToSocket?.FlowNode!);
+                if(FromSocket!=null){
+                    FromSocket.Connections--;
+                    await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, FromSocket.FlowNode!);
+                }
+                if(ToSocket!=null)
+                {
+                    ToSocket.Connections--;
+                    await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, ToSocket.FlowNode!);
+                }
             }
             catch
             {

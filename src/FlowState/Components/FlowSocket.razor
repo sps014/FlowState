@@ -54,6 +54,8 @@
     private string SocketStyle =>
     $"width:{Size}px; height:{Size}px; background-color:{InnerColor}; border:3px solid {OuterColor};";
 
+    public int Connections { get; set; } = 0;
+
     protected override void OnAfterRender(bool firstRender)
     {
         base.OnAfterRender(firstRender);
