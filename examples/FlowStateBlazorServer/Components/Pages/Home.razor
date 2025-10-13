@@ -41,11 +41,11 @@
         //FlowNodeBase c= graph.Nodes.First();
         //Console.WriteLine($"Node count: {c.X},{c.Y}");
         fromNodeInfo=graph.CreateNode<InputNode>(0,0,[]);
-        toNodeInfo = graph.CreateNode(typeof(InputNode).AssemblyQualifiedName,200,200,[]);
+        toNodeInfo = graph.CreateNode<InputNode>(200,200,[]);
 
         await Task.Delay(100);
 
-        edgeInfo = graph.Connect(fromNodeInfo.Id,toNodeInfo.Id,"Output","Input").Edge;
+        //edgeInfo = graph.Connect(fromNodeInfo.Id,toNodeInfo.Id,"Output","Input").Edge;
         //Console.WriteLine(data.Error);
     }
 
@@ -69,8 +69,6 @@
     private void NodesSelected(string[] selectedNodes)
     {
         selection = selectedNodes;
-
-        Console.WriteLine($"Selected nodes: {string.Join(",", selectedNodes)}");
     }
     private async Task RemoveNode()
     {
@@ -104,4 +102,30 @@
     0 0,        /* Minor grid */
     0 0;        /* Minor grid */
 }
+
+/* Input box styles */
+.input-box {
+  width: 90%;
+  padding: 6px 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  font-size: 12px;
+  outline: none;
+  transition: all 0.2s ease;
+  margin: 4px 0;
+  pointer-events: auto;
+  cursor: text;
+}
+
+.input-box:focus {
+  border-color: var(--fg-accent);
+  background: rgba(255,255,255,0.1);
+}
+
+.input-box::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
 </style>

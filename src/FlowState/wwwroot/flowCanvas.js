@@ -127,6 +127,12 @@ function startTempConnection(e,socket) {
   if (socket.getAttribute("type") == "input")
     tempEdgeStopPosition = getSocketPosition(socket);
   else tempEdgeStartPosition = getSocketPosition(socket);
+
+  if(autoUpdateSocketColors)
+  {
+    const color = socket.getAttribute('innercolor');
+    tempEdgeElement.setAttribute('stroke',color);
+  }
 }
 
 function stopTempConnection(e) {
