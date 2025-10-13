@@ -124,6 +124,13 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         return new NodeProperties(GetType().AssemblyQualifiedName!, Id, parameterValues);
     }
 
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        StateHasChanged();
+
+    }
+
     /// <summary>
     /// Disposes of the node and clears all sockets
     /// </summary>

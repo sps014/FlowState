@@ -5,7 +5,7 @@
 <FlowNode>
 <div class="title">🔢 Number</div>
             <div class="body">
-              <input type="number" class="input-box" draggable="false" value="0" placeholder="Enter value">
+              <input type="number" class="input-box" draggable="false" @bind="Value" placeholder="Enter value">
               <FlowSocket Name="Output"  Label="Out" Type="SocketType.Output" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
         </div>
 </FlowNode>
