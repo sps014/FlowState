@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using FlowState.Models;
+using FlowState.Models.Execution;
 using FlowState.Models.Serializable;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
@@ -65,7 +66,7 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     /// Executes the node's logic
     /// </summary>
     /// <returns>A task representing the asynchronous operation</returns>
-    public abstract ValueTask ExecuteAsync();
+    public abstract ValueTask ExecuteAsync(FlowExecutionContext context);
 
     // Public Methods
 

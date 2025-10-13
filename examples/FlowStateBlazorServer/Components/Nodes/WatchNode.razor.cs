@@ -2,6 +2,7 @@ namespace FlowStateBlazorServer.Components.Nodes;
 
 using FlowState.Attributes;
 using FlowState.Components;
+using FlowState.Models.Execution;
 
 /// <summary>
 /// Node that displays the value it receives
@@ -11,18 +12,11 @@ public partial class WatchNode
 {
     private string displayValue = "No value";
 
-    public override ValueTask ExecuteAsync()
+    public override ValueTask ExecuteAsync(FlowExecutionContext context)
     {
-        // Watch node just displays the value, no output
-        StateHasChanged();
-        return ValueTask.CompletedTask;
-    }
-
-    /// <summary>
-    /// Sets the value to display
-    /// </summary>
-    public void SetInput(object? value)
-    {
+        // Get input value using context API
+        var value = context.GetInputSocketData("Input");
+        
         if (value == null)
         {
             displayValue = "null";
@@ -32,7 +26,9 @@ public partial class WatchNode
             displayValue = value.ToString() ?? "null";
         }
         
+        // Watch node just displays the value, no output
         StateHasChanged();
+        return ValueTask.CompletedTask;
     }
 }
 

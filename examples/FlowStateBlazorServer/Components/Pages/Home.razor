@@ -12,6 +12,7 @@
 <button @onclick="ClearGraph">Clear Graph</button>
 <button @onclick="LoadGraph">Load Graph</button>
 <button @onclick="RemoveNode">Remove Node</button>
+<button @onclick="ExecuteGraph">Execute Graph</button>
 
 <FlowCanvas Height="100vh" Width="100vw" Graph="graph" OnCanvasLoaded="OnLoaded" OnSelectionChanged="NodesSelected">
  <BackgroundContent>
@@ -103,6 +104,10 @@
     private async Task RemoveNode()
     {
         graph.RemoveNode(selection.First());
+    }
+    private async Task ExecuteGraph()
+    {
+        await graph.ExecuteAsync();
     }
     private void RemoveEdge()
     {

@@ -327,11 +327,11 @@ public class FlowGraph : ISerializable<GraphData>
     /// <summary>
     /// Executes the graph
     /// </summary>
-    public ValueTask ExecuteAsync()
+    public ValueTask ExecuteAsync(CancellationToken cancellationToken=default)
     {
         if(Canvas==null)
             throw new Exception("Canvas is not set");
-        return executionFlow.ExecuteAsync(Canvas.ExecutionDirection);
+        return executionFlow.ExecuteAsync(Canvas.ExecutionDirection, cancellationToken);
     }
 
     // Serialization Methods

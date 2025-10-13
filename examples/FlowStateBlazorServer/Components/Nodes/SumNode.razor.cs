@@ -2,6 +2,7 @@ namespace FlowStateBlazorServer.Components.Nodes;
 
 using FlowState.Attributes;
 using FlowState.Components;
+using FlowState.Models.Execution;
 
 /// <summary>
 /// Node that adds two numbers together
@@ -12,40 +13,20 @@ public partial class SumNode
     private float inputA = 0;
     private float inputB = 0;
 
-    public override ValueTask ExecuteAsync()
+    public override ValueTask ExecuteAsync(FlowExecutionContext context)
     {
+        // Get input values using context API
+        // Note: GetInputSocketData<float> will handle conversion from long/int to float automatically
+        inputA = context.GetInputSocketData<float>("InputA");
+        inputB = context.GetInputSocketData<float>("InputB");
+        
         // Calculate sum
         float result = inputA + inputB;
         
-        // Output the result
-        SetOutput("Output", result);
+        // Set output using context API
+        context.SetOutputSocketData("Output", result);
         
         return ValueTask.CompletedTask;
-    }
-
-    /// <summary>
-    /// Sets input value A
-    /// </summary>
-    public void SetInputA(float value)
-    {
-        inputA = value;
-    }
-
-    /// <summary>
-    /// Sets input value B
-    /// </summary>
-    public void SetInputB(float value)
-    {
-        inputB = value;
-    }
-
-    /// <summary>
-    /// Sets output value
-    /// </summary>
-    private void SetOutput(string socketName, float value)
-    {
-        // Store the output value for connected nodes to retrieve
-        // This would be handled by the execution system
     }
 }
 

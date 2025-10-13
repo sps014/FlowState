@@ -1,6 +1,7 @@
 using FlowState.Components;
 using FlowState.Models.Events;
 
+
 namespace FlowState.Models.Execution;
 
 /// <summary>
@@ -46,7 +47,7 @@ public class FlowGraphExecution
     /// <summary>
     /// Execute all nodes in the graph in dependency order
     /// </summary>
-    public async ValueTask ExecuteAsync(ExecutionDirection direction)
+    public async ValueTask ExecuteAsync(ExecutionDirection direction, CancellationToken cancellationToken)
     {
         Direction = direction;        
 
@@ -75,83 +76,142 @@ public class FlowGraphExecution
         
         int executedCount = 0;
         Exception? executionError = null;
+        bool wasCancelled = false;
         
-        // Execute nodes in order
-        foreach (var nodeId in executionOrder)
+        // Create shared data storage for this execution run
+        var sharedExecutionData = new Dictionary<string, object?>();
+        
+        try
         {
-            var node = Graph.GetNodeById(nodeId);
-            if (node == null)
-                continue;
-            
-            // Check if node should execute based on active branches
-            if (!ShouldNodeExecute(nodeId))
-                continue;
-            
-            try
+            // Execute nodes in order
+            foreach (var nodeId in executionOrder)
             {
-                // Fire node execution start event
-                OnNodeExecutionStarted?.Invoke(this, new NodeExecutionEventArgs
+                // Check cancellation before each node
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    NodeId = nodeId,
-                    Timestamp = DateTime.UtcNow
-                });
+                    wasCancelled = true;
+                    throw new OperationCanceledException("Graph execution was cancelled.", cancellationToken);
+                }
                 
-                await node.ExecuteAsync();
-                executedCount++;
+                var node = Graph.GetNodeById(nodeId);
+                if (node == null)
+                    continue;
                 
-                // Fire node execution completed event
-                OnNodeExecutionCompleted?.Invoke(this, new NodeExecutionEventArgs
+                // Check if node should execute based on active branches
+                if (!ShouldNodeExecute(nodeId))
+                    continue;
+                
+                try
                 {
-                    NodeId = nodeId,
-                    Timestamp = DateTime.UtcNow
-                });
-            }
-            catch (Exception error)
-            {
-                Console.WriteLine($"Error executing node {nodeId}: {error.Message}");
-                executionError = error;
-                
-                // Fire node execution error event
-                OnNodeExecutionError?.Invoke(this, new NodeExecutionErrorEventArgs
+                    // Fire node execution start event
+                    OnNodeExecutionStarted?.Invoke(this, new NodeExecutionEventArgs
+                    {
+                        NodeId = nodeId,
+                        Timestamp = DateTime.UtcNow
+                    });
+                    
+                    // Create execution context with full graph state and shared data
+                    var executionContext = new FlowExecutionContext(node)
+                    {
+                        CancellationToken = cancellationToken,
+                        Direction = Direction,
+                        Execution = this,
+                        CustomData = sharedExecutionData // Share data across all nodes
+                    };
+                    
+                    await node.ExecuteAsync(executionContext);
+                    executedCount++;
+                    
+                    // Fire node execution completed event
+                    OnNodeExecutionCompleted?.Invoke(this, new NodeExecutionEventArgs
+                    {
+                        NodeId = nodeId,
+                        Timestamp = DateTime.UtcNow
+                    });
+                }
+                catch (OperationCanceledException)
                 {
-                    NodeId = nodeId,
-                    Error = error,
-                    Timestamp = DateTime.UtcNow
-                });
-                
-                break; // Stop execution on first failure
+                    // Cancellation occurred during node execution
+                    wasCancelled = true;
+                    throw;
+                }
+                catch (Exception error)
+                {
+                    Console.WriteLine($"Error executing node {nodeId}: {error.Message}");
+                    executionError = error;
+                    
+                    // Fire node execution error event
+                    OnNodeExecutionError?.Invoke(this, new NodeExecutionErrorEventArgs
+                    {
+                        NodeId = nodeId,
+                        Error = error,
+                        Timestamp = DateTime.UtcNow
+                    });
+                    
+                    break; // Stop execution on first failure
+                }
             }
         }
-        
-        // Fire complete event
-        OnExecutionCompleted?.Invoke(this, new ExecutionCompletedEventArgs
+        catch (OperationCanceledException cancelEx)
         {
-            ExecutedNodes = executedCount,
-            TotalNodes = executionOrder.Length,
-            Error = executionError,
-            Timestamp = DateTime.UtcNow
-        });
+            // Fire completion event with cancellation info
+            OnExecutionCompleted?.Invoke(this, new ExecutionCompletedEventArgs
+            {
+                ExecutedNodes = executedCount,
+                TotalNodes = executionOrder.Length,
+                Error = cancelEx,
+                Timestamp = DateTime.UtcNow
+            });
+            
+            // Re-throw to propagate cancellation
+            throw;
+        }
         
-        // Re-throw error if execution failed
-        if (executionError != null)
-            throw executionError;
+        // Fire complete event (only if not cancelled)
+        if (!wasCancelled)
+        {
+            OnExecutionCompleted?.Invoke(this, new ExecutionCompletedEventArgs
+            {
+                ExecutedNodes = executedCount,
+                TotalNodes = executionOrder.Length,
+                Error = executionError,
+                Timestamp = DateTime.UtcNow
+            });
+            
+            // Re-throw error if execution failed
+            if (executionError != null)
+                throw executionError;
+        }
     }
 
     /// <summary>
     /// Execute only selected nodes
     /// </summary>
-    public async Task ExecuteSelectedNodesAsync()
+    public async Task ExecuteSelectedNodesAsync(CancellationToken cancellationToken = default)
     {
         var selectedNodeIds = await Graph.GetSelectedNodesAsync();
         
         if (selectedNodeIds.Length == 0)
             return;
         
-        // Execute nodes in parallel
+        // Create shared data storage for this execution run
+        var sharedExecutionData = new Dictionary<string, object?>();
+        
+        // Execute nodes in parallel with context
         var executionTasks = selectedNodeIds
             .Select(nodeId => Graph.GetNodeById(nodeId))
             .Where(node => node != null)
-            .Select(node => node!.ExecuteAsync().AsTask());
+            .Select(node =>
+            {
+                var context = new FlowExecutionContext(node!)
+                {
+                    CancellationToken = cancellationToken,
+                    Direction = Direction,
+                    Execution = this,
+                    CustomData = sharedExecutionData // Share data across all nodes
+                };
+                return node!.ExecuteAsync(context).AsTask();
+            });
         
         try
         {
