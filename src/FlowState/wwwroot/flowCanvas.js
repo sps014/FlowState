@@ -91,6 +91,9 @@ export function setComponentProperties(nodeSelectionClassParam, autoUpdateSocket
 // =================== Pointer Event Handlers ===================
 
 function pointerdown(e) {
+  // Prevent event bubbling to parent elements
+  e.stopPropagation();
+  
   const socket = getClickedSocket(e);
   const node = getClickedNode(e);
 
@@ -111,6 +114,9 @@ function pointerdown(e) {
 }
 
 function pointermove(e) {
+  // Prevent event bubbling to parent elements
+  e.stopPropagation();
+  
   if (isConnectingNodes) {
     updateTempConnection(e);
     return;
@@ -123,6 +129,9 @@ function pointermove(e) {
 }
 
 function pointerup(e) {
+  // Prevent event bubbling to parent elements
+  e.stopPropagation();
+  
   if (isConnectingNodes) {
     stopTempConnection(e);
   }
@@ -134,6 +143,9 @@ function pointerup(e) {
 }
 
 function pointerleave(e) {
+  // Prevent event bubbling to parent elements
+  e.stopPropagation();
+  
   panEnd(e);
 }
 
@@ -375,8 +387,14 @@ function panEnd(e) {
 // =================== Canvas Zoom ===================
 
 function onWheel(e) {
+  // Always prevent default to stop page scroll
+  e.preventDefault();
+  e.stopPropagation();
+  
   const delta = e.deltaY < 0 ? 0.02 : -0.02;
   const newZoom = clamp(zoom + delta, minZoom, maxZoom);
+  
+  // If zoom didn't change (at min/max), still prevent scroll but don't update
   if (Math.abs(newZoom - zoom) < 0.001) return;
 
   const rect = canvasEl.getBoundingClientRect();
@@ -390,9 +408,6 @@ function onWheel(e) {
   updateTransforms();
 
   dotnetRef.invokeMethodAsync("NotifyZoomed", zoom);
-
-  e.stopPropagation();
-  e.preventDefault();
 }
 
 // =================== Transform & Background Updates ===================
