@@ -1,0 +1,13 @@
+@using FlowState.Components
+@inherits FlowNodeBase
+@using FlowState.Models
+
+<FlowNode>
+    <div class="title">➕ Sum</div>
+    <div class="body">
+        <FlowSocket Name="InputA" Label="A" Type="SocketType.Input" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
+        <FlowSocket Name="InputB" Label="B" Type="SocketType.Input" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
+        <FlowSocket Name="Output" Label="Result" Type="SocketType.Output" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
+    </div>
+</FlowNode>
+

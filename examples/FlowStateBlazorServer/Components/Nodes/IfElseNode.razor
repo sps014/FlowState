@@ -1,0 +1,54 @@
+@using FlowState.Components
+@inherits FlowNodeBase
+@using FlowState.Models
+
+<FlowNode>
+    <div class="title">🔀 If-Else</div>
+    <div class="body">
+        <FlowSocket Name="InputA" Label="A" Type="SocketType.Input" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
+        
+        <select class="operator-dropdown" @bind="selectedOperator" draggable="false">
+            <option value=">">&gt; Greater Than</option>
+            <option value="<">&lt; Less Than</option>
+            <option value="==">== Equal</option>
+            <option value="!=">!= Not Equal</option>
+            <option value=">=">&gt;= Greater or Equal</option>
+            <option value="<=">&lt;= Less or Equal</option>
+        </select>
+        
+        <FlowSocket Name="InputB" Label="B" Type="SocketType.Input" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
+        
+        <div class="output-sockets">
+            <FlowSocket Name="OutputTrue" Label="True" Type="SocketType.Output" T="typeof(float)" OuterColor="green" InnerColor="lightgreen"/>
+            <FlowSocket Name="OutputFalse" Label="False" Type="SocketType.Output" T="typeof(float)" OuterColor="red" InnerColor="lightcoral"/>
+        </div>
+    </div>
+</FlowNode>
+
+<style>
+    .operator-dropdown {
+        width: 100%;
+        padding: 6px 8px;
+        margin: 8px 0;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 6px;
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 12px;
+        outline: none;
+        cursor: pointer;
+        pointer-events: auto;
+    }
+
+    .operator-dropdown:focus {
+        border-color: var(--fg-accent);
+        background: rgba(255,255,255,0.1);
+    }
+
+    .output-sockets {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+</style>

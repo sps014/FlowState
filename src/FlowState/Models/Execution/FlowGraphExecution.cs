@@ -9,7 +9,7 @@ namespace FlowState.Models.Execution;
 /// handles branch tracking for conditional execution, and provides comprehensive 
 /// execution control and monitoring.
 /// </summary>
-public class GraphFlowExecution
+public class FlowGraphExecution
 {
     /// <summary>
     /// Map of node IDs to active input socket indices
@@ -31,24 +31,25 @@ public class GraphFlowExecution
     /// <summary>
     /// The execution direction (InputToOutput or OutputToInput)
     /// </summary>
-    public ExecutionDirection Direction { get; }
+    public ExecutionDirection Direction { get; private set; }
     
     /// <summary>
     /// Creates a new GraphFlowExecution instance
     /// </summary>
     /// <param name="graph">The parent FlowGraph instance</param>
     /// <param name="direction">The execution direction</param>
-    public GraphFlowExecution(FlowGraph graph, ExecutionDirection direction = ExecutionDirection.InputToOutput)
+    public FlowGraphExecution(FlowGraph graph)
     {
         Graph = graph;
-        Direction = direction;
     }
 
     /// <summary>
     /// Execute all nodes in the graph in dependency order
     /// </summary>
-    public async Task ExecuteAsync()
+    public async ValueTask ExecuteAsync(ExecutionDirection direction)
     {
+        Direction = direction;        
+
         // Fire start event
         OnExecutionStarted?.Invoke(this, new ExecutionEventArgs 
         { 

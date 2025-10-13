@@ -2,6 +2,7 @@ using System.Drawing;
 using FlowState.Models;
 using FlowState.Models.Dom;
 using FlowState.Models.Events;
+using FlowState.Models.Execution;
 using FlowState.Models.Serializable;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -60,6 +61,13 @@ namespace FlowState.Components
         /// </summary>
         [Parameter]
         public bool AutoUpdateSocketColors { get; set; } = true;
+        
+
+        /// <summary>
+        /// Gets or sets the execution direction (InputToOutput or OutputToInput)
+        /// </summary>
+        [Parameter]
+        public ExecutionDirection ExecutionDirection { get; set; } = ExecutionDirection.InputToOutput;
 
         /// <summary>
         /// Gets or sets the CSS class to apply to selected nodes

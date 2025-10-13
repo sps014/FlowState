@@ -30,23 +30,53 @@
     {
         base.OnInitialized();
         graph.RegisterNode<InputNode>();
+        graph.RegisterNode<SumNode>();
+        graph.RegisterNode<IfElseNode>();
+        graph.RegisterNode<WatchNode>();
     }
     private NodeInfo? fromNodeInfo,toNodeInfo;
     private EdgeInfo? edgeInfo;
 
     private async Task OnLoaded()
     {
-
         graph.TypeCompatibiltyRegistry.Register<float>(typeof(int));
-        //FlowNodeBase c= graph.Nodes.First();
-        //Console.WriteLine($"Node count: {c.X},{c.Y}");
-        fromNodeInfo=graph.CreateNode<InputNode>(0,0,[]);
-        toNodeInfo = graph.CreateNode<InputNode>(200,200,[]);
+        
+        // Create flow: Sum two inputs, compare with threshold, display result
+        
+        // Two input nodes for Sum
+        fromNodeInfo = graph.CreateNode<InputNode>(50, 80, []);
+        toNodeInfo = graph.CreateNode<InputNode>(50, 220, []);
+        
+        // Sum node
+        var sumNode = graph.CreateNode<SumNode>(350, 150, []);
+        
+        // Threshold input for comparison
+        var thresholdNode = graph.CreateNode<InputNode>(350, 320, []);
+        
+        // If-Else comparison node
+        var ifElseNode = graph.CreateNode<IfElseNode>(650, 200, []);
+        
+        // Watch nodes for true and false paths
+        var watchTrue = graph.CreateNode<WatchNode>(950, 120, []);
+        var watchFalse = graph.CreateNode<WatchNode>(950, 280, []);
 
         await Task.Delay(100);
 
-        //edgeInfo = graph.Connect(fromNodeInfo.Id,toNodeInfo.Id,"Output","Input").Edge;
-        //Console.WriteLine(data.Error);
+        // Connect: Input1 + Input2 -> Sum
+        edgeInfo = graph.Connect(fromNodeInfo.Id, sumNode.Id, "Output", "InputA").Edge;
+        graph.Connect(toNodeInfo.Id, sumNode.Id, "Output", "InputB");
+        
+        // Connect: Sum result -> IfElse InputA (value to compare)
+        graph.Connect(sumNode.Id, ifElseNode.Id, "Output", "InputA");
+        
+        // Connect: Threshold -> IfElse InputB (compare against this)
+        graph.Connect(thresholdNode.Id, ifElseNode.Id, "Output", "InputB");
+        
+        // Connect: IfElse True path -> Watch (when condition is true)
+        graph.Connect(ifElseNode.Id, watchTrue.Id, "OutputTrue", "Input");
+        
+        // Connect: IfElse False path -> Watch (when condition is false)
+        graph.Connect(ifElseNode.Id, watchFalse.Id, "OutputFalse", "Input");
     }
 
 

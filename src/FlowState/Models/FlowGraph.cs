@@ -4,6 +4,7 @@ using FlowState.Components;
 using FlowState.Models.Serializable;
 using FlowState.Models.Events;
 using Microsoft.AspNetCore.Components;
+using FlowState.Models.Execution;
 
 namespace FlowState.Models;
 
@@ -41,6 +42,14 @@ public class FlowGraph : ISerializable<GraphData>
 
     internal Dictionary<string, NodeInfo> NodesInfo { get; } = new();
     internal Dictionary<string, EdgeInfo> EdgesInfo { get; } = new();
+
+
+    private FlowGraphExecution executionFlow;
+
+    public FlowGraph()
+    {
+        executionFlow = new FlowGraphExecution(this);
+    }
 
     // Node Management Methods
 
@@ -310,6 +319,19 @@ public class FlowGraph : ISerializable<GraphData>
         if (Canvas == null)
             throw new Exception("Canvas is not set");
         return Canvas.GetSelectedNodesAsync();
+    }
+
+
+    // Graph Execution Methods
+
+    /// <summary>
+    /// Executes the graph
+    /// </summary>
+    public ValueTask ExecuteAsync()
+    {
+        if(Canvas==null)
+            throw new Exception("Canvas is not set");
+        return executionFlow.ExecuteAsync(Canvas.ExecutionDirection);
     }
 
     // Serialization Methods

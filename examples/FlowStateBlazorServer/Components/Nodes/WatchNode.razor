@@ -1,0 +1,39 @@
+@using FlowState.Components
+@inherits FlowNodeBase
+@using FlowState.Models
+
+<FlowNode>
+    <div class="title">👁️ Watch</div>
+    <div class="body">
+        <FlowSocket Name="Input" Label="Value" Type="SocketType.Input" T="typeof(object)" OuterColor="gray" InnerColor="lightgray"/>
+        <div class="watch-display">
+            <label>Output:</label>
+            <div class="watch-value">@displayValue</div>
+        </div>
+    </div>
+</FlowNode>
+
+<style>
+    .watch-display {
+        margin-top: 8px;
+        padding: 8px;
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        font-family: monospace;
+    }
+
+    .watch-display label {
+        font-size: 10px;
+        color: #888;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .watch-value {
+        color: #0f0;
+        font-size: 14px;
+        font-weight: bold;
+        word-break: break-all;
+    }
+</style>
+
