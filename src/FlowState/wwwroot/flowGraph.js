@@ -126,11 +126,20 @@ function pointerdown(e) {
   const node = getClickedNode(e);
 
   if (socket) {
+    // Don't start connection from interactive elements
+    if (isInteractiveElement(e.target)) {
+      return;
+    }
     tempSocket = socket;
     startTempConnection(e, socket);
   } else if (node) {
+    // Always allow selection
     handleNodeSelection(node, e);
-    dragNodeStart(e, node);
+    
+    // Only start dragging if not clicking on interactive elements
+    if (!isInteractiveElement(e.target)) {
+      dragNodeStart(e, node);
+    }
   } else {
     // Clicking on canvas background
     if (isMultiSelectionKeyPressed(e)) {
@@ -818,6 +827,29 @@ function getClickedNode(e) {
 
 function getClickedSocket(e) {
   return e.target.closest(".socket-anchor");
+}
+
+function isInteractiveElement(target) {
+  const tagName = target.tagName.toLowerCase();
+  const interactiveTags = ['input', 'textarea', 'select', 'button', 'a'];
+  
+  // Check if it's an interactive element
+  if (interactiveTags.includes(tagName)) {
+    return true;
+  }
+  
+  // Check if element has contenteditable
+  if (target.isContentEditable) {
+    return true;
+  }
+  
+  // Check for elements with role that indicates interactivity
+  const role = target.getAttribute('role');
+  if (role && ['button', 'textbox', 'slider', 'spinbutton'].includes(role)) {
+    return true;
+  }
+  
+  return false;
 }
 
 function clamp(v, min, max) {
