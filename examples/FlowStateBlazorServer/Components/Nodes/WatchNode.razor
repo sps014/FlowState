@@ -1,9 +1,15 @@
 @using FlowState.Components
-@inherits FlowNodeBase
 @using FlowState.Models
+@inherits ExecutableNodeBase
 
 <FlowNode>
-    <div class="title">👁️ Watch</div>
+    <div class="title-container">
+        <div class="title">👁️ Watch</div>
+        @if (IsExecuting)
+        {
+            <div class="execution-progress"></div>
+        }
+    </div>
     <div class="body">
         <FlowSocket Name="Input" Label="Value" Type="SocketType.Input" T="typeof(object)" OuterColor="gray" InnerColor="lightgray"/>
         <div class="watch-display">

@@ -1,11 +1,17 @@
 @using FlowState.Components
-@inherits FlowNodeBase
 @using FlowState.Models
+@inherits ExecutableNodeBase
 
 <FlowNode>
-<div class="title">🔢 Number</div>
-            <div class="body">
-              <input type="number" class="input-box" draggable="false" @bind="Value" placeholder="Enter value">
-              <FlowSocket Name="Output"  Label="Out" Type="SocketType.Output" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
-        </div>
+    <div class="title-container">
+        <div class="title">🔢 Number</div>
+        @if (IsExecuting)
+        {
+            <div class="execution-progress"></div>
+        }
+    </div>
+    <div class="body">
+        <input type="number" class="input-box" draggable="false" @bind="Value" placeholder="Enter value">
+        <FlowSocket Name="Output" Label="Out" Type="SocketType.Output" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
+    </div>
 </FlowNode>

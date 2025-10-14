@@ -1,9 +1,15 @@
 @using FlowState.Components
-@inherits FlowNodeBase
 @using FlowState.Models
+@inherits ExecutableNodeBase
 
 <FlowNode>
-    <div class="title">➕ Sum</div>
+    <div class="title-container">
+        <div class="title">➕ Sum</div>
+        @if (IsExecuting)
+        {
+            <div class="execution-progress"></div>
+        }
+    </div>
     <div class="body">
         <FlowSocket Name="InputA" Label="A" Type="SocketType.Input" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
         <FlowSocket Name="InputB" Label="B" Type="SocketType.Input" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>

@@ -162,5 +162,44 @@
 .input-box::placeholder {
   color: rgba(255,255,255,0.5);
 }
+.title-container {
+    position: relative;
+}
+
+.execution-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.execution-progress::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        #4CAF50 25%, 
+        #8BC34A 50%, 
+        #4CAF50 75%, 
+        transparent 100%);
+    animation: progress-slide 1.5s ease-in-out infinite;
+}
+
+@@keyframes progress-slide {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
 
 </style>
