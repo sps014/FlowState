@@ -235,7 +235,17 @@ public class FlowGraph : ISerializable<GraphData>
         if (checkDataType && !IsDataTypeCompatibile(fromSocket, toSocket))
             return (null, $"Incompatible Data Types {fromSocket.T}->{toSocket.T}");
 
-        var id = Guid.NewGuid().ToString();
+        // if tosocket is already connected, delete the edge 
+        var existingEdge = toSocket.Connections.FirstOrDefault();
+        if (existingEdge != null)
+        {
+            // Clean up socket connections lazily
+            _ = existingEdge.CleanupConnectionsAsync();
+            
+            RemoveEdge(existingEdge.Id);
+        }
+
+        var id = Guid.CreateVersion7().ToString();
         Dictionary<string, object> data = new();
 
         data[nameof(FlowEdge.Graph)] = this;

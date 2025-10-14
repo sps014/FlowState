@@ -103,8 +103,8 @@ namespace FlowState.Components
             {
                 await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, FromSocket.FlowNode!);
                 await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, ToSocket.FlowNode!);
-                ToSocket.Connections++;
-                FromSocket.Connections++;
+                ToSocket.Connections.Add(this);
+                FromSocket.Connections.Add(this);
                 await UpdatePathAsync();
             }
 
@@ -162,6 +162,61 @@ namespace FlowState.Components
         }
 
         /// <summary>
+        /// Cleans up socket connections immediately (synchronous)
+        /// </summary>
+        private void RemoveFromSocketConnections()
+        {
+            if (FromSocket != null)
+            {
+                FromSocket.Connections.Remove(this);
+            }
+            if (ToSocket != null)
+            {
+                ToSocket.Connections.Remove(this);
+            }
+        }
+
+        /// <summary>
+        /// Removes edge from canvas edge map asynchronously
+        /// </summary>
+        private async ValueTask RemoveFromCanvasEdgeMapAsync()
+        {
+            if (Graph == null || Graph.Canvas == null)
+                return;
+
+            if (FromSocket != null)
+            {
+                await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, FromSocket.FlowNode!);
+            }
+            if (ToSocket != null)
+            {
+                await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, ToSocket.FlowNode!);
+            }
+        }
+
+        /// <summary>
+        /// Cleans up socket connections and edge mappings asynchronously
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation</returns>
+        public async ValueTask CleanupConnectionsAsync()
+        {
+            if (Graph == null || Graph.Canvas == null || IsTempEdge)
+                return;
+
+            try
+            {
+                RemoveFromSocketConnections();
+                
+                // Await canvas cleanup for proper disposal
+                await RemoveFromCanvasEdgeMapAsync();
+            }
+            catch
+            {
+                Debug.Write("Failed to cleanup connections");
+            }
+        }
+
+        /// <summary>
         /// Disposes of the edge and cleans up connections
         /// </summary>
         /// <returns>A task representing the asynchronous operation</returns>
@@ -175,23 +230,7 @@ namespace FlowState.Components
                 ToSocket.ResetColor();
             }
 
-            try
-            {
-                if (FromSocket != null)
-                {
-                    FromSocket.Connections--;
-                    await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, FromSocket.FlowNode!);
-                }
-                if (ToSocket != null)
-                {
-                    ToSocket.Connections--;
-                    await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, ToSocket.FlowNode!);
-                }
-            }
-            catch
-            {
-                Debug.Write("Failed to dispose");
-            }
+            await CleanupConnectionsAsync();
         }
 
         /// <summary>

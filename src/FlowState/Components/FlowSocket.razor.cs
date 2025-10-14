@@ -70,7 +70,7 @@ namespace FlowState.Components
         /// <summary>
         /// Gets the number of connections to this socket
         /// </summary>
-        public int Connections { get; set; } = 0;
+        public List<FlowEdge> Connections { get; set; } = new();
 
         private string? innerSocketColorCopy;
         protected string? outerSocketColorCopy;
