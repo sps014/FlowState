@@ -5,6 +5,7 @@ let canvasEl = null;
 let gridEl = null;
 let flowContentEl = null;
 let dotnetRef = null;
+let jsEdgePathFunctionName = null;
 
 // Canvas State
 let offsetX = 0;
@@ -83,7 +84,7 @@ export function removeCanvasEvents(el) {
 /**
  * Sets component-level properties
  */
-export function setComponentProperties(nodeSelectionClassParam, autoUpdateSocketColorsParam) {
+export function setComponentProperties(nodeSelectionClassParam, autoUpdateSocketColorsParam, jsEdgePathFunctionNameParam) {
   nodeSelectionClass = nodeSelectionClassParam;
   autoUpdateSocketColors = autoUpdateSocketColorsParam;
 }
@@ -181,9 +182,9 @@ function updateTempConnection(e) {
   let path;
 
   if (tempEdgeStartPosition) {
-    path = createCubicPath(tempEdgeStartPosition, currentCursorPos);
+    path = generateSvgPath(tempEdgeStartPosition, currentCursorPos);
   } else {
-    path = createCubicPath(currentCursorPos, tempEdgeStopPosition);
+    path = generateSvgPath(currentCursorPos, tempEdgeStopPosition);
   }
 
   tempEdgeElement.setAttribute("d", path);
@@ -484,7 +485,7 @@ export function updatePath(outputSocketEl, inputSocketEl, edgeEl) {
   const fromPos = getSocketPosition(outputSocketEl);
   const toPos = getSocketPosition(inputSocketEl);
 
-  const path = createCubicPath(fromPos, toPos, outputSocketEl, inputSocketEl);
+  const path = generateSvgPath(toPos,fromPos);
 
   edgeEl.setAttribute("d", path);
 }
@@ -543,7 +544,14 @@ function getEdgesElementsToBeUpdated(nodesEl) {
   return edgesElements;
 }
 
-function createCubicPath(from, to, fromSocket = null) {
+function generateSvgPath(to, from) {
+  if (jsEdgePathFunctionName) {
+    return window[jsEdgePathFunctionName](to, from);
+  }
+  return createCubicPath(to, from);
+}
+
+function createCubicPath(to, from) {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const dist = Math.hypot(dx, dy);
@@ -551,19 +559,8 @@ function createCubicPath(from, to, fromSocket = null) {
 
   let c1, c2;
 
-  if (fromSocket) {
-    const isOutput = fromSocket.getAttribute("type") === "output";
-    if (isOutput) {
-      c1 = { x: from.x + offset, y: from.y };
-      c2 = { x: to.x - offset, y: to.y };
-    } else {
-      c1 = { x: from.x - offset, y: from.y };
-      c2 = { x: to.x + offset, y: to.y };
-    }
-  } else {
-    c1 = { x: from.x + offset, y: from.y };
-    c2 = { x: to.x - offset, y: to.y };
-  }
+  c1 = { x: from.x - offset, y: from.y };
+  c2 = { x: to.x + offset, y: to.y };
 
   return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
 }

@@ -100,6 +100,12 @@ namespace FlowState.Components
         public double Zoom { get; set; } = 1.0;
 
         /// <summary>
+        /// Gets or sets the name of the JavaScript function to use for edge path calculation (should be defined in the js file and must be accessible from Window object)
+        /// </summary>
+        [Parameter]
+        public string? JsEdgePathFunctionName { get; set; } = null;
+
+        /// <summary>
         /// Gets or sets whether edges should validate data type compatibility
         /// </summary>
         [Parameter]
@@ -216,7 +222,7 @@ namespace FlowState.Components
                 throw new Exception("Flow Canvas Background is null");
 
             JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowCanvas.js");
-            await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass, AutoUpdateSocketColors);
+            await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass, AutoUpdateSocketColors, JsEdgePathFunctionName);
             await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef, flowContentRef, dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
 
