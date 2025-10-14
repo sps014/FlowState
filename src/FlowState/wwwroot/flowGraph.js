@@ -51,6 +51,7 @@ let edgeSocketsMap = new Map(); // Map<EdgeEl, {to: SocketEl, from: SocketEl}>
 let nodeSelectionClass = "selected";
 let autoUpdateSocketColors = false;
 let multiSelectionKey = "shift"; // "shift", "ctrl", "alt", or "meta"
+let isReadOnly = false;
 
 // Cache
 let cacheGridBackgroundSize = null;
@@ -94,10 +95,19 @@ export function removeCanvasEvents(el) {
 /**
  * Sets component-level properties
  */
-export function setComponentProperties(nodeSelectionClassParam, autoUpdateSocketColorsParam, jsEdgePathFunctionNameParam, multiSelectionKeyParam) {
-  nodeSelectionClass = nodeSelectionClassParam;
-  autoUpdateSocketColors = autoUpdateSocketColorsParam;
-  multiSelectionKey = (multiSelectionKeyParam || "shift").toLowerCase();
+export function setComponentProperties(props) {
+  nodeSelectionClass = props.nodeSelectionClass || "selected";
+  autoUpdateSocketColors = props.autoUpdateSocketColors || false;
+  jsEdgePathFunctionName = props.jsEdgePathFunctionName || null;
+  multiSelectionKey = (props.multiSelectionKey || "shift").toLowerCase();
+  isReadOnly = props.isReadOnly || false;
+}
+
+/**
+ * Sets read-only mode
+ */
+export function setReadOnly(readOnly) {
+  isReadOnly = readOnly;
 }
 
 // =================== Pointer Event Handlers ===================
@@ -128,8 +138,8 @@ function pointerdown(e) {
   const node = getClickedNode(e);
 
   if (socket) {
-    // Don't start connection from interactive elements
-    if (isInteractiveElement(e.target)) {
+    // Don't start connection from interactive elements or in read-only mode
+    if (isInteractiveElement(e.target) || isReadOnly) {
       return;
     }
     tempSocket = socket;
@@ -138,18 +148,18 @@ function pointerdown(e) {
     // Always allow selection
     handleNodeSelection(node, e);
     
-    // Only start dragging if not clicking on interactive elements
-    if (!isInteractiveElement(e.target)) {
+    // Only start dragging if not clicking on interactive elements and not in read-only mode
+    if (!isInteractiveElement(e.target) && !isReadOnly) {
       dragNodeStart(e, node);
     }
   } else {
     // Clicking on canvas background
-    if (isMultiSelectionKeyPressed(e)) {
-      // Multi-selection key pressed → rectangle selection
+    if (isMultiSelectionKeyPressed(e) && !isReadOnly) {
+      // Multi-selection key pressed → rectangle selection (only if not read-only)
       startRectangleSelection(e);
     } else {
       // No multi-selection key → pan canvas
-      if (selectedNodes.size > 0) {
+      if (selectedNodes.size > 0 && !isReadOnly) {
         const deselected = [...selectedNodes].map((n) => n.id);
         clearSelection();
         dotnetRef.invokeMethodAsync("NotifyNodesCleared", deselected);
@@ -205,8 +215,8 @@ function pointerleave(e) {
 }
 
 function onKeyDown(e) {
-  // Don't handle keyboard shortcuts if typing in an input field
-  if (isInteractiveElement(e.target)) {
+  // Don't handle keyboard shortcuts if typing in an input field or in read-only mode
+  if (isInteractiveElement(e.target) || isReadOnly) {
     return;
   }
 
@@ -220,7 +230,7 @@ function onKeyDown(e) {
 }
 
 function deleteSelectedNodes() {
-  if (selectedNodes.size === 0) return;
+  if (isReadOnly || selectedNodes.size === 0) return;
   
   const nodeIds = [...selectedNodes].map(node => node.id);
   
@@ -684,6 +694,8 @@ export function setCanvasProperties(props) {
   minZoom = props.minZoom || 0.1;
   maxZoom = props.maxZoom || 2.0;
   zoom = clamp(props.zoom, minZoom, maxZoom);
+  isReadOnly = props.isReadOnly;
+
   updateTransforms();
 }
 
@@ -691,7 +703,7 @@ export function setCanvasProperties(props) {
  * Gets current canvas properties
  */
 export function getCanvasProperties() {
-  return { offsetX, offsetY, zoom, minZoom, maxZoom };
+  return { offsetX, offsetY, zoom, minZoom, maxZoom ,isReadOnly};
 }
 
 /**

@@ -120,6 +120,12 @@ namespace FlowState.Components
         [Parameter]
         public bool EdgeShouldMatchDataType { get; set; } = true;
 
+        /// <summary>
+        /// Gets or sets whether the canvas is in read-only mode. When true, only panning and zooming are allowed.
+        /// </summary>
+        [Parameter]
+        public bool IsReadOnly { get; set; } = false;
+
     /// <summary>
     /// Gets or sets custom CSS styles for the background grid
     /// </summary>
@@ -238,7 +244,14 @@ namespace FlowState.Components
                 throw new Exception("Flow Canvas Background is null");
 
             JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowGraph.js");
-            await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass, AutoUpdateSocketColors, JsEdgePathFunctionName, MultiSelectionKey);
+            await JsModule.InvokeVoidAsync("setComponentProperties", new
+            {
+                nodeSelectionClass = NodeSelectionClass,
+                autoUpdateSocketColors = AutoUpdateSocketColors,
+                jsEdgePathFunctionName = JsEdgePathFunctionName,
+                multiSelectionKey = MultiSelectionKey,
+                isReadOnly = IsReadOnly
+            });
             await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef, flowContentRef, selectionRectRef, dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
 
@@ -303,6 +316,8 @@ namespace FlowState.Components
         /// <returns>A task representing the asynchronous operation</returns>
         public ValueTask SetViewportPropertiesAsync(CanvasProperties canvasProperties)
         {
+            IsReadOnly = canvasProperties.IsReadOnly;
+            StateHasChanged();
             return JsModule.InvokeVoidAsync("setCanvasProperties", canvasProperties);
         }
 
@@ -336,6 +351,17 @@ namespace FlowState.Components
             return JsModule.InvokeVoidAsync("setZoom", zoom);
         }
 
+        /// <summary>
+        /// Sets whether the canvas is in read-only mode
+        /// </summary>
+        /// <param name="isReadOnly">True to enable read-only mode, false to allow editing</param>
+        /// <returns>A task representing the asynchronous operation</returns>
+        public ValueTask SetReadOnlyAsync(bool isReadOnly)
+        {
+            IsReadOnly = isReadOnly;
+            return JsModule.InvokeVoidAsync("setReadOnly", isReadOnly);
+        }
+
         // Public Methods - Canvas Management
 
         /// <summary>
@@ -350,7 +376,7 @@ namespace FlowState.Components
             Graph.NodesInfo.Clear();
             Graph.EdgesInfo.Clear();
 
-            return SetViewportPropertiesAsync(new CanvasProperties { Zoom = 1.0, MinZoom = MinZoom, MaxZoom = MaxZoom, OffsetX = 0, OffsetY = 0 });
+            return SetViewportPropertiesAsync(new CanvasProperties { Zoom = 1.0, MinZoom = MinZoom, MaxZoom = MaxZoom, OffsetX = 0, OffsetY = 0 , IsReadOnly= IsReadOnly });
         }
 
         // Public Methods - Node Selection
@@ -439,6 +465,9 @@ namespace FlowState.Components
         [JSInvokable]
         public async Task NotifyNodeMoved(string nodeId, double x, double y)
         {
+            if (IsReadOnly)
+                return;
+
             if (OnNodeMoved.HasDelegate)
                 await OnNodeMoved.InvokeAsync(new NodeMovedArgs(nodeId, x, y));
         }
@@ -489,6 +518,9 @@ namespace FlowState.Components
         [JSInvokable]
         public async ValueTask EdgeConnectRequest(string fromNodeId, string toNodeId, string fromSocketName, string toSocketName)
         {
+            if (IsReadOnly)
+                return;
+
             if (OnEdgeConnectRequest.HasDelegate)
             {
                 ConnectRequestArgs e = new(fromNodeId, toNodeId, fromSocketName, toSocketName, Graph);
@@ -507,7 +539,7 @@ namespace FlowState.Components
         [JSInvokable]
         public void DeleteNodes(string[] nodeIds)
         {
-            if (Graph == null || nodeIds == null || nodeIds.Length == 0)
+            if (IsReadOnly || Graph == null || nodeIds == null || nodeIds.Length == 0)
                 return;
 
             foreach (var nodeId in nodeIds)

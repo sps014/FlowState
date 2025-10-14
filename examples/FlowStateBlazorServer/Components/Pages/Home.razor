@@ -13,8 +13,9 @@
 <button @onclick="LoadGraph">Load Graph</button>
 <button @onclick="RemoveNode">Remove Node</button>
 <button @onclick="ExecuteGraph">Execute Graph</button>
+<button @onclick="ToggleReadOnly">@(isReadOnly ? "Enable Editing" : "Enable Read-Only")</button>
 
-<FlowCanvas Height="100vh" Width="100vw" Graph="graph" OnCanvasLoaded="OnLoaded" OnSelectionChanged="NodesSelected">
+<FlowCanvas @ref="canvas" Height="100vh" Width="100vw" Graph="graph" IsReadOnly="isReadOnly" OnCanvasLoaded="OnLoaded" OnSelectionChanged="NodesSelected">
  <BackgroundContent>
         <FlowBackground class="flow-grid-lines"/>
     </BackgroundContent>
@@ -25,7 +26,9 @@
 @code
 {
     FlowGraph graph = new FlowGraph();
+    FlowCanvas? canvas;
     private string data="{}";
+    private bool isReadOnly = false;
 
     protected override void OnInitialized()
     {
@@ -109,6 +112,16 @@
     {
         await graph.ExecuteAsync();
     }
+    
+    private async Task ToggleReadOnly()
+    {
+        isReadOnly = !isReadOnly;
+        if (canvas != null)
+        {
+            await canvas.SetReadOnlyAsync(isReadOnly);
+        }
+    }
+    
     private void RemoveEdge()
     {
         graph.RemoveEdge(edgeInfo.Id);
