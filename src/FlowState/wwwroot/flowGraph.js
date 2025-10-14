@@ -276,6 +276,7 @@ function connectRequest(fromNodeId, toNodeId, fromSocketName, toSocketName) {
 
 function handleNodeSelection(node, e) {
   if (isMultiSelectionKeyPressed(e)) {
+    // Multi-selection mode: toggle the clicked node
     if (selectedNodes.has(node)) {
       node.classList.remove(nodeSelectionClass);
       selectedNodes.delete(node);
@@ -286,6 +287,13 @@ function handleNodeSelection(node, e) {
       dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
     }
   } else {
+    // If clicking on an already selected node, keep the selection (for dragging)
+    if (selectedNodes.has(node)) {
+      // Don't change selection - user wants to drag the group
+      return;
+    }
+    
+    // Clear selection and select only this node
     for (const n of selectedNodes) {
       n.classList.remove(nodeSelectionClass);
     }
