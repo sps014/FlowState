@@ -76,6 +76,7 @@ export function setupCanvasEvents(el, gridElement, flowContentElement, selection
   el.addEventListener("pointerup", pointerup);
   el.addEventListener("pointerleave", pointerleave);
   el.addEventListener("wheel", onWheel);
+  document.addEventListener("keydown", onKeyDown);
 }
 
 /**
@@ -87,6 +88,7 @@ export function removeCanvasEvents(el) {
   el.removeEventListener("pointerup", pointerup);
   el.removeEventListener("pointerleave", pointerleave);
   el.removeEventListener("wheel", onWheel);
+  document.removeEventListener("keydown", onKeyDown);
 }
 
 /**
@@ -200,6 +202,32 @@ function pointerleave(e) {
     stopRectangleSelection(e);
   }
   panEnd(e);
+}
+
+function onKeyDown(e) {
+  // Don't handle keyboard shortcuts if typing in an input field
+  if (isInteractiveElement(e.target)) {
+    return;
+  }
+
+  // Delete key or Backspace on Mac
+  if (e.key === "Delete" || e.key === "Backspace") {
+    if (selectedNodes.size > 0) {
+      e.preventDefault(); // Prevent browser back navigation on Backspace
+      deleteSelectedNodes();
+    }
+  }
+}
+
+function deleteSelectedNodes() {
+  if (selectedNodes.size === 0) return;
+  
+  const nodeIds = [...selectedNodes].map(node => node.id);
+  
+  clearSelection();
+    
+  // Notify .NET to delete the nodes
+  dotnetRef.invokeMethodAsync("DeleteNodes", nodeIds);
 }
 
 // =================== Edge Connection (Temp Edge) ===================

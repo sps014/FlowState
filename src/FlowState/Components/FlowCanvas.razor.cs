@@ -501,6 +501,21 @@ namespace FlowState.Components
                 Graph!.Connect(fromNodeId, toNodeId, fromSocketName, toSocketName, EdgeShouldMatchDataType);
         }
 
+        /// <summary>
+        /// Called from JavaScript when nodes should be deleted (Delete key pressed)
+        /// </summary>
+        [JSInvokable]
+        public void DeleteNodes(string[] nodeIds)
+        {
+            if (Graph == null || nodeIds == null || nodeIds.Length == 0)
+                return;
+
+            foreach (var nodeId in nodeIds)
+            {
+                Graph.RemoveNode(nodeId);
+            }
+        }
+
         // Serialization
 
         /// <summary>
