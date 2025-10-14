@@ -200,7 +200,6 @@ namespace FlowState.Components
             Graph.EdgeRemoved += RefreshOnEdgeRemoved;
             Graph.AllNodesCleared += RefreshOnAllNodesCleared;
             Graph.AllEdgesCleared += RefreshOnAllEdgesCleared;
-            Graph.OnDeserialzed += OnDeserialzed;
             Graph.ForcedRequestDomStateChanged += ForcedRequestDomStateChanged;
 
             dotnetObjRef = DotNetObjectReference.Create(this);
@@ -269,11 +268,6 @@ namespace FlowState.Components
         }
 
         private void RefreshOnAllNodesCleared(object? _, EventArgs e)
-        {
-            StateHasChanged();
-        }
-
-        private void OnDeserialzed(object? _, EventArgs e)
         {
             StateHasChanged();
         }
@@ -512,7 +506,6 @@ namespace FlowState.Components
                 Graph.EdgeRemoved -= RefreshOnEdgeRemoved;
                 Graph.AllNodesCleared -= RefreshOnAllNodesCleared;
                 Graph.AllEdgesCleared -= RefreshOnAllEdgesCleared;
-                Graph.OnDeserialzed -= OnDeserialzed;
                 Graph.ForcedRequestDomStateChanged -= ForcedRequestDomStateChanged;
             }
 

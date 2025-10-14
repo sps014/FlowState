@@ -10,7 +10,7 @@ public partial class InputNode
 {
 
     [Parameter]
-    public long Value { get; set; }
+    public int Value { get; set; }
 
     public override ValueTask ExecuteAsync(FlowExecutionContext context)
     {

@@ -122,17 +122,31 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     /// <returns>A NodeProperties object containing the node's state</returns>
     public async ValueTask<NodeProperties> GetSerializableObjectAsync()
     {
+
+        var position = await DomElement!.GetTransformPositionAsync();
+        X = position.X;
+        Y = position.Y;
+
+
         var properties = this.GetType().GetProperties();
-        var parameterProperties = properties.Where(p => p.GetCustomAttributes(typeof(ParameterAttribute), false).Any()).ToList();
-        var parameterValues = parameterProperties.ToDictionary(p => p.Name, p => p.GetValue(this));
+        
+        var parameterProperties = properties
+            .Where(p => p.GetCustomAttributes(typeof(ParameterAttribute), false).Any()).ToList();
+        var parameterValues = parameterProperties
+            .ToDictionary(p => p.Name, p => new { Value = p.GetValue(this), Type = p.PropertyType });
+            
         parameterValues ??= new();
         parameterValues.Remove(nameof(Graph));
 
-        var position = await DomElement!.GetTransformPositionAsync();
-        parameterValues[nameof(X)] = position.X;
-        parameterValues[nameof(Y)] = position.Y;
 
-        return new NodeProperties(GetType().AssemblyQualifiedName!, Id, parameterValues);
+        var data = new Dictionary<string, StoredProperty>();
+
+        foreach(var (k,v) in parameterValues)
+        {
+            data[k] = new StoredProperty(v.Type.AssemblyQualifiedName!, v.Value);
+        }
+
+        return new NodeProperties(GetType().AssemblyQualifiedName!, Id, data);
     }
 
     protected override void OnParametersSet()

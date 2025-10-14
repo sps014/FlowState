@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using Newtonsoft.Json;
 using FlowState.Components;
 using FlowState.Models.Serializable;
 using FlowState.Models.Events;
 using Microsoft.AspNetCore.Components;
 using FlowState.Models.Execution;
+using System.Text.Json;
 
 namespace FlowState.Models;
 
@@ -370,7 +370,7 @@ public class FlowGraph : ISerializable<GraphData>
     public async ValueTask<string> SerializeAsync()
     {
         var data = await GetSerializableObjectAsync();
-        return JsonConvert.SerializeObject(data);
+        return JsonSerializer.Serialize(data);
     }
 
     /// <summary>
@@ -380,7 +380,7 @@ public class FlowGraph : ISerializable<GraphData>
     /// <returns>A task representing the asynchronous operation</returns>
     public ValueTask DeserializeAsync(string data)
     {
-        var graphData = JsonConvert.DeserializeObject<GraphData>(data);
+        var graphData = JsonSerializer.Deserialize<GraphData>(data);
         if (graphData == null)
             throw new Exception("Invalid graph data");
         return DeserializeAsync(graphData);
@@ -403,7 +403,7 @@ public class FlowGraph : ISerializable<GraphData>
         foreach (var node in graphData.Nodes)
         {
             var type = Type.GetType(node.Type)!;
-            _ = CreateNode(type, node.X, node.Y, node.Data ?? []);
+            _ = CreateNode(type, node.X, node.Y, node.GetRawDictionary());
         }
 
         ForcedRequestDomStateChanged?.Invoke(this, EventArgs.Empty);
@@ -415,8 +415,9 @@ public class FlowGraph : ISerializable<GraphData>
             _ = Connect(edge.FromNodeId, edge.ToNodeId, edge.FromSocketName, edge.ToSocketName);
         }
 
-        OnDeserialzed?.Invoke(this, EventArgs.Empty);
+        ForcedRequestDomStateChanged?.Invoke(this, EventArgs.Empty);
     }
+
 
     /// <summary>
     /// Clears the entire graph including all nodes and edges
@@ -479,8 +480,4 @@ public class FlowGraph : ISerializable<GraphData>
     /// </summary>
     public event EventHandler? ForcedRequestDomStateChanged;
 
-    /// <summary>
-    /// Fired when deserialization is complete
-    /// </summary>
-    public event EventHandler? OnDeserialzed;
 }
