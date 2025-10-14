@@ -55,9 +55,34 @@
 }
 
 /* Default edge execution animation */
+.edge-executing {
+    stroke-width: 4 !important;
+    stroke-dasharray: 10, 5;
+    animation: edge-flow 1s linear infinite, edge-pulse 0.5s ease-in-out;
+    filter: drop-shadow(0 0 4px currentColor);
+}
+
 ::deep .edge-executing {
     stroke-width: 4 !important;
     stroke-dasharray: 10, 5;
     animation: edge-flow 1s linear infinite, edge-pulse 0.5s ease-in-out;
     filter: drop-shadow(0 0 4px currentColor);
+}
+
+@keyframes edge-flow {
+    0% {
+        stroke-dashoffset: 0;
+    }
+    100% {
+        stroke-dashoffset: 15;
+    }
+}
+
+@keyframes edge-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
 }

@@ -83,6 +83,12 @@ namespace FlowState.Components
         [Parameter]
         public bool IsTempEdge { get; set; } = false;
 
+        /// <summary>
+        /// Gets or sets whether this edge is currently executing
+        /// </summary>
+        [Parameter]
+        public bool IsExecuting { get; set; } = false;
+
         private string? strokeColorCopy;
 
         // Lifecycle Methods
@@ -156,8 +162,9 @@ namespace FlowState.Components
         /// <summary>
         /// Triggers a re-render of the edge component
         /// </summary>
-        public void Refresh()
+        public void SetExecuting(bool isExecuting)
         {
+            IsExecuting = isExecuting;
             StateHasChanged();
         }
 

@@ -120,11 +120,17 @@ namespace FlowState.Components
         [Parameter]
         public bool EdgeShouldMatchDataType { get; set; } = true;
 
-        /// <summary>
-        /// Gets or sets custom CSS styles for the background grid
-        /// </summary>
-        [Parameter]
-        public string GridStyle { get; set; } = string.Empty;
+    /// <summary>
+    /// Gets or sets custom CSS styles for the background grid
+    /// </summary>
+    [Parameter]
+    public string GridStyle { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the CSS class to apply to edges when their connected nodes are executing
+    /// </summary>
+    [Parameter]
+    public string ExecutingEdgeClass { get; set; } = "edge-executing";
 
         // Event Callbacks
 

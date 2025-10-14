@@ -43,12 +43,14 @@ public class FlowGraph : ISerializable<GraphData>
     internal Dictionary<string, NodeInfo> NodesInfo { get; } = new();
     internal Dictionary<string, EdgeInfo> EdgesInfo { get; } = new();
 
-
-    private FlowGraphExecution executionFlow;
+    /// <summary>
+    /// Gets the execution flow handler for this graph
+    /// </summary>
+    public FlowGraphExecution ExecutionFlow { get; }
 
     public FlowGraph()
     {
-        executionFlow = new FlowGraphExecution(this);
+        ExecutionFlow = new FlowGraphExecution(this);
     }
 
     // Node Management Methods
@@ -353,7 +355,7 @@ public class FlowGraph : ISerializable<GraphData>
     {
         if(Canvas==null)
             throw new Exception("Canvas is not set");
-        return executionFlow.ExecuteAsync(Canvas.ExecutionDirection, cancellationToken);
+        return ExecutionFlow.ExecuteAsync(Canvas.ExecutionDirection, cancellationToken);
     }
 
     // Serialization Methods

@@ -4,6 +4,13 @@
 @using Microsoft.JSInterop
 @using System.Diagnostics
 
-<path class="edge" style="pointer-events: none; @Style" @ref="edgeRef" @key="Id" stroke-width="@StrokeWidth" fill="@Fill"
-    stroke-linecap="@StrokeLineCap" stroke="@Stroke" @attributes="InputAttributes">
+<path class="edge @(IsExecuting && Graph?.Canvas != null ? Graph.Canvas.ExecutingEdgeClass : "")" 
+    style="pointer-events: none; @Style" 
+    @ref="edgeRef" 
+    @key="Id" 
+    stroke-width="@StrokeWidth" 
+    fill="@Fill"
+    stroke-linecap="@StrokeLineCap" 
+    stroke="@Stroke" 
+    @attributes="InputAttributes">
 </path>

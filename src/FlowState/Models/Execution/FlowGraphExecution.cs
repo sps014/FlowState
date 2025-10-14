@@ -25,6 +25,11 @@ public class FlowGraphExecution
     private Dictionary<string, HashSet<int>> activeOutputs = [];
 
     /// <summary>
+    /// Set of edge IDs that are currently executing
+    /// </summary>
+    private HashSet<string> executingEdgeIds = new();
+
+    /// <summary>
     /// The parent FlowGraph instance
     /// </summary>
     public FlowGraph Graph { get; }
@@ -49,13 +54,15 @@ public class FlowGraphExecution
     /// </summary>
     public async ValueTask ExecuteAsync(ExecutionDirection direction, CancellationToken cancellationToken)
     {
-        Direction = direction;        
+        Direction = direction;
 
         // Fire start event
-        OnExecutionStarted?.Invoke(this, new ExecutionEventArgs 
-        { 
-            Timestamp = DateTime.UtcNow 
+        OnExecutionStarted?.Invoke(this, new ExecutionEventArgs
+        {
+            Timestamp = DateTime.UtcNow
         });
+
+        executingEdgeIds.Clear();
         
         // Clear previous execution state
         ClearBranchTracking();
@@ -116,6 +123,9 @@ public class FlowGraphExecution
                         Timestamp = DateTime.UtcNow
                     });
                     
+                    // Mark connected edges as executing
+                    MarkNodeEdgesAsExecuting(nodeId, true);
+                    
                     // Create execution context with full graph state and shared data
                     var executionContext = new FlowExecutionContext(node)
                     {
@@ -127,6 +137,9 @@ public class FlowGraphExecution
                     
                     await node.ExecuteAsync(executionContext);
                     executedCount++;
+                    
+                    // Mark connected edges as no longer executing
+                    MarkNodeEdgesAsExecuting(nodeId, false);
                     
                     // Fire node execution completed event
                     OnNodeExecutionCompleted?.Invoke(this, new NodeExecutionEventArgs
@@ -419,6 +432,31 @@ public class FlowGraphExecution
     public bool NodeHasInputValues(string nodeId)
     {
         return ShouldNodeExecute(nodeId);
+    }
+
+    /// <summary>
+    /// Marks input edges (edges coming TO the node) as executing
+    /// This shows where the data is flowing from during node execution
+    /// </summary>
+    private void MarkNodeEdgesAsExecuting(string nodeId, bool isExecuting)
+    {
+        var node = Graph.GetNodeById(nodeId);
+        if (node == null || Graph.Canvas == null)
+            return;
+
+        // Directly access input socket connections - much faster than iterating all edges
+        foreach (var socket in node.InputSockets.Values)
+        {
+            foreach (var edge in socket.Connections)
+            {
+                if (isExecuting)
+                    executingEdgeIds.Add(edge.Id);
+                else
+                    executingEdgeIds.Remove(edge.Id);
+
+                edge.SetExecuting(isExecuting);
+            }
+        }
     }
 
     // Events
