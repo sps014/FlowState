@@ -75,6 +75,12 @@ namespace FlowState.Components
         [Parameter]
         public string NodeSelectionClass { get; set; } = "selected";
 
+        /// <summary>
+        /// Gets or sets the key to use for multi-selection. Options: "shift", "ctrl", "alt", "meta"
+        /// </summary>
+        [Parameter]
+        public string MultiSelectionKey { get; set; } = "shift";
+
         [Parameter]
         public string SelectionRectangleClass { get; set; } = "flow-selection-rectangle";
 
@@ -226,7 +232,7 @@ namespace FlowState.Components
                 throw new Exception("Flow Canvas Background is null");
 
             JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowGraph.js");
-            await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass, AutoUpdateSocketColors, JsEdgePathFunctionName);
+            await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass, AutoUpdateSocketColors, JsEdgePathFunctionName, MultiSelectionKey);
             await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef, flowContentRef, selectionRectRef, dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
 

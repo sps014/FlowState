@@ -295,6 +295,18 @@ public class FlowGraph : ISerializable<GraphData>
         AllEdgesCleared?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Gets an edge by its ID
+    /// </summary>
+    /// <param name="id">The ID of the edge</param>
+    /// <returns>The edge, or null if not found</returns>
+    public FlowEdge? GetEdgeById(string id)
+    {
+        if (EdgesInfo.ContainsKey(id))
+            return EdgesInfo[id].Instance;
+        return null;
+    }
+
     // Selection Methods
 
     /// <summary>

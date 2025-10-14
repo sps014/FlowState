@@ -41,15 +41,23 @@
     background: transparent;
 }
 
-.flow-selection-rectangle {
-    border: 2px solid #4a90e2;
-    background-color: rgba(74, 144, 226, 0.1);
-}
-
 .flow-selection {
     position: absolute;
     pointer-events: none;
     z-index: 9999;
     display: none;
     box-sizing: border-box;
+}
+
+.flow-selection-rectangle {
+    border: 2px solid #4a90e2;
+    background-color: rgba(74, 144, 226, 0.1);
+}
+
+/* Default edge execution animation */
+::deep .edge-executing {
+    stroke-width: 4 !important;
+    stroke-dasharray: 10, 5;
+    animation: edge-flow 1s linear infinite, edge-pulse 0.5s ease-in-out;
+    filter: drop-shadow(0 0 4px currentColor);
 }

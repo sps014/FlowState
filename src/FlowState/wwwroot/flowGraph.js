@@ -50,6 +50,7 @@ let edgeSocketsMap = new Map(); // Map<EdgeEl, {to: SocketEl, from: SocketEl}>
 // Configuration
 let nodeSelectionClass = "selected";
 let autoUpdateSocketColors = false;
+let multiSelectionKey = "shift"; // "shift", "ctrl", "alt", or "meta"
 
 // Cache
 let cacheGridBackgroundSize = null;
@@ -91,12 +92,31 @@ export function removeCanvasEvents(el) {
 /**
  * Sets component-level properties
  */
-export function setComponentProperties(nodeSelectionClassParam, autoUpdateSocketColorsParam, jsEdgePathFunctionNameParam) {
+export function setComponentProperties(nodeSelectionClassParam, autoUpdateSocketColorsParam, jsEdgePathFunctionNameParam, multiSelectionKeyParam) {
   nodeSelectionClass = nodeSelectionClassParam;
   autoUpdateSocketColors = autoUpdateSocketColorsParam;
+  multiSelectionKey = (multiSelectionKeyParam || "shift").toLowerCase();
 }
 
 // =================== Pointer Event Handlers ===================
+
+/**
+ * Checks if the multi-selection modifier key is pressed
+ */
+function isMultiSelectionKeyPressed(e) {
+  switch (multiSelectionKey) {
+    case "shift":
+      return e.shiftKey;
+    case "ctrl":
+      return e.ctrlKey;
+    case "alt":
+      return e.altKey;
+    case "meta":
+      return e.metaKey;
+    default:
+      return e.shiftKey; // default to shift
+  }
+}
 
 function pointerdown(e) {
   // Prevent event bubbling to parent elements
@@ -113,19 +133,14 @@ function pointerdown(e) {
     dragNodeStart(e, node);
   } else {
     // Clicking on canvas background
-    if (!e.ctrlKey && !e.metaKey && selectedNodes.size > 0) {
+    if (!isMultiSelectionKeyPressed(e) && selectedNodes.size > 0) {
       const deselected = [...selectedNodes].map((n) => n.id);
       clearSelection();
       dotnetRef.invokeMethodAsync("NotifyNodesCleared", deselected);
     }
     
-    // Start rectangle selection or panning
-    // Use shift key to force panning, otherwise start rectangle selection
-    if (e.shiftKey) {
-      panStart(e);
-    } else {
-      startRectangleSelection(e);
-    }
+    // Start rectangle selection
+    startRectangleSelection(e);
   }
 }
 
@@ -260,7 +275,7 @@ function connectRequest(fromNodeId, toNodeId, fromSocketName, toSocketName) {
 // =================== Node Selection ===================
 
 function handleNodeSelection(node, e) {
-  if (e.ctrlKey || e.metaKey) {
+  if (isMultiSelectionKeyPressed(e)) {
     if (selectedNodes.has(node)) {
       node.classList.remove(nodeSelectionClass);
       selectedNodes.delete(node);
@@ -751,7 +766,7 @@ function stopRectangleSelection(e) {
   );
   
   // Handle selection based on modifier keys
-  if (!e.ctrlKey && !e.metaKey) {
+  if (!isMultiSelectionKeyPressed(e)) {
     // Clear existing selection if no modifier key
     clearSelection();
   }
