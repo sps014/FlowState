@@ -15,7 +15,7 @@
 <button @onclick="ExecuteGraph">Execute Graph</button>
 <button @onclick="ToggleReadOnly">@(isReadOnly ? "Enable Editing" : "Enable Read-Only")</button>
 
-<FlowCanvas @ref="canvas" Height="100vh" Width="100vw" Graph="graph" IsReadOnly="isReadOnly" OnCanvasLoaded="OnLoaded" OnSelectionChanged="NodesSelected">
+<FlowCanvas @ref="canvas" Height="100vh" Width="100vw" Graph="graph" IsReadOnly="isReadOnly" OnCanvasLoaded="OnLoaded" OnSelectionChanged="NodesSelected" OnSocketLongPress="HandleSocketLongPress">
  <BackgroundContent>
         <FlowBackground class="flow-grid-lines"/>
     </BackgroundContent>
@@ -125,6 +125,11 @@
     private void RemoveEdge()
     {
         graph.RemoveEdge(edgeInfo.Id);
+    }
+    
+    private void HandleSocketLongPress(SocketLongPressEventArgs e)
+    {
+        Console.WriteLine(e.Socket.Name);
     }
 }
 

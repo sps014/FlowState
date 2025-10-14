@@ -43,6 +43,13 @@ let tempEdgeStopPosition = null;
 let tempSocket = null;
 let tempEdgeElement = null;
 
+// Long Press State
+let longPressTimer = null;
+let longPressStartX = 0;
+let longPressStartY = 0;
+const LONG_PRESS_DURATION = 500; // milliseconds
+const LONG_PRESS_MOVE_THRESHOLD = 10; // pixels
+
 // Edge Management
 let nodeEdgeMap = new Map(); // Map<NodeEl, Edges[]>
 let edgeSocketsMap = new Map(); // Map<EdgeEl, {to: SocketEl, from: SocketEl}>
@@ -142,6 +149,7 @@ function pointerdown(e) {
     if (isInteractiveElement(e.target) || isReadOnly) {
       return;
     }
+    startLongPress(e, socket);
     tempSocket = socket;
     startTempConnection(e, socket);
   } else if (node) {
@@ -173,6 +181,8 @@ function pointermove(e) {
   // Prevent event bubbling to parent elements
   e.stopPropagation();
   
+  checkLongPressMove(e);
+  
   if (isConnectingNodes) {
     updateTempConnection(e);
     return;
@@ -192,6 +202,8 @@ function pointerup(e) {
   // Prevent event bubbling to parent elements
   e.stopPropagation();
   
+  cancelLongPress();
+  
   if (isConnectingNodes) {
     stopTempConnection(e);
   }
@@ -207,6 +219,8 @@ function pointerup(e) {
 function pointerleave(e) {
   // Prevent event bubbling to parent elements
   e.stopPropagation();
+  
+  cancelLongPress();
   
   if (isRectangleSelecting) {
     stopRectangleSelection(e);
@@ -321,6 +335,40 @@ function stopTempConnection(e) {
 
 function connectRequest(fromNodeId, toNodeId, fromSocketName, toSocketName) {
   dotnetRef.invokeMethodAsync("EdgeConnectRequest", fromNodeId, toNodeId, fromSocketName, toSocketName);
+}
+
+// =================== Long Press Detection ===================
+
+function startLongPress(e, socket) {
+  cancelLongPress();
+  longPressStartX = e.clientX;
+  longPressStartY = e.clientY;
+  
+  longPressTimer = setTimeout(() => {
+    const nodeId = socket.getAttribute("node-id");
+    const socketName = socket.getAttribute("name");
+    dotnetRef.invokeMethodAsync("NotifySocketLongPress", nodeId, socketName);
+    longPressTimer = null;
+  }, LONG_PRESS_DURATION);
+}
+
+function cancelLongPress() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+
+function checkLongPressMove(e) {
+  if (longPressTimer) {
+    const dx = e.clientX - longPressStartX;
+    const dy = e.clientY - longPressStartY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance > LONG_PRESS_MOVE_THRESHOLD) {
+      cancelLongPress();
+    }
+  }
 }
 
 // =================== Node Selection ===================

@@ -194,6 +194,12 @@ namespace FlowState.Components
         [Parameter]
         public EventCallback<CanvasLoadedEventArgs> OnCanvasLoaded { get; set; }
 
+        /// <summary>
+        /// Event fired when a socket is long pressed
+        /// </summary>
+        [Parameter]
+        public EventCallback<SocketLongPressEventArgs> OnSocketLongPress { get; set; }
+
         private FlowEdge? TempEdge = null;
         private ElementReference canvasRef;
         private ElementReference flowContentRef;
@@ -269,20 +275,6 @@ namespace FlowState.Components
                     MaxZoom = MaxZoom
                 });
         }
-
-        public override async Task SetParametersAsync(ParameterView parameters)
-        {
-
-            foreach (var param in parameters)
-            {
-                if (param.Name == nameof(IsReadOnly))
-                    await SetReadOnlyAsync((bool)param.Value);
-                if (param.Name == nameof(Zoom))
-                    await SetZoomAsync((double)param.Value);
-            }
-            await base.SetParametersAsync(parameters);
-        }
-
         // Event Handlers
 
         private void ForcedRequestDomStateChanged(object? _, EventArgs e)
@@ -523,6 +515,22 @@ namespace FlowState.Components
         {
             if (OnNotifyNodesCleared.HasDelegate)
                 await OnNotifyNodesCleared.InvokeAsync(new NodesClearedEventArgs { ClearedCount = Graph.Nodes.Count });
+        }
+
+        /// <summary>
+        /// Called from JavaScript when a socket is long pressed
+        /// </summary>
+        [JSInvokable]
+        public async Task NotifySocketLongPress(string nodeId, string socketName)
+        {
+            if (!OnSocketLongPress.HasDelegate)
+                return;
+
+            var node = Graph.Nodes.FirstOrDefault(n => n.Id == nodeId);
+            var socket = node?.Sockets.FirstOrDefault(s => s.Name == socketName);
+
+            if (socket != null)
+                await OnSocketLongPress.InvokeAsync(new SocketLongPressEventArgs { Socket = socket });
         }
 
         /// <summary>
