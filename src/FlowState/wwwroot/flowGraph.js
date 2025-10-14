@@ -18,6 +18,7 @@ let maxZoom = 2.0;
 let isPanning = false;
 let isNodeDragging = false;
 let isConnectingNodes = false;
+let isRectangleSelecting = false;
 
 // Panning State
 let startX = 0;
@@ -30,6 +31,11 @@ let selectedNodes = new Set();
 let dragStartPositions = new Map();
 let lastMouseX = 0;
 let lastMouseY = 0;
+
+// Rectangle Selection State
+let rectangleSelectionStartX = 0;
+let rectangleSelectionStartY = 0;
+let rectangleSelectionElement = null;
 
 // Edge Connection State
 let tempEdgeStartPosition = null;
@@ -54,10 +60,11 @@ let cacheGridSizeMatrix = null;
 /**
  * Sets up canvas event listeners and initializes the canvas
  */
-export function setupCanvasEvents(el, gridElement, flowContentElement, dotnetReference) {
+export function setupCanvasEvents(el, gridElement, flowContentElement, selectionRectElement, dotnetReference) {
   canvasEl = el;
   flowContentEl = flowContentElement;
   gridEl = gridElement;
+  rectangleSelectionElement = selectionRectElement;
   dotnetRef = dotnetReference;
 
   const style = window.getComputedStyle(gridEl);
@@ -105,12 +112,20 @@ function pointerdown(e) {
     handleNodeSelection(node, e);
     dragNodeStart(e, node);
   } else {
-    if (selectedNodes.size > 0) {
+    // Clicking on canvas background
+    if (!e.ctrlKey && !e.metaKey && selectedNodes.size > 0) {
       const deselected = [...selectedNodes].map((n) => n.id);
       clearSelection();
       dotnetRef.invokeMethodAsync("NotifyNodesCleared", deselected);
     }
-    panStart(e);
+    
+    // Start rectangle selection or panning
+    // Use shift key to force panning, otherwise start rectangle selection
+    if (e.shiftKey) {
+      panStart(e);
+    } else {
+      startRectangleSelection(e);
+    }
   }
 }
 
@@ -126,6 +141,10 @@ function pointermove(e) {
     dragNodeMove(e);
     return;
   }
+  if (isRectangleSelecting) {
+    updateRectangleSelection(e);
+    return;
+  }
   panMove(e);
 }
 
@@ -138,6 +157,8 @@ function pointerup(e) {
   }
   if (isNodeDragging) {
     dragNodeStop(e);
+  } else if (isRectangleSelecting) {
+    stopRectangleSelection(e);
   } else {
     panEnd(e);
   }
@@ -147,6 +168,9 @@ function pointerleave(e) {
   // Prevent event bubbling to parent elements
   e.stopPropagation();
   
+  if (isRectangleSelecting) {
+    stopRectangleSelection(e);
+  }
   panEnd(e);
 }
 
@@ -621,6 +645,130 @@ export function setOffset(x, y) {
 export function setZoom(z) {
   zoom = clamp(z, minZoom, maxZoom);
   updateTransforms();
+}
+
+// =================== Rectangle Selection ===================
+
+function updateSelectionRectangle(startX, startY, endX, endY) {
+  if (!rectangleSelectionElement) return;
+  
+  const left = Math.min(startX, endX);
+  const top = Math.min(startY, endY);
+  const width = Math.abs(endX - startX);
+  const height = Math.abs(endY - startY);
+  
+  rectangleSelectionElement.style.left = `${left}px`;
+  rectangleSelectionElement.style.top = `${top}px`;
+  rectangleSelectionElement.style.width = `${width}px`;
+  rectangleSelectionElement.style.height = `${height}px`;
+  rectangleSelectionElement.style.display = 'block';
+}
+
+function removeSelectionRectangle() {
+  if (rectangleSelectionElement) {
+    rectangleSelectionElement.style.display = 'none';
+  }
+}
+
+function getNodesIntersectingRectangle(rectLeft, rectTop, rectRight, rectBottom) {
+  const nodes = flowContentEl.querySelectorAll('.flow-node');
+  const intersectingNodes = [];
+  
+  for (const node of nodes) {
+    const nodeRect = node.getBoundingClientRect();
+    const canvasRect = canvasEl.getBoundingClientRect();
+    
+    // Convert node bounds to canvas coordinates
+    const nodeLeft = nodeRect.left - canvasRect.left;
+    const nodeTop = nodeRect.top - canvasRect.top;
+    const nodeRight = nodeRect.right - canvasRect.left;
+    const nodeBottom = nodeRect.bottom - canvasRect.top;
+    
+    // Check if rectangles intersect
+    const intersects = !(
+      nodeRight < rectLeft ||
+      nodeLeft > rectRight ||
+      nodeBottom < rectTop ||
+      nodeTop > rectBottom
+    );
+    
+    if (intersects) {
+      intersectingNodes.push(node);
+    }
+  }
+  
+  return intersectingNodes;
+}
+
+function startRectangleSelection(e) {
+  isRectangleSelecting = true;
+  const canvasRect = canvasEl.getBoundingClientRect();
+  rectangleSelectionStartX = e.clientX - canvasRect.left;
+  rectangleSelectionStartY = e.clientY - canvasRect.top;
+  
+  // Initialize rectangle at start position with zero size
+  updateSelectionRectangle(
+    rectangleSelectionStartX,
+    rectangleSelectionStartY,
+    rectangleSelectionStartX,
+    rectangleSelectionStartY
+  );
+}
+
+function updateRectangleSelection(e) {
+  if (!isRectangleSelecting) return;
+  
+  const canvasRect = canvasEl.getBoundingClientRect();
+  const currentX = e.clientX - canvasRect.left;
+  const currentY = e.clientY - canvasRect.top;
+  
+  updateSelectionRectangle(
+    rectangleSelectionStartX,
+    rectangleSelectionStartY,
+    currentX,
+    currentY
+  );
+}
+
+function stopRectangleSelection(e) {
+  if (!isRectangleSelecting) return;
+  
+  isRectangleSelecting = false;
+  const canvasRect = canvasEl.getBoundingClientRect();
+  const endX = e.clientX - canvasRect.left;
+  const endY = e.clientY - canvasRect.top;
+  
+  const rectLeft = Math.min(rectangleSelectionStartX, endX);
+  const rectTop = Math.min(rectangleSelectionStartY, endY);
+  const rectRight = Math.max(rectangleSelectionStartX, endX);
+  const rectBottom = Math.max(rectangleSelectionStartY, endY);
+  
+  const intersectingNodes = getNodesIntersectingRectangle(
+    rectLeft,
+    rectTop,
+    rectRight,
+    rectBottom
+  );
+  
+  // Handle selection based on modifier keys
+  if (!e.ctrlKey && !e.metaKey) {
+    // Clear existing selection if no modifier key
+    clearSelection();
+  }
+  
+  // Add intersecting nodes to selection
+  for (const node of intersectingNodes) {
+    if (!selectedNodes.has(node)) {
+      node.classList.add(nodeSelectionClass);
+      selectedNodes.add(node);
+      dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
+    }
+  }
+  
+  const selectedIds = [...selectedNodes].map((n) => n.id);
+  dotnetRef.invokeMethodAsync("NotifySelectionChanged", selectedIds);
+  
+  removeSelectionRectangle();
 }
 
 // =================== Utility Functions ===================

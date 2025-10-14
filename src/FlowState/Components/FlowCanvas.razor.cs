@@ -75,6 +75,9 @@ namespace FlowState.Components
         [Parameter]
         public string NodeSelectionClass { get; set; } = "selected";
 
+        [Parameter]
+        public string SelectionRectangleClass { get; set; } = "flow-selection-rectangle";
+
         /// <summary>
         /// Gets or sets the CSS class for the canvas element
         /// </summary>
@@ -176,6 +179,7 @@ namespace FlowState.Components
         private FlowEdge? TempEdge = null;
         private ElementReference canvasRef;
         private ElementReference flowContentRef;
+        private ElementReference selectionRectRef;
         internal ElementReference gridRef;
 
 #nullable disable
@@ -221,9 +225,9 @@ namespace FlowState.Components
             if (BackgroundContent == null)
                 throw new Exception("Flow Canvas Background is null");
 
-            JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowCanvas.js");
+            JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowGraph.js");
             await JsModule.InvokeVoidAsync("setComponentProperties", NodeSelectionClass, AutoUpdateSocketColors, JsEdgePathFunctionName);
-            await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef, flowContentRef, dotnetObjRef);
+            await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef, flowContentRef, selectionRectRef, dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
 
             if (TempEdge != null)

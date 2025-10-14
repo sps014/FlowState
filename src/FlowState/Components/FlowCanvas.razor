@@ -6,6 +6,9 @@
     <div @ref="canvasRef" class="@Class"
         style="width:@Width; height:@Height; overflow:hidden; position:relative; cursor:grab; @Style">
 
+        <!-- Selection Rectangle -->
+        <div @ref="selectionRectRef" class="flow-selection @SelectionRectangleClass"></div>
+
         <!-- Background grid -->
         @if (BackgroundContent != null)
         {
