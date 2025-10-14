@@ -521,7 +521,7 @@ namespace FlowState.Components
         /// Called from JavaScript when a socket is long pressed
         /// </summary>
         [JSInvokable]
-        public async Task NotifySocketLongPress(string nodeId, string socketName)
+        public async Task NotifySocketLongPress(string nodeId, string socketName, double x, double y)
         {
             if (!OnSocketLongPress.HasDelegate)
                 return;
@@ -530,7 +530,7 @@ namespace FlowState.Components
             var socket = node?.Sockets.FirstOrDefault(s => s.Name == socketName);
 
             if (socket != null)
-                await OnSocketLongPress.InvokeAsync(new SocketLongPressEventArgs { Socket = socket });
+                await OnSocketLongPress.InvokeAsync(new SocketLongPressEventArgs { Socket = socket, X = x, Y = y });
         }
 
         /// <summary>

@@ -347,7 +347,10 @@ function startLongPress(e, socket) {
   longPressTimer = setTimeout(() => {
     const nodeId = socket.getAttribute("node-id");
     const socketName = socket.getAttribute("name");
-    dotnetRef.invokeMethodAsync("NotifySocketLongPress", nodeId, socketName);
+    const containerRect = flowContentEl.getBoundingClientRect();
+    const x = (e.clientX - containerRect.left) / zoom;
+    const y = (e.clientY - containerRect.top) / zoom;
+    dotnetRef.invokeMethodAsync("NotifySocketLongPress", nodeId, socketName, x, y);
     longPressTimer = null;
   }, LONG_PRESS_DURATION);
 }

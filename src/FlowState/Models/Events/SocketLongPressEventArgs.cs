@@ -1,3 +1,5 @@
+using FlowState.Components;
+
 namespace FlowState.Models.Events;
 
 /// <summary>
@@ -5,6 +7,8 @@ namespace FlowState.Models.Events;
 /// </summary>
 public class SocketLongPressEventArgs : EventArgs
 {
-    public required FlowState.Components.FlowSocket Socket { get; init; }
+    public required FlowSocket Socket { get; init; }
+    public required double X { get; init; }
+    public required double Y { get; init; }
 }
 
