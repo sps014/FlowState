@@ -133,14 +133,18 @@ function pointerdown(e) {
     dragNodeStart(e, node);
   } else {
     // Clicking on canvas background
-    if (!isMultiSelectionKeyPressed(e) && selectedNodes.size > 0) {
-      const deselected = [...selectedNodes].map((n) => n.id);
-      clearSelection();
-      dotnetRef.invokeMethodAsync("NotifyNodesCleared", deselected);
+    if (isMultiSelectionKeyPressed(e)) {
+      // Multi-selection key pressed → rectangle selection
+      startRectangleSelection(e);
+    } else {
+      // No multi-selection key → pan canvas
+      if (selectedNodes.size > 0) {
+        const deselected = [...selectedNodes].map((n) => n.id);
+        clearSelection();
+        dotnetRef.invokeMethodAsync("NotifyNodesCleared", deselected);
+      }
+      panStart(e);
     }
-    
-    // Start rectangle selection
-    startRectangleSelection(e);
   }
 }
 
