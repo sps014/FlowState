@@ -13,7 +13,7 @@ namespace FlowState.Components
     /// <summary>
     /// Main canvas component for rendering and managing the flow graph
     /// </summary>
-    public partial class FlowCanvas : IAsyncDisposable, ISerializable<CanvasProperties>
+    public partial class FlowCanvas : ComponentBase, IAsyncDisposable, ISerializable<CanvasProperties>
     {
         // Properties
 
@@ -61,7 +61,7 @@ namespace FlowState.Components
         /// </summary>
         [Parameter]
         public bool AutoUpdateSocketColors { get; set; } = true;
-        
+
 
         /// <summary>
         /// Gets or sets the execution direction (InputToOutput or OutputToInput)
@@ -126,17 +126,17 @@ namespace FlowState.Components
         [Parameter]
         public bool IsReadOnly { get; set; } = false;
 
-    /// <summary>
-    /// Gets or sets custom CSS styles for the background grid
-    /// </summary>
-    [Parameter]
-    public string GridStyle { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets custom CSS styles for the background grid
+        /// </summary>
+        [Parameter]
+        public string GridStyle { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Gets or sets the CSS class to apply to edges when their connected nodes are executing
-    /// </summary>
-    [Parameter]
-    public string ExecutingEdgeClass { get; set; } = "edge-executing";
+        /// <summary>
+        /// Gets or sets the CSS class to apply to edges when their connected nodes are executing
+        /// </summary>
+        [Parameter]
+        public string ExecutingEdgeClass { get; set; } = "edge-executing";
 
         // Event Callbacks
 
@@ -270,6 +270,19 @@ namespace FlowState.Components
                 });
         }
 
+        public override async Task SetParametersAsync(ParameterView parameters)
+        {
+
+            foreach (var param in parameters)
+            {
+                if (param.Name == nameof(IsReadOnly))
+                    await SetReadOnlyAsync((bool)param.Value);
+                if (param.Name == nameof(Zoom))
+                    await SetZoomAsync((double)param.Value);
+            }
+            await base.SetParametersAsync(parameters);
+        }
+
         // Event Handlers
 
         private void ForcedRequestDomStateChanged(object? _, EventArgs e)
@@ -336,7 +349,7 @@ namespace FlowState.Components
         /// <param name="offsetX">The X offset</param>
         /// <param name="offsetY">The Y offset</param>
         /// <returns>A task representing the asynchronous operation</returns>
-        public ValueTask SetOffsetAsync(int offsetX, int offsetY)
+        public ValueTask SetOffsetAsync(double offsetX, double offsetY)
         {
             return JsModule.InvokeVoidAsync("setOffset", offsetX, offsetY);
         }
@@ -376,7 +389,7 @@ namespace FlowState.Components
             Graph.NodesInfo.Clear();
             Graph.EdgesInfo.Clear();
 
-            return SetViewportPropertiesAsync(new CanvasProperties { Zoom = 1.0, MinZoom = MinZoom, MaxZoom = MaxZoom, OffsetX = 0, OffsetY = 0 , IsReadOnly= IsReadOnly });
+            return SetViewportPropertiesAsync(new CanvasProperties { Zoom = 1.0, MinZoom = MinZoom, MaxZoom = MaxZoom, OffsetX = 0, OffsetY = 0, IsReadOnly = IsReadOnly });
         }
 
         // Public Methods - Node Selection
