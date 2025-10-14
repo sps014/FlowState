@@ -47,7 +47,7 @@ let tempEdgeElement = null;
 let longPressTimer = null;
 let longPressStartX = 0;
 let longPressStartY = 0;
-const LONG_PRESS_DURATION = 500; // milliseconds
+const LONG_PRESS_DURATION = 1000; // milliseconds
 const LONG_PRESS_MOVE_THRESHOLD = 10; // pixels
 
 // Edge Management
@@ -294,6 +294,16 @@ function updateTempConnection(e) {
   tempEdgeElement.setAttribute("d", path);
 }
 
+function resetTempConnection() {
+  if (tempEdgeElement) {
+    tempEdgeElement.setAttribute("d", "");
+  }
+  tempSocket = null;
+  tempEdgeStartPosition = null;
+  tempEdgeStopPosition = null;
+  isConnectingNodes = false;
+}
+
 function stopTempConnection(e) {
   if (tempSocket) {
     let targetSocket = e.target.closest(".socket-anchor");
@@ -325,12 +335,7 @@ function stopTempConnection(e) {
     }
   }
 
-  if (tempEdgeElement) {
-    tempEdgeElement.setAttribute("d", "");
-  }
-
-  tempSocket = null;
-  isConnectingNodes = false;
+  resetTempConnection();
 }
 
 function connectRequest(fromNodeId, toNodeId, fromSocketName, toSocketName) {
@@ -351,6 +356,9 @@ function startLongPress(e, socket) {
     const x = (e.clientX - containerRect.left) / zoom;
     const y = (e.clientY - containerRect.top) / zoom;
     dotnetRef.invokeMethodAsync("NotifySocketLongPress", nodeId, socketName, x, y);
+    
+    // Stop edge drawing after long press
+    resetTempConnection();
     longPressTimer = null;
   }, LONG_PRESS_DURATION);
 }
