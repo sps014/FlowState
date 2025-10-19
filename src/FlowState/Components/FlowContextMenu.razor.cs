@@ -4,6 +4,7 @@ using FlowState.Models.Events;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace FlowState.Components;
@@ -139,7 +140,7 @@ public partial class FlowContextMenu : ComponentBase, IAsyncDisposable
         dotNetRef ??= DotNetObjectReference.Create(this);
         await JS.InvokeVoidAsync("flowContextMenuSetup", menuRef, dotNetRef);
     }
-    
+
     /// <summary>
     /// Hides the context menu
     /// </summary>
@@ -148,7 +149,7 @@ public partial class FlowContextMenu : ComponentBase, IAsyncDisposable
     {
         Visible = false;
         StateHasChanged();
-        
+
         // Cleanup click-outside listener
         if (dotNetRef != null)
         {
@@ -156,12 +157,21 @@ public partial class FlowContextMenu : ComponentBase, IAsyncDisposable
         }
     }
     
+    /// <summary>
+    /// Dispose Async
+    /// </summary>
+    /// <returns></returns>
     public async ValueTask DisposeAsync()
     {
         if (dotNetRef != null)
         {
-            await JS.InvokeVoidAsync("flowContextMenuCleanup");
-            dotNetRef.Dispose();
+            try
+            {
+                await JS.InvokeVoidAsync("flowContextMenuCleanup");
+                dotNetRef.Dispose();
+            }catch{
+                Debug.WriteLine("failed to dispose flowContext");
+            }
         }
     }
     

@@ -86,6 +86,10 @@ export function setupCanvasEvents(elements, dotnetReference) {
   const style = window.getComputedStyle(gridEl);
   cacheGridBackgroundSize = style.backgroundSize;
 
+  // Make canvas focusable for keyboard events
+  canvasEl.tabIndex = -1;
+  canvasEl.style.outline = 'none';
+
   canvasEl.addEventListener("pointerdown", pointerdown);
   canvasEl.addEventListener("pointermove", pointermove);
   canvasEl.addEventListener("pointerup", pointerup);
@@ -108,7 +112,7 @@ export function removeCanvasEvents(el) {
   el.removeEventListener("pointerleave", pointerleave);
   el.removeEventListener("wheel", onWheel);
   el.removeEventListener("contextmenu", onContextMenu);
-  document.removeEventListener("keydown", onKeyDown);
+  el.removeEventListener("keydown", onKeyDown);
 }
 
 /**
@@ -159,6 +163,9 @@ function isMultiSelectionKeyPressed(e) {
 function pointerdown(e) {
   // Prevent event bubbling to parent elements
   e.stopPropagation();
+  
+  // Focus canvas to enable keyboard events (delete, arrows, etc.)
+  canvasEl?.focus();
   
   const socket = getClickedSocket(e);
   const node = getClickedNode(e);
