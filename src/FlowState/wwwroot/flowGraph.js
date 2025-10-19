@@ -92,7 +92,7 @@ export function setupCanvasEvents(elements, dotnetReference) {
   canvasEl.addEventListener("pointerleave", pointerleave);
   canvasEl.addEventListener("wheel", onWheel);
   canvasEl.addEventListener("contextmenu", onContextMenu);
-  document.addEventListener("keydown", onKeyDown);
+  canvasEl.addEventListener("keydown", onKeyDown);
   
   // Setup edge hover detection on SVG container
   setupEdgeHoverDetection();
