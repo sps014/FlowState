@@ -7,7 +7,7 @@
 
 <PageTitle>Home</PageTitle>
 
-
+<button @onclick="AddInputNode">Add Input Node</button>
 <button @onclick="SaveGraph">Save Graph</button>
 <button @onclick="ClearGraph">Clear Graph</button>
 <button @onclick="LoadGraph">Load Graph</button>
@@ -81,6 +81,11 @@
         
         // Connect: IfElse False path -> Watch (when condition is false)
         graph.Connect(ifElseNode.Id, watchFalse.Id, "OutputFalse", "Input");
+    }
+
+    private async Task AddInputNode()
+    {
+        graph.CreateNode<InputNode>(50, 80, []);
     }
 
 

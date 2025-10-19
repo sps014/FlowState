@@ -460,6 +460,14 @@ namespace FlowState.Components
             return JsModule.InvokeVoidAsync("deleteEdgeFromMap", edge.edgeRef, node.DomElement?.nodeRef);
         }
 
+        /// <summary>
+        /// Calls StateHasChanged
+        /// </summary>
+        public void Refresh()
+        {
+            StateHasChanged();
+        }
+
         // JS Invokable Methods - Event Notifications
 
         /// <summary>

@@ -129,19 +129,19 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
 
 
         var properties = this.GetType().GetProperties();
-        
+
         var parameterProperties = properties
             .Where(p => p.GetCustomAttributes(typeof(ParameterAttribute), false).Any()).ToList();
         var parameterValues = parameterProperties
             .ToDictionary(p => p.Name, p => new { Value = p.GetValue(this), Type = p.PropertyType });
-            
+
         parameterValues ??= new();
         parameterValues.Remove(nameof(Graph));
 
 
         var data = new Dictionary<string, StoredProperty>();
 
-        foreach(var (k,v) in parameterValues)
+        foreach (var (k, v) in parameterValues)
         {
             data[k] = new StoredProperty(v.Type.AssemblyQualifiedName!, v.Value);
         }
@@ -149,12 +149,17 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         return new NodeProperties(GetType().AssemblyQualifiedName!, Id, data);
     }
 
-    protected override void OnParametersSet()
+    protected override void OnAfterRender(bool firstRender)
     {
-        base.OnParametersSet();
-        StateHasChanged();
+        base.OnAfterRender(firstRender);
 
+        if (!firstRender)
+            return;
+
+        if (Graph != null && Graph.Canvas != null)
+            Graph.Canvas.Refresh();
     }
+
 
     /// <summary>
     /// Disposes of the node and clears all sockets
