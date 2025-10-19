@@ -149,9 +149,13 @@
         Console.WriteLine($"Socket: {e.Socket.Name}, X: {e.X}, Y: {e.Y}");
     }
     
-    private void HandleContextMenu(CanvasContextMenuEventArgs e)
+    private async Task HandleContextMenu(CanvasContextMenuEventArgs e)
     {
-        contextMenu?.Show(e.X, e.Y);
+        if (contextMenu != null)
+        {
+            // Pass both screen coords (for menu positioning) and canvas coords (for node creation)
+            await contextMenu.ShowAsync(e.ClientX, e.ClientY, e.X, e.Y);
+        }
     }
 }
 

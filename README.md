@@ -87,7 +87,12 @@ using FlowState.Components;
 using FlowState.Models.Execution;
 using Microsoft.AspNetCore.Components;
 
-[FlowNodeMetadata("Math")] // Category for organization
+[FlowNodeMetadata(
+    Category = "Math",
+    Title = "Double Value",
+    Description = "Doubles the input value",
+    Icon = "🔢",
+    Order = 1)]
 public partial class MyCustomNode : FlowNodeBase
 {
     [Parameter]
@@ -127,7 +132,12 @@ public partial class MyCustomNode : FlowNodeBase
 
 ```csharp
 // SumNode.razor.cs
-[FlowNodeMetadata("Math")]
+[FlowNodeMetadata(
+    Category = "Math",
+    Title = "Add Numbers",
+    Description = "Adds two numbers together",
+    Icon = "➕",
+    Order = 2)]
 public partial class SumNode : FlowNodeBase
 {
     public override async ValueTask ExecuteAsync(FlowExecutionContext context)
@@ -501,6 +511,46 @@ private void HandleContextMenu(CanvasContextMenuEventArgs e)
 ```
 
 ## 🔧 Advanced Features
+
+### Context Menu for Adding Nodes
+
+FlowState includes a built-in context menu component for adding nodes to the canvas:
+
+```razor
+<FlowCanvas @ref="canvas" 
+            Graph="graph"
+            OnContextMenu="HandleContextMenu">
+    <BackgroundContent>
+        <FlowBackground/>
+    </BackgroundContent>
+</FlowCanvas>
+
+<FlowContextMenu @ref="contextMenu" Graph="graph" />
+
+@code {
+    FlowCanvas? canvas;
+    FlowContextMenu? contextMenu;
+    FlowGraph graph = new();
+
+    private async Task HandleContextMenu(CanvasContextMenuEventArgs e)
+    {
+        if (contextMenu != null)
+        {
+            await contextMenu.ShowAsync(e.ClientX, e.ClientY, e.X, e.Y);
+        }
+    }
+}
+```
+
+The context menu automatically displays all registered nodes grouped by category, with search functionality. Customize appearance using CSS variables:
+
+```css
+:root {
+    --context-menu-bg: #0b1220;
+    --context-menu-border: #94a3b8;
+    --node-item-hover-bg: #7c3aed;
+}
+```
 
 ### Type Conversion
 

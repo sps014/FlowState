@@ -301,7 +301,8 @@ function onContextMenu(e) {
   const clientX = e.clientX;
   const clientY = e.clientY;
   
-  // Convert to canvas coordinates (accounting for zoom and pan)
+  // Convert to canvas coordinates (accounting for zoom)
+  // Note: containerRect already accounts for pan offset via transform
   const containerRect = flowContentEl.getBoundingClientRect();
   const x = (clientX - containerRect.left) / zoom;
   const y = (clientY - containerRect.top) / zoom;
@@ -1065,3 +1066,33 @@ function splitNumberAndUnit(input) {
     unit: match[2] || "",
   };
 }
+
+// =================== Context Menu Click-Outside Handling ===================
+
+let contextMenuElement = null;
+let contextMenuDotNetRef = null;
+let clickOutsideHandler = null;
+
+window.flowContextMenuSetup = function(menuRef, dotNetRef) {
+  contextMenuElement = menuRef;
+  contextMenuDotNetRef = dotNetRef;
+  
+  // Add click listener with a small delay to avoid closing immediately
+  setTimeout(() => {
+    clickOutsideHandler = function(e) {
+      if (contextMenuElement && !contextMenuElement.contains(e.target)) {
+        contextMenuDotNetRef.invokeMethodAsync('HideAsync');
+      }
+    };
+    document.addEventListener('click', clickOutsideHandler);
+  }, 100);
+};
+
+window.flowContextMenuCleanup = function() {
+  if (clickOutsideHandler) {
+    document.removeEventListener('click', clickOutsideHandler);
+    clickOutsideHandler = null;
+  }
+  contextMenuElement = null;
+  contextMenuDotNetRef = null;
+};

@@ -2,6 +2,8 @@ using FlowState.Attributes;
 using FlowState.Models;
 using FlowState.Models.Events;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 using System.Reflection;
 
 namespace FlowState.Components;
@@ -9,8 +11,13 @@ namespace FlowState.Components;
 /// <summary>
 /// A context menu component for adding nodes to the flow graph
 /// </summary>
-public partial class FlowContextMenu : ComponentBase
+public partial class FlowContextMenu : ComponentBase, IAsyncDisposable
 {
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+    
+    private ElementReference menuRef;
+    private DotNetObjectReference<FlowContextMenu>? dotNetRef;
+    
     /// <summary>
     /// Gets or sets the flow graph reference
     /// </summary>
@@ -102,33 +109,60 @@ public partial class FlowContextMenu : ComponentBase
     // Private fields
     
     private bool Visible { get; set; }
+    private double ScreenX { get; set; }
+    private double ScreenY { get; set; }
     private double CanvasX { get; set; }
     private double CanvasY { get; set; }
     private string SearchTerm { get; set; } = string.Empty;
     private List<NodeDefinition> NodeDefinitions { get; set; } = new();
     
     /// <summary>
-    /// Shows the context menu at the specified canvas position
+    /// Shows the context menu at the specified position
     /// </summary>
-    /// <param name="x">Canvas X coordinate</param>
-    /// <param name="y">Canvas Y coordinate</param>
-    public void Show(double x, double y)
+    /// <param name="screenX">Screen X coordinate (for menu positioning)</param>
+    /// <param name="screenY">Screen Y coordinate (for menu positioning)</param>
+    /// <param name="canvasX">Canvas X coordinate (for node creation)</param>
+    /// <param name="canvasY">Canvas Y coordinate (for node creation)</param>
+    public async Task ShowAsync(double screenX, double screenY, double canvasX, double canvasY)
     {
-        CanvasX = x;
-        CanvasY = y;
+        ScreenX = screenX;
+        ScreenY = screenY;
+        CanvasX = canvasX;
+        CanvasY = canvasY;
         Visible = true;
         SearchTerm = string.Empty;
         LoadNodeDefinitions();
         StateHasChanged();
+        
+        // Setup click-outside listener after rendering
+        await Task.Delay(10);
+        dotNetRef ??= DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("flowContextMenuSetup", menuRef, dotNetRef);
     }
     
     /// <summary>
     /// Hides the context menu
     /// </summary>
-    public void Hide()
+    [JSInvokable]
+    public async Task HideAsync()
     {
         Visible = false;
         StateHasChanged();
+        
+        // Cleanup click-outside listener
+        if (dotNetRef != null)
+        {
+            await JS.InvokeVoidAsync("flowContextMenuCleanup");
+        }
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (dotNetRef != null)
+        {
+            await JS.InvokeVoidAsync("flowContextMenuCleanup");
+            dotNetRef.Dispose();
+        }
     }
     
     private void LoadNodeDefinitions()
@@ -180,11 +214,11 @@ public partial class FlowContextMenu : ComponentBase
             .ToDictionary(g => g.Key, g => g.ToList());
     }
     
-    private void HandleNodeClick(NodeDefinition nodeDef)
+    private async Task HandleNodeClick(NodeDefinition nodeDef)
     {
         // Create the node directly
         Graph?.CreateNode(nodeDef.NodeType, CanvasX, CanvasY, new Dictionary<string, object?>());
-        Hide();
+        await HideAsync();
     }
 }
 

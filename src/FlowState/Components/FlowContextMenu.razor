@@ -4,15 +4,11 @@
 
 @if (Visible)
 {
-    <div class="flow-context-menu-overlay @OverlayClass" 
-         style="@OverlayStyle"
-         @onclick="Hide" 
-         @oncontextmenu:preventDefault>
-        
-        <div class="flow-context-menu @MenuClass" 
-             style="left: @(CanvasX)px; top: @(CanvasY)px; @MenuStyle"
-             @onclick:stopPropagation
-             @oncontextmenu:stopPropagation>
+    <div class="flow-context-menu @MenuClass" 
+         style="left: @(ScreenX)px; top: @(ScreenY)px; @MenuStyle"
+         @onclick:stopPropagation
+         @oncontextmenu:stopPropagation
+         @ref="menuRef">
             
             @if (ShowHeader)
             {
@@ -65,6 +61,5 @@
                 <div class="no-nodes">@EmptyMessage</div>
             }
         </div>
-    </div>
 }
 
