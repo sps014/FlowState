@@ -258,10 +258,17 @@ function onKeyDown(e) {
 
   // Delete key or Backspace on Mac
   if (e.key === "Delete" || e.key === "Backspace") {
-    if (selectedNodes.size > 0 || hoveredEdgeEl) {
+    if (hoveredEdgeEl) {
+      // If edge is hovered, deselect nodes and delete only the edge
+      e.preventDefault(); // Prevent browser back navigation on Backspace
+      if (selectedNodes.size > 0) {
+        clearSelection();
+      }
+      deleteHoveredEdge();
+    } else if (selectedNodes.size > 0) {
+      // If no edge hovered but nodes selected, delete nodes
       e.preventDefault(); // Prevent browser back navigation on Backspace
       deleteSelectedNodes();
-      deleteHoveredEdge();
     }
   }
 }
@@ -283,6 +290,12 @@ function onContextMenu(e) {
   // Prevent the browser context menu from appearing
   e.preventDefault();
   e.stopPropagation();
+  
+  // Don't open context menu if right-clicking on a node
+  const clickedNode = getClickedNode(e);
+  if (clickedNode) {
+    return;
+  }
   
   // Get client coordinates
   const clientX = e.clientX;
