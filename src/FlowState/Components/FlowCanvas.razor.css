@@ -35,6 +35,19 @@
 
 }
 
+/* Edge hover detector */
+::deep .edge-hover-detector {
+    pointer-events: stroke;
+    cursor: pointer;
+    z-index: 10;
+}
+
+/* Default edge hover style */
+::deep .edge-hovered {
+    opacity: 0.5;
+    stroke-width: 14 !important;
+}
+
 .nodes {
     position: relative;
     z-index: 2;

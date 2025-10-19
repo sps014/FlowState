@@ -4,6 +4,8 @@
 let canvasEl = null;
 let gridEl = null;
 let flowContentEl = null;
+let edgeHoverDetectorEl = null;
+let edgesSvgEl = null;
 let dotnetRef = null;
 let jsEdgePathFunctionName = null;
 
@@ -31,6 +33,9 @@ let selectedNodes = new Set();
 let dragStartPositions = new Map();
 let lastMouseX = 0;
 let lastMouseY = 0;
+
+// Edge Hover State
+let hoveredEdgeEl = null;
 
 // Rectangle Selection State
 let rectangleSelectionStartX = 0;
@@ -74,6 +79,8 @@ export function setupCanvasEvents(elements, dotnetReference) {
   flowContentEl = elements.flowContentElement;
   gridEl = elements.gridElement;
   rectangleSelectionElement = elements.selectionRectElement;
+  edgeHoverDetectorEl = elements.edgeHoverDetectorElement;
+  edgesSvgEl = elements.edgesSvgElement;
   dotnetRef = dotnetReference;
 
   const style = window.getComputedStyle(gridEl);
@@ -86,6 +93,9 @@ export function setupCanvasEvents(elements, dotnetReference) {
   canvasEl.addEventListener("wheel", onWheel);
   canvasEl.addEventListener("contextmenu", onContextMenu);
   document.addEventListener("keydown", onKeyDown);
+  
+  // Setup edge hover detection on SVG container
+  setupEdgeHoverDetection();
 }
 
 /**
@@ -248,9 +258,23 @@ function onKeyDown(e) {
 
   // Delete key or Backspace on Mac
   if (e.key === "Delete" || e.key === "Backspace") {
-    if (selectedNodes.size > 0) {
+    if (selectedNodes.size > 0 || hoveredEdgeEl) {
       e.preventDefault(); // Prevent browser back navigation on Backspace
       deleteSelectedNodes();
+      deleteHoveredEdge();
+    }
+  }
+}
+
+function deleteHoveredEdge() {
+  if (!hoveredEdgeEl || isReadOnly) return;
+  
+  const edgeId = hoveredEdgeEl.id || hoveredEdgeEl.getAttribute('id');
+  if (edgeId) {
+    dotnetRef.invokeMethodAsync("DeleteEdge", edgeId);
+    hoveredEdgeEl = null;
+    if (edgeHoverDetectorEl) {
+      edgeHoverDetectorEl.removeAttribute('d');
     }
   }
 }
@@ -705,6 +729,41 @@ export function deleteEdgeFromMap(edgeEl, nodeEl) {
  */
 export function setTempEdgeElement(el) {
   tempEdgeElement = el;
+}
+
+// =================== Edge Hover Detection ===================
+
+function setupEdgeHoverDetection() {
+  if (!edgesSvgEl) return;
+  
+  // Listen only on the SVG container
+  edgesSvgEl.addEventListener('mouseover', handleEdgeMouseEnter);
+  edgesSvgEl.addEventListener('mouseout', handleEdgeMouseLeave);
+}
+
+function handleEdgeMouseEnter(e) {
+  if (!edgeHoverDetectorEl || isPanning || isNodeDragging || isConnectingNodes || isRectangleSelecting) return;
+  
+  const target = e.target;
+  if (target && target.classList && target.classList.contains('edge') && target.id !== 'tempEdge') {
+    const pathData = target.getAttribute('d');
+    const stroke = target.getAttribute('stroke') || window.getComputedStyle(target).stroke;
+    if (pathData) {
+      edgeHoverDetectorEl.setAttribute('d', pathData);
+      edgeHoverDetectorEl.setAttribute('stroke', stroke);
+      hoveredEdgeEl = target;
+    }
+  }
+}
+
+function handleEdgeMouseLeave(e) {
+  if (!edgeHoverDetectorEl) return;
+  
+  const target = e.target;
+  if (target && target.classList && target.classList.contains('edge') && target === hoveredEdgeEl) {
+    edgeHoverDetectorEl.removeAttribute('d');
+    hoveredEdgeEl = null;
+  }
 }
 
 function updateEdges(nodesEl) {

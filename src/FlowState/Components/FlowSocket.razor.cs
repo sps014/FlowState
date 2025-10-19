@@ -74,11 +74,15 @@ namespace FlowState.Components
 
         private string? innerSocketColorCopy;
         protected string? outerSocketColorCopy;
+        
+        // Current colors (internal state that can differ from Parameters)
+        private string? currentInnerColor;
+        private string? currentOuterColor;
 
         private string Class => ChildContent == null ? "socket-default" : string.Empty;
         private string LayoutClass => ChildContent == null ? "socket-container" : string.Empty;
         private string SocketStyle =>
-            $"width:{Size}px; height:{Size}px; background-color:{InnerColor}; border:3px solid {OuterColor};";
+            $"width:{Size}px; height:{Size}px; background-color:{currentInnerColor ?? InnerColor}; border:3px solid {currentOuterColor ?? OuterColor};";
 
         // Lifecycle Methods
 
@@ -105,8 +109,8 @@ namespace FlowState.Components
         /// <param name="outerColor">The new outer color</param>
         public void AutoUpdateSocketColor(string innerColor, string outerColor)
         {
-            InnerColor = innerColor;
-            OuterColor = outerColor;
+            currentInnerColor = innerColor;
+            currentOuterColor = outerColor;
             StateHasChanged();
         }
 
@@ -115,12 +119,9 @@ namespace FlowState.Components
         /// </summary>
         public void ResetColor()
         {
-            if (innerSocketColorCopy != null && outerSocketColorCopy != null)
-            {
-                InnerColor = innerSocketColorCopy;
-                OuterColor = outerSocketColorCopy;
-                StateHasChanged();
-            }
+            currentInnerColor = null;
+            currentOuterColor = null;
+            StateHasChanged();
         }
     }
 }

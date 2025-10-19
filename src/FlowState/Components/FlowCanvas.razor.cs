@@ -210,6 +210,8 @@ namespace FlowState.Components
         private ElementReference canvasRef;
         private ElementReference flowContentRef;
         private ElementReference selectionRectRef;
+        private ElementReference edgeHoverDetectorRef;
+        private ElementReference edgesSvgRef;
         internal ElementReference gridRef;
 
 #nullable disable
@@ -270,7 +272,9 @@ namespace FlowState.Components
                     canvasElement = canvasRef,
                     gridElement = gridRef,
                     flowContentElement = flowContentRef,
-                    selectionRectElement = selectionRectRef
+                    selectionRectElement = selectionRectRef,
+                    edgeHoverDetectorElement = edgeHoverDetectorRef,
+                    edgesSvgElement = edgesSvgRef
                 }, 
                 dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
@@ -563,6 +567,18 @@ namespace FlowState.Components
                 ClientX = clientX, 
                 ClientY = clientY 
             });
+        }
+
+        /// <summary>
+        /// Called from JavaScript to delete an edge
+        /// </summary>
+        [JSInvokable]
+        public void DeleteEdge(string edgeId)
+        {
+            if (IsReadOnly || Graph == null)
+                return;
+
+            Graph.RemoveEdge(edgeId);
         }
 
         /// <summary>

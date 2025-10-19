@@ -4,8 +4,9 @@
 @using Microsoft.JSInterop
 @using System.Diagnostics
 
-<path class="edge @(IsExecuting && Graph?.Canvas != null ? Graph.Canvas.ExecutingEdgeClass : "")" 
-    style="pointer-events: none; @Style" 
+<path id="@Id"
+    class="edge @(IsExecuting && Graph?.Canvas != null ? Graph.Canvas.ExecutingEdgeClass : "")" 
+    style="pointer-events: stroke; @Style" 
     @ref="edgeRef" 
     @key="Id" 
     stroke-width="@StrokeWidth" 
