@@ -76,10 +76,10 @@ namespace FlowState.Components
         public string NodeSelectionClass { get; set; } = "selected";
 
         /// <summary>
-        /// Gets or sets the key to use for multi-selection. Options: "shift", "ctrl", "alt", "meta"
+        /// Gets or sets the key to use for panning the canvas. Options: "shift", "ctrl", "alt", "meta"
         /// </summary>
         [Parameter]
-        public string MultiSelectionKey { get; set; } = "shift";
+        public string PanKey { get; set; } = "alt";
 
         [Parameter]
         public string SelectionRectangleClass { get; set; } = "flow-selection-rectangle";
@@ -200,6 +200,12 @@ namespace FlowState.Components
         [Parameter]
         public EventCallback<SocketLongPressEventArgs> OnSocketLongPress { get; set; }
 
+        /// <summary>
+        /// Event fired when the canvas is right-clicked (context menu)
+        /// </summary>
+        [Parameter]
+        public EventCallback<CanvasContextMenuEventArgs> OnContextMenu { get; set; }
+
         private FlowEdge? TempEdge = null;
         private ElementReference canvasRef;
         private ElementReference flowContentRef;
@@ -255,10 +261,18 @@ namespace FlowState.Components
                 nodeSelectionClass = NodeSelectionClass,
                 autoUpdateSocketColors = AutoUpdateSocketColors,
                 jsEdgePathFunctionName = JsEdgePathFunctionName,
-                multiSelectionKey = MultiSelectionKey,
+                panKey = PanKey,
                 isReadOnly = IsReadOnly
             });
-            await JsModule.InvokeVoidAsync("setupCanvasEvents", canvasRef, gridRef, flowContentRef, selectionRectRef, dotnetObjRef);
+            await JsModule.InvokeVoidAsync("setupCanvasEvents", 
+                new
+                {
+                    canvasElement = canvasRef,
+                    gridElement = gridRef,
+                    flowContentElement = flowContentRef,
+                    selectionRectElement = selectionRectRef
+                }, 
+                dotnetObjRef);
             await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
 
             if (TempEdge != null)
@@ -531,6 +545,24 @@ namespace FlowState.Components
 
             if (socket != null)
                 await OnSocketLongPress.InvokeAsync(new SocketLongPressEventArgs { Socket = socket, X = x, Y = y });
+        }
+
+        /// <summary>
+        /// Called from JavaScript when the canvas is right-clicked
+        /// </summary>
+        [JSInvokable]
+        public async Task NotifyContextMenu(double x, double y, double clientX, double clientY)
+        {
+            if (!OnContextMenu.HasDelegate)
+                return;
+
+            await OnContextMenu.InvokeAsync(new CanvasContextMenuEventArgs 
+            { 
+                X = x, 
+                Y = y, 
+                ClientX = clientX, 
+                ClientY = clientY 
+            });
         }
 
         /// <summary>

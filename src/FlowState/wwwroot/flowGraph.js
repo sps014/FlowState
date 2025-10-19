@@ -57,7 +57,7 @@ let edgeSocketsMap = new Map(); // Map<EdgeEl, {to: SocketEl, from: SocketEl}>
 // Configuration
 let nodeSelectionClass = "selected";
 let autoUpdateSocketColors = false;
-let multiSelectionKey = "shift"; // "shift", "ctrl", "alt", or "meta"
+let panKey = "alt"; // "shift", "ctrl", "alt", or "meta"
 let isReadOnly = false;
 
 // Cache
@@ -69,21 +69,22 @@ let cacheGridSizeMatrix = null;
 /**
  * Sets up canvas event listeners and initializes the canvas
  */
-export function setupCanvasEvents(el, gridElement, flowContentElement, selectionRectElement, dotnetReference) {
-  canvasEl = el;
-  flowContentEl = flowContentElement;
-  gridEl = gridElement;
-  rectangleSelectionElement = selectionRectElement;
+export function setupCanvasEvents(elements, dotnetReference) {
+  canvasEl = elements.canvasElement;
+  flowContentEl = elements.flowContentElement;
+  gridEl = elements.gridElement;
+  rectangleSelectionElement = elements.selectionRectElement;
   dotnetRef = dotnetReference;
 
   const style = window.getComputedStyle(gridEl);
   cacheGridBackgroundSize = style.backgroundSize;
 
-  el.addEventListener("pointerdown", pointerdown);
-  el.addEventListener("pointermove", pointermove);
-  el.addEventListener("pointerup", pointerup);
-  el.addEventListener("pointerleave", pointerleave);
-  el.addEventListener("wheel", onWheel);
+  canvasEl.addEventListener("pointerdown", pointerdown);
+  canvasEl.addEventListener("pointermove", pointermove);
+  canvasEl.addEventListener("pointerup", pointerup);
+  canvasEl.addEventListener("pointerleave", pointerleave);
+  canvasEl.addEventListener("wheel", onWheel);
+  canvasEl.addEventListener("contextmenu", onContextMenu);
   document.addEventListener("keydown", onKeyDown);
 }
 
@@ -96,6 +97,7 @@ export function removeCanvasEvents(el) {
   el.removeEventListener("pointerup", pointerup);
   el.removeEventListener("pointerleave", pointerleave);
   el.removeEventListener("wheel", onWheel);
+  el.removeEventListener("contextmenu", onContextMenu);
   document.removeEventListener("keydown", onKeyDown);
 }
 
@@ -106,7 +108,7 @@ export function setComponentProperties(props) {
   nodeSelectionClass = props.nodeSelectionClass || "selected";
   autoUpdateSocketColors = props.autoUpdateSocketColors || false;
   jsEdgePathFunctionName = props.jsEdgePathFunctionName || null;
-  multiSelectionKey = (props.multiSelectionKey || "shift").toLowerCase();
+  panKey = (props.panKey || "alt").toLowerCase();
   isReadOnly = props.isReadOnly || false;
 }
 
@@ -120,10 +122,10 @@ export function setReadOnly(readOnly) {
 // =================== Pointer Event Handlers ===================
 
 /**
- * Checks if the multi-selection modifier key is pressed
+ * Checks if the pan modifier key is pressed
  */
-function isMultiSelectionKeyPressed(e) {
-  switch (multiSelectionKey) {
+function isPanKeyPressed(e) {
+  switch (panKey) {
     case "shift":
       return e.shiftKey;
     case "ctrl":
@@ -133,8 +135,15 @@ function isMultiSelectionKeyPressed(e) {
     case "meta":
       return e.metaKey;
     default:
-      return e.shiftKey; // default to shift
+      return e.altKey; // default to alt
   }
+}
+
+/**
+ * Checks if the multi-selection modifier key is pressed (Ctrl/Cmd for additive selection)
+ */
+function isMultiSelectionKeyPressed(e) {
+  return e.ctrlKey || e.metaKey; // Ctrl on Windows/Linux, Cmd on Mac
 }
 
 function pointerdown(e) {
@@ -162,17 +171,14 @@ function pointerdown(e) {
     }
   } else {
     // Clicking on canvas background
-    if (isMultiSelectionKeyPressed(e) && !isReadOnly) {
-      // Multi-selection key pressed → rectangle selection (only if not read-only)
-      startRectangleSelection(e);
-    } else {
-      // No multi-selection key → pan canvas
-      if (selectedNodes.size > 0 && !isReadOnly) {
-        const deselected = [...selectedNodes].map((n) => n.id);
-        clearSelection();
-        dotnetRef.invokeMethodAsync("NotifyNodesCleared", deselected);
-      }
+    if (isPanKeyPressed(e)) {
+      // Pan key pressed → pan canvas
       panStart(e);
+    } else {
+      // No pan key → rectangle selection (only if not read-only)
+      if (!isReadOnly) {
+        startRectangleSelection(e);
+      }
     }
   }
 }
@@ -195,7 +201,9 @@ function pointermove(e) {
     updateRectangleSelection(e);
     return;
   }
-  panMove(e);
+  if (isPanning) {
+    panMove(e);
+  }
 }
 
 function pointerup(e) {
@@ -206,12 +214,11 @@ function pointerup(e) {
   
   if (isConnectingNodes) {
     stopTempConnection(e);
-  }
-  if (isNodeDragging) {
+  } else if (isNodeDragging) {
     dragNodeStop(e);
   } else if (isRectangleSelecting) {
     stopRectangleSelection(e);
-  } else {
+  } else if (isPanning) {
     panEnd(e);
   }
 }
@@ -222,10 +229,15 @@ function pointerleave(e) {
   
   cancelLongPress();
   
-  if (isRectangleSelecting) {
+  if (isConnectingNodes) {
+    stopTempConnection(e);
+  } else if (isNodeDragging) {
+    dragNodeStop(e);
+  } else if (isRectangleSelecting) {
     stopRectangleSelection(e);
+  } else if (isPanning) {
+    panEnd(e);
   }
-  panEnd(e);
 }
 
 function onKeyDown(e) {
@@ -241,6 +253,24 @@ function onKeyDown(e) {
       deleteSelectedNodes();
     }
   }
+}
+
+function onContextMenu(e) {
+  // Prevent the browser context menu from appearing
+  e.preventDefault();
+  e.stopPropagation();
+  
+  // Get client coordinates
+  const clientX = e.clientX;
+  const clientY = e.clientY;
+  
+  // Convert to canvas coordinates (accounting for zoom and pan)
+  const containerRect = flowContentEl.getBoundingClientRect();
+  const x = (clientX - containerRect.left) / zoom;
+  const y = (clientY - containerRect.top) / zoom;
+  
+  // Notify C# about the context menu event
+  dotnetRef.invokeMethodAsync("NotifyContextMenu", x, y, clientX, clientY);
 }
 
 function deleteSelectedNodes() {
