@@ -210,10 +210,6 @@ public class FlowGraph : ISerializable<GraphData>
     /// <returns>A tuple containing the edge info and any error message</returns>
     public (EdgeInfo? Edge, string? Error) Connect(string fromNodeId, string toNodeId, string fromSocketName, string toSocketName, bool checkDataType = false)
     {
-        if (Edges.Any(x => x.FromSocket?.Name == fromSocketName && x.ToSocket?.Name == toSocketName
-            && x.FromSocket.FlowNode!.Id == fromNodeId && x.ToSocket.FlowNode!.Id == toNodeId))
-            return (null, "Link already Exists");
-
         var fromNode = GetNodeById(fromNodeId);
         var toNode = GetNodeById(toNodeId);
 
@@ -224,12 +220,15 @@ public class FlowGraph : ISerializable<GraphData>
 
         var fromSocket = fromNode.OutputSockets.GetValueOrDefault(fromSocketName);
         var toSocket = toNode.InputSockets.GetValueOrDefault(toSocketName);
-
+        
         if (fromSocket == null)
             return (null, "supplied from socket name didn't exist: " + fromSocketName);
-
         if (toSocket == null)
             return (null, "supplied to socket name didn't exist: " + toSocketName);
+        
+        // Check if connection already exists by looking at socket's connections
+        if (toSocket.Connections.Any(e => e.FromSocket == fromSocket))
+            return (null, "Link already Exists");
 
         if (fromSocket.Type == toSocket.Type)
             return (null, "can't connect sockets of same type");
