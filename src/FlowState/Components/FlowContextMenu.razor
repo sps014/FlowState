@@ -1,0 +1,70 @@
+@using FlowState.Models
+@using FlowState.Attributes
+@using System.Reflection
+
+@if (Visible)
+{
+    <div class="flow-context-menu-overlay @OverlayClass" 
+         style="@OverlayStyle"
+         @onclick="Hide" 
+         @oncontextmenu:preventDefault>
+        
+        <div class="flow-context-menu @MenuClass" 
+             style="left: @(CanvasX)px; top: @(CanvasY)px; @MenuStyle"
+             @onclick:stopPropagation
+             @oncontextmenu:stopPropagation>
+            
+            @if (ShowHeader)
+            {
+                <div class="context-menu-header @HeaderClass" style="@HeaderStyle">
+                    @HeaderContent
+                </div>
+            }
+            
+            @if (ShowSearch)
+            {
+                <div class="search-container">
+                    <input type="text" 
+                           class="search-input"
+                           placeholder="@SearchPlaceholder"
+                           @bind="SearchTerm"
+                           @bind:event="oninput"
+                           @onclick:stopPropagation
+                           autofocus />
+                </div>
+            }
+            
+            @foreach (var category in GetGroupedNodes())
+            {
+                <div class="node-category">
+                    <div class="category-header">@category.Key</div>
+                    @foreach (var nodeDef in category.Value)
+                    {
+                        <div class="node-item" 
+                             @onclick="() => HandleNodeClick(nodeDef)"
+                             title="@nodeDef.Description">
+                            <div class="node-icon">@nodeDef.Icon</div>
+                            <div class="node-info">
+                                <div class="node-name">@nodeDef.Title</div>
+                                @if (!string.IsNullOrEmpty(nodeDef.Description) && ShowDescriptions)
+                                {
+                                    <div class="node-description">@nodeDef.Description</div>
+                                }
+                            </div>
+                            @if (ShowNodeType)
+                            {
+                                <div class="node-type">@nodeDef.Name</div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            
+            @if (!GetGroupedNodes().Any())
+            {
+                <div class="no-nodes">@EmptyMessage</div>
+            }
+        </div>
+    </div>
+}
+

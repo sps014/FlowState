@@ -4,7 +4,12 @@ using FlowState.Attributes;
 using FlowState.Models.Execution;
 using Microsoft.AspNetCore.Components;
 
-[FlowNodeMetadata("Input")]
+[FlowNodeMetadata(
+    Category = "Input",
+    Title = "Number Input",
+    Description = "Provides a numeric input value",
+    Icon = "🔢",
+    Order = 1)]
 public partial class InputNode : ExecutableNodeBase
 {
     [Parameter]

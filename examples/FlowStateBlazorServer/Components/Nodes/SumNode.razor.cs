@@ -6,7 +6,12 @@ using FlowState.Models.Execution;
 /// <summary>
 /// Node that adds two numbers together
 /// </summary>
-[FlowNodeMetadata("Sum")]
+[FlowNodeMetadata(
+    Category = "Math",
+    Title = "Sum",
+    Description = "Adds two numbers together",
+    Icon = "➕",
+    Order = 1)]
 public partial class SumNode : ExecutableNodeBase
 {
     private float inputA = 0;

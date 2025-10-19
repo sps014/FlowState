@@ -6,7 +6,12 @@ using FlowState.Models.Execution;
 /// <summary>
 /// Node that displays the value it receives
 /// </summary>
-[FlowNodeMetadata("Watch")]
+[FlowNodeMetadata(
+    Category = "Output",
+    Title = "Watch",
+    Description = "Displays the input value",
+    Icon = "👁️",
+    Order = 1)]
 public partial class WatchNode : ExecutableNodeBase
 {
     private string displayValue = "No value";

@@ -6,7 +6,12 @@ using FlowState.Models.Execution;
 /// <summary>
 /// Node that compares two values and outputs to true or false path
 /// </summary>
-[FlowNodeMetadata("If-Else")]
+[FlowNodeMetadata(
+    Category = "Logic",
+    Title = "If/Else",
+    Description = "Conditional branching based on comparison",
+    Icon = "🔀",
+    Order = 1)]
 public partial class IfElseNode : ExecutableNodeBase
 {
     private float inputA = 0;

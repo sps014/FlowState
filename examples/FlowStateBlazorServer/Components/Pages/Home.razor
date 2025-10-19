@@ -15,11 +15,22 @@
 <button @onclick="ExecuteGraph">Execute Graph</button>
 <button @onclick="ToggleReadOnly">@(isReadOnly ? "Enable Editing" : "Enable Read-Only")</button>
 
-<FlowCanvas @ref="canvas" Height="100vh" Width="100vw" Graph="graph" IsReadOnly="isReadOnly" OnCanvasLoaded="OnLoaded" OnSelectionChanged="NodesSelected" OnSocketLongPress="HandleSocketLongPress">
- <BackgroundContent>
+<FlowCanvas @ref="canvas" 
+            Height="100vh" 
+            Width="100vw" 
+            Graph="graph" 
+            IsReadOnly="isReadOnly" 
+            OnCanvasLoaded="OnLoaded" 
+            OnSelectionChanged="NodesSelected" 
+            OnSocketLongPress="HandleSocketLongPress"
+            OnContextMenu="HandleContextMenu">
+    <BackgroundContent>
         <FlowBackground class="flow-grid-lines"/>
     </BackgroundContent>
-    </FlowCanvas>
+</FlowCanvas>
+
+<FlowContextMenu @ref="contextMenu"
+                 Graph="graph" />
 
 
 
@@ -27,6 +38,7 @@
 {
     FlowGraph graph = new FlowGraph();
     FlowCanvas? canvas;
+    FlowContextMenu? contextMenu;
     private string data="{}";
     private bool isReadOnly = false;
 
@@ -135,6 +147,11 @@
     private void HandleSocketLongPress(SocketLongPressEventArgs e)
     {
         Console.WriteLine($"Socket: {e.Socket.Name}, X: {e.X}, Y: {e.Y}");
+    }
+    
+    private void HandleContextMenu(CanvasContextMenuEventArgs e)
+    {
+        contextMenu?.Show(e.X, e.Y);
     }
 }
 
