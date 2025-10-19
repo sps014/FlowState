@@ -28,7 +28,7 @@ public partial class WatchNode : ExecutableNodeBase
 
     public override async ValueTask ExecuteAsync(FlowExecutionContext context)
     {
-        await ExecuteWithProgressAsync(async (ctx) =>
+        await ExecuteWithProgressAsync((ctx) =>
         {
             // Get input value using context API
             var value = ctx.GetInputSocketData("Input");
@@ -41,6 +41,8 @@ public partial class WatchNode : ExecutableNodeBase
             {
                 displayValue = value.ToString() ?? "null";
             }
+            
+            return ValueTask.CompletedTask;
         }, context);
     }
 }

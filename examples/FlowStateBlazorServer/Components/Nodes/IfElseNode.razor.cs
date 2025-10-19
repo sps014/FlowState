@@ -20,7 +20,7 @@ public partial class IfElseNode : ExecutableNodeBase
 
     public override async ValueTask ExecuteAsync(FlowExecutionContext context)
     {
-        await ExecuteWithProgressAsync(async (ctx) =>
+        await ExecuteWithProgressAsync((ctx) =>
         {
             // Get input values using context API
             inputA = ctx.GetInputSocketData<float>("InputA");
@@ -38,6 +38,8 @@ public partial class IfElseNode : ExecutableNodeBase
                 // Output to False path using context API
                 ctx.SetOutputSocketData("OutputFalse", inputB);
             }
+            
+            return ValueTask.CompletedTask;
         }, context);
     }
 

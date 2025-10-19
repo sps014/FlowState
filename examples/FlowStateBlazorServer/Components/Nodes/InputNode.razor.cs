@@ -17,10 +17,12 @@ public partial class InputNode : ExecutableNodeBase
 
     public override async ValueTask ExecuteAsync(FlowExecutionContext context)
     {
-        await ExecuteWithProgressAsync(async (ctx) =>
+        await ExecuteWithProgressAsync((ctx) =>
         {
             // Set output value using context API
             ctx.SetOutputSocketData("Output", Value);
+            
+            return ValueTask.CompletedTask;
         }, context);
     }
 }

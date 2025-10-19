@@ -19,7 +19,7 @@ public partial class SumNode : ExecutableNodeBase
 
     public override async ValueTask ExecuteAsync(FlowExecutionContext context)
     {
-        await ExecuteWithProgressAsync(async (ctx) =>
+        await ExecuteWithProgressAsync((ctx) =>
         {
             // Get input values using context API
             // Note: GetInputSocketData<float> will handle conversion from long/int to float automatically
@@ -31,6 +31,8 @@ public partial class SumNode : ExecutableNodeBase
             
             // Set output using context API
             ctx.SetOutputSocketData("Output", result);
+            
+            return ValueTask.CompletedTask;
         }, context);
     }
 }
