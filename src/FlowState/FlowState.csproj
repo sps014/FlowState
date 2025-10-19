@@ -4,8 +4,25 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    
+    <!-- NuGet Package Metadata -->
+    <PackageId>FlowState</PackageId>
+    <Title>FlowState</Title>
+    <Authors>sps014</Authors>
+    <Description>A modern, high-performance node-based visual programming library for Blazor applications. Build interactive flow-based editors with custom nodes, real-time execution, and a beautiful theme UI.</Description>
+    <PackageTags>blazor;node-editor;visual-programming;flow-graph;node-graph;blazor-component</PackageTags>
+    <PackageProjectUrl>https://github.com/yourusername/FlowState</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yourusername/FlowState</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Copyright © 2025</Copyright>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <SupportedPlatform Include="browser" />
