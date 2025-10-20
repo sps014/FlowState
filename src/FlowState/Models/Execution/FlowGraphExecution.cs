@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using FlowState.Components;
 using FlowState.Models.Events;
 
@@ -156,7 +157,7 @@ public class FlowGraphExecution
                 }
                 catch (Exception error)
                 {
-                    Console.WriteLine($"Error executing node {nodeId}: {error.Message}");
+                    Debug.WriteLine($"Error executing node {nodeId}: {error.Message}");
                     executionError = error;
                     
                     // Fire node execution error event
@@ -238,7 +239,7 @@ public class FlowGraphExecution
         }
         catch (Exception error)
         {
-            Console.WriteLine($"Error executing selected nodes: {error.Message}");
+            Debug.WriteLine($"Error executing selected nodes: {error.Message}");
             throw;
         }
     }

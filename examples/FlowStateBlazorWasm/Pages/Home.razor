@@ -1,0 +1,336 @@
+﻿@page "/"
+@using FlowState.Components
+@using FlowState.Models
+@using System.Threading.Tasks
+@using FlowState.Models.Events
+@using FlowStateBlazorWasm.Nodes
+@using System.Text.RegularExpressions
+@using System.Diagnostics
+
+<PageTitle>Home</PageTitle>
+
+<div class="toolbar">
+    <button class="btn btn-success" @onclick="SaveGraph">💾 Save Graph</button>
+    <button class="btn btn-danger" @onclick="ClearGraph">🗑️ Clear Graph</button>
+    <button class="btn btn-info" @onclick="LoadGraph">📂 Load Graph</button>
+    <button class="btn btn-execute" @onclick="ExecuteGraph">▶️ Execute Graph</button>
+    <button class="btn btn-secondary" @onclick="ToggleReadOnly">@(isReadOnly ? "🔓 Enable Editing" : "🔒 Read-Only")</button>
+</div>
+
+<FlowCanvas @ref="canvas" 
+            Height="calc(100vh - 60px)" 
+            Width="100vw" 
+            Graph="graph" 
+            IsReadOnly="isReadOnly" 
+            OnCanvasLoaded="OnLoaded" 
+            OnSocketLongPress="HandleSocketLongPress"
+            OnContextMenu="HandleContextMenu">
+    <BackgroundContent>
+        <FlowBackground class="flow-grid-lines"/>
+    </BackgroundContent>
+</FlowCanvas>
+
+<FlowContextMenu @ref="contextMenu"
+                 Graph="graph" />
+
+
+
+@code
+{
+    FlowGraph graph = new FlowGraph();
+    FlowCanvas? canvas;
+    FlowContextMenu? contextMenu;
+    private string data="{}";
+    private bool isReadOnly = false;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        graph.RegisterNode<InputNode>();
+        graph.RegisterNode<IfElseNode>();
+        graph.RegisterNode<SumNode>();
+        graph.RegisterNode<WatchNode>();
+    }
+    private NodeInfo? fromNodeInfo,toNodeInfo;
+    private EdgeInfo? edgeInfo;
+
+    private async Task OnLoaded()
+    {
+
+        graph.TypeCompatibiltyRegistry.Register<float>(typeof(int));
+        
+        // Create flow: Sum two inputs, compare with threshold, display result
+        
+        // Two input nodes for Sum
+        fromNodeInfo = graph.CreateNode<InputNode>(50, 80, []);
+        toNodeInfo = graph.CreateNode<InputNode>(50, 220, []);
+        
+        // Sum node
+        var sumNode = graph.CreateNode<SumNode>(350, 150, []);
+        
+        // Threshold input for comparison
+        var thresholdNode = graph.CreateNode<InputNode>(350, 320, []);
+        
+        // If-Else comparison node
+        var ifElseNode = graph.CreateNode<IfElseNode>(650, 200, []);
+        
+        // Watch nodes for true and false paths
+        var watchTrue = graph.CreateNode<WatchNode>(950, 120, []);
+        var watchFalse = graph.CreateNode<WatchNode>(950, 280, []);
+
+        await Task.Delay(100);
+
+        // Connect: Input1 + Input2 -> Sum
+        edgeInfo = graph.Connect(fromNodeInfo.Id, sumNode.Id, "Output", "InputA").Edge;
+        graph.Connect(toNodeInfo.Id, sumNode.Id, "Output", "InputB");
+        
+        // Connect: Sum result -> IfElse InputA (value to compare)
+        graph.Connect(sumNode.Id, ifElseNode.Id, "Output", "InputA");
+        
+        // Connect: Threshold -> IfElse InputB (compare against this)
+        graph.Connect(thresholdNode.Id, ifElseNode.Id, "Output", "InputB");
+        
+        // Connect: IfElse True path -> Watch (when condition is true)
+        graph.Connect(ifElseNode.Id, watchTrue.Id, "OutputTrue", "Input");
+        
+        // Connect: IfElse False path -> Watch (when condition is false)
+        graph.Connect(ifElseNode.Id, watchFalse.Id, "OutputFalse", "Input"); 
+    }
+
+
+    private async Task SaveGraph()
+    {
+        data = await graph.SerializeAsync();
+    }
+
+    private async Task ClearGraph()
+    {
+        await graph.ClearAsync();
+    }
+
+    private async Task LoadGraph()
+    {
+        await graph.DeserializeAsync(data);
+    }
+
+    private async Task ExecuteGraph()
+    {
+        await graph.ExecuteAsync();
+    }
+    
+    private async Task ToggleReadOnly()
+    {
+        isReadOnly = !isReadOnly;
+        if (canvas != null)
+        {
+            await canvas.SetReadOnlyAsync(isReadOnly);
+        }
+    }
+    
+    
+    private void HandleSocketLongPress(SocketLongPressEventArgs e)
+    {
+        Debug.WriteLine($"Socket: {e.Socket.Name}, X: {e.X}, Y: {e.Y}");
+    }
+    
+    private async Task HandleContextMenu(CanvasContextMenuEventArgs e)
+    {
+        if (contextMenu != null)
+        {
+            // Pass both screen coords (for menu positioning) and canvas coords (for node creation)
+            await contextMenu.ShowAsync(e.ClientX, e.ClientY, e.X, e.Y);
+        }
+    }
+}
+
+<style>
+/* Toolbar styles */
+.toolbar {
+    height: 60px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Base button styles */
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Button variants */
+.btn-primary {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.btn-info:hover {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.btn-execute {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    color: white;
+}
+
+.btn-execute:hover {
+    background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+.flow-grid-lines
+{
+    background: #111827;
+    background-image: 
+    /* Main grid lines */
+    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px),
+    /* Minor grid lines */
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 
+    100px 100px,
+    100px 100px,
+    20px 20px,
+    20px 20px;
+  background-position: 
+    0 0,        /* Main grid */
+    0 0,        /* Main grid */
+    0 0,        /* Minor grid */
+    0 0;        /* Minor grid */
+}
+
+/* Input box styles */
+.input-box {
+  width: 90%;
+  padding: 6px 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  font-size: 12px;
+  outline: none;
+  transition: all 0.2s ease;
+  margin: 4px 0;
+  pointer-events: auto;
+  cursor: text;
+}
+
+:deep .input-box:focus {
+  border-color: var(--fg-accent);
+  background: rgba(255,255,255,0.1);
+}
+
+.input-box::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+.title-container {
+    position: relative;
+}
+
+.execution-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.execution-progress::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        #4CAF50 25%, 
+        #8BC34A 50%, 
+        #4CAF50 75%, 
+        transparent 100%);
+    animation: progress-slide 1.5s ease-in-out infinite;
+}
+
+@@keyframes progress-slide {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+
+</style>

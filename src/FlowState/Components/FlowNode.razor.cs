@@ -34,20 +34,25 @@ namespace FlowState.Components
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-            await base.OnAfterRenderAsync(firstRender);
+
+            if(OperatingSystem.IsBrowser() && Node!=null && Node.DomElement==null)
+                await InitAsync();
 
             if (!firstRender)
                 return;
 
+            await InitAsync();
+            
+        }
+
+        private ValueTask InitAsync()
+        {
             if (Node != null && Node.Graph != null)
             {
                 Node.DomElement = this;
-                await MoveNodeAsync(Node.X, Node.Y);
+                return MoveNodeAsync(Node.X, Node.Y);
             }
-            else
-            {
-                throw new Exception("Error rendering the node");
-            }
+            return ValueTask.CompletedTask;
         }
 
         // Public Methods
