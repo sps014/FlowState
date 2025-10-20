@@ -9,7 +9,8 @@
 
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FlowState\FlowState.csproj" />
+    <ProjectReference Include="..\SharedNodesLibrary\SharedNodesLibrary.csproj" />
   </ItemGroup>
+
 
 </Project>

@@ -1,4 +1,4 @@
-namespace FlowStateBlazorWasm.Nodes;
+namespace SharedNodesLibrary.Nodes;
 
 using FlowState.Attributes;
 using FlowState.Models.Execution;

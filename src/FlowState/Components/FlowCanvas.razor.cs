@@ -343,6 +343,8 @@ namespace FlowState.Components
         public ValueTask SetViewportPropertiesAsync(CanvasProperties canvasProperties)
         {
             IsReadOnly = canvasProperties.IsReadOnly;
+
+            Console.WriteLine(canvasProperties.OffsetX + canvasProperties.OffsetY);
             StateHasChanged();
             return JsModule.InvokeVoidAsync("setCanvasProperties", canvasProperties);
         }
