@@ -62,13 +62,6 @@ namespace FlowState.Components
         [Parameter]
         public bool AutoUpdateSocketColors { get; set; } = true;
 
-
-        /// <summary>
-        /// Gets or sets the execution direction (InputToOutput or OutputToInput)
-        /// </summary>
-        [Parameter]
-        public ExecutionDirection ExecutionDirection { get; set; } = ExecutionDirection.InputToOutput;
-
         /// <summary>
         /// Gets or sets the CSS class to apply to selected nodes
         /// </summary>

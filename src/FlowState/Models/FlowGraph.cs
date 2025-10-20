@@ -354,7 +354,7 @@ public class FlowGraph : ISerializable<GraphData>
     {
         if(Canvas==null)
             throw new Exception("Canvas is not set");
-        return ExecutionFlow.ExecuteAsync(Canvas.ExecutionDirection, cancellationToken);
+        return ExecutionFlow.ExecuteAsync(cancellationToken);
     }
 
     // Serialization Methods

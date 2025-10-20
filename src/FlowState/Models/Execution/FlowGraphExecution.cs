@@ -36,15 +36,9 @@ public class FlowGraphExecution
     public FlowGraph Graph { get; }
     
     /// <summary>
-    /// The execution direction (InputToOutput or OutputToInput)
-    /// </summary>
-    public ExecutionDirection Direction { get; private set; }
-    
-    /// <summary>
     /// Creates a new GraphFlowExecution instance
     /// </summary>
     /// <param name="graph">The parent FlowGraph instance</param>
-    /// <param name="direction">The execution direction</param>
     public FlowGraphExecution(FlowGraph graph)
     {
         Graph = graph;
@@ -53,10 +47,8 @@ public class FlowGraphExecution
     /// <summary>
     /// Execute all nodes in the graph in dependency order
     /// </summary>
-    public async ValueTask ExecuteAsync(ExecutionDirection direction, CancellationToken cancellationToken)
+    public async ValueTask ExecuteAsync(CancellationToken cancellationToken)
     {
-        Direction = direction;
-
         // Fire start event
         OnExecutionStarted?.Invoke(this, new ExecutionEventArgs
         {
@@ -131,7 +123,6 @@ public class FlowGraphExecution
                     var executionContext = new FlowExecutionContext(node)
                     {
                         CancellationToken = cancellationToken,
-                        Direction = Direction,
                         Execution = this,
                         CustomData = sharedExecutionData // Share data across all nodes
                     };
@@ -226,7 +217,6 @@ public class FlowGraphExecution
                 var context = new FlowExecutionContext(node!)
                 {
                     CancellationToken = cancellationToken,
-                    Direction = Direction,
                     Execution = this,
                     CustomData = sharedExecutionData // Share data across all nodes
                 };
@@ -245,7 +235,7 @@ public class FlowGraphExecution
     }
 
     /// <summary>
-    /// Get execution order using topological sort based on execution direction
+    /// Get execution order using topological sort
     /// </summary>
     private string[] GetExecutionOrder()
     {
@@ -261,21 +251,10 @@ public class FlowGraphExecution
             dependencies[node.Id] = [];
         }
 
-        // Build dependency graph based on execution direction
+        // Build dependency graph - ToSocket node depends on FromSocket node
         foreach(var edge in Graph.Edges)
         {
-            if (Direction == ExecutionDirection.InputToOutput)
-            {
-                // Normal flow: outputs depend on inputs
-                // ToSocket node depends on FromSocket node
-                dependencies[edge.ToSocket!.FlowNode!.Id].Add(edge.FromSocket!.FlowNode!.Id);
-            }
-            else // OutputToInput
-            {
-                // Reverse flow: inputs depend on outputs
-                // FromSocket node depends on ToSocket node
-                dependencies[edge.FromSocket!.FlowNode!.Id].Add(edge.ToSocket!.FlowNode!.Id);
-            }
+            dependencies[edge.ToSocket!.FlowNode!.Id].Add(edge.FromSocket!.FlowNode!.Id);
         }
 
         // Local function for DFS topological sort

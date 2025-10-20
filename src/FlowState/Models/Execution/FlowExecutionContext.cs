@@ -18,11 +18,6 @@ public class FlowExecutionContext
     public CancellationToken CancellationToken { get; set; }
     
     /// <summary>
-    /// Gets the execution direction (InputToOutput or OutputToInput).
-    /// </summary>
-    public ExecutionDirection Direction { get; init; }
-    
-    /// <summary>
     /// Gets the graph execution instance managing this execution.
     /// Provides access to branch tracking and execution utilities.
     /// </summary>
