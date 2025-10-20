@@ -39,11 +39,30 @@ jobs:
       - name: Change base-tag in index.html
         run: sed -i 's/<base href="\/" \/>/<base href="\/FlowState\/" \/>/g' publish/wwwroot/index.html
 
+      - name: Ensure crossorigin attribute on script tags
+        run: |
+          sed -i 's/<script src="_framework\/blazor\.webassembly\([^"]*\)\.js"><\/script>/<script src="_framework\/blazor.webassembly\1.js" crossorigin="anonymous"><\/script>/g' publish/wwwroot/index.html
+          sed -i 's/<script src="_framework\/blazor\.webassembly\([^"]*\)\.js" crossorigin="anonymous" crossorigin="anonymous">/<script src="_framework\/blazor.webassembly\1.js" crossorigin="anonymous">/g' publish/wwwroot/index.html
+
       - name: Add .nojekyll file
         run: touch publish/wwwroot/.nojekyll
 
       - name: Add 404.html for SPA routing
         run: cp publish/wwwroot/index.html publish/wwwroot/404.html
+
+      - name: Add custom headers for WASM and compression
+        run: |
+          cat > publish/wwwroot/.htaccess << 'EOF'
+          # Enable CORS for WebAssembly
+          <FilesMatch "\.(wasm|dll|pdb|dat)$">
+            Header set Access-Control-Allow-Origin "*"
+          </FilesMatch>
+          
+          # Proper MIME types
+          AddType application/wasm .wasm
+          AddType application/octet-stream .dll
+          AddType application/octet-stream .dat
+          EOF
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
