@@ -1,13 +1,41 @@
 namespace FlowState.Models.Serializable;
 
+/// <summary>
+/// Represents serializable node properties
+/// </summary>
 public class NodeProperties
 {
+    /// <summary>
+    /// Gets or sets the node type
+    /// </summary>
     public string Type { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the node ID
+    /// </summary>
     public string Id { get; set; }
+    
+    /// <summary>
+    /// Gets the X coordinate from stored data
+    /// </summary>
     public double X => Convert.ToDouble(Data[nameof(X)].GetValue());
+    
+    /// <summary>
+    /// Gets the Y coordinate from stored data
+    /// </summary>
     public double Y => Convert.ToDouble(Data[nameof(Y)].GetValue());
+    
+    /// <summary>
+    /// Gets or sets the dictionary of stored properties
+    /// </summary>
     public Dictionary<string, StoredProperty> Data { get; init; } = new ();
 
+    /// <summary>
+    /// Initializes a new instance of the NodeProperties class
+    /// </summary>
+    /// <param name="type">The node type</param>
+    /// <param name="id">The node ID</param>
+    /// <param name="data">The stored properties</param>
     public NodeProperties(string type, string id, Dictionary<string, StoredProperty> data)
     {
         Type = type;
@@ -15,6 +43,10 @@ public class NodeProperties
         Data = data;
     }
     
+    /// <summary>
+    /// Converts stored properties to a raw dictionary
+    /// </summary>
+    /// <returns>A dictionary of property names and values</returns>
     public Dictionary<string,object?> GetRawDictionary()
     {
         var dict = new Dictionary<string, object?>();

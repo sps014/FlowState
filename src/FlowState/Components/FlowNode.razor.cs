@@ -27,11 +27,18 @@ namespace FlowState.Components
 
         // Lifecycle Methods
 
+        /// <summary>
+        /// Initializes the node component
+        /// </summary>
         protected override void OnInitialized()
         {
             base.OnInitialized();
         }
 
+        /// <summary>
+        /// Performs initialization after the component has rendered
+        /// </summary>
+        /// <param name="firstRender">Whether this is the first time the component has rendered</param>
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
 

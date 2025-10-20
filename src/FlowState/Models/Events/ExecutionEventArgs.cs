@@ -5,6 +5,9 @@ namespace FlowState.Models.Events;
 /// </summary>
 public class ExecutionEventArgs : EventArgs
 {
+    /// <summary>
+    /// Gets the timestamp when the event occurred
+    /// </summary>
     public DateTime Timestamp { get; init; }
 }
 

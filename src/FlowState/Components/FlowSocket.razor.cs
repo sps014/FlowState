@@ -73,6 +73,10 @@ namespace FlowState.Components
         public List<FlowEdge> Connections { get; set; } = new();
 
         private string? innerSocketColorCopy;
+        
+        /// <summary>
+        /// Copy of outer socket color for internal use
+        /// </summary>
         protected string? outerSocketColorCopy;
         
         // Current colors (internal state that can differ from Parameters)
@@ -86,6 +90,10 @@ namespace FlowState.Components
 
         // Lifecycle Methods
 
+        /// <summary>
+        /// Performs initialization after the component has rendered
+        /// </summary>
+        /// <param name="firstRender">Whether this is the first time the component has rendered</param>
         protected override void OnAfterRender(bool firstRender)
         {
             base.OnAfterRender(firstRender);

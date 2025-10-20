@@ -5,6 +5,9 @@ namespace FlowState.Models.Events;
 /// </summary>
 public class SelectionChangedEventArgs : EventArgs
 {
+    /// <summary>
+    /// Gets the IDs of the selected nodes
+    /// </summary>
     public required string[] SelectedNodeIds { get; init; }
     
     /// <summary>

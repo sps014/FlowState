@@ -74,6 +74,9 @@ namespace FlowState.Components
         [Parameter]
         public string PanKey { get; set; } = "alt";
 
+        /// <summary>
+        /// Gets or sets the CSS class for the selection rectangle
+        /// </summary>
         [Parameter]
         public string SelectionRectangleClass { get; set; } = "flow-selection-rectangle";
 
@@ -223,6 +226,9 @@ namespace FlowState.Components
 
         // Lifecycle Methods
 
+        /// <summary>
+        /// Initializes the canvas component
+        /// </summary>
         protected override void OnInitialized()
         {
             if (Graph == null)
@@ -240,6 +246,10 @@ namespace FlowState.Components
             dotnetObjRef = DotNetObjectReference.Create(this);
         }
 
+        /// <summary>
+        /// Performs initialization after the component has rendered
+        /// </summary>
+        /// <param name="firstRender">Whether this is the first time the component has rendered</param>
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             await base.OnAfterRenderAsync(firstRender);

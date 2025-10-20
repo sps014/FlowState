@@ -149,6 +149,10 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         return new NodeProperties(GetType().AssemblyQualifiedName!, Id, data);
     }
 
+    /// <summary>
+    /// Performs initialization after the component has rendered
+    /// </summary>
+    /// <param name="firstRender">Whether this is the first time the component has rendered</param>
     protected override void OnAfterRender(bool firstRender)
     {
         base.OnAfterRender(firstRender);

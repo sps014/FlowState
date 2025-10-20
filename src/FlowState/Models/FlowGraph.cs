@@ -48,6 +48,9 @@ public class FlowGraph : ISerializable<GraphData>
     /// </summary>
     public FlowGraphExecution ExecutionFlow { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the FlowGraph class
+    /// </summary>
     public FlowGraph()
     {
         ExecutionFlow = new FlowGraphExecution(this);

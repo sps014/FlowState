@@ -5,6 +5,9 @@ namespace FlowState.Models.Events;
 /// </summary>
 public class ZoomEventArgs : EventArgs
 {
+    /// <summary>
+    /// Gets the current zoom level
+    /// </summary>
     public double Zoom { get; init; }
     
     /// <summary>

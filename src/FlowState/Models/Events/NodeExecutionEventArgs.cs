@@ -5,6 +5,9 @@ namespace FlowState.Models.Events;
 /// </summary>
 public class NodeExecutionEventArgs : ExecutionEventArgs
 {
+    /// <summary>
+    /// Gets the ID of the node that was executed
+    /// </summary>
     public required string NodeId { get; init; }
 }
 
