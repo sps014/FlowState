@@ -1,0 +1,22 @@
+@using FlowState.Components
+@using FlowState.Models
+
+@inherits FlowNodeBase
+
+<FlowNode Kind="@NodeKind" Class="group">
+
+    <div class="title-container">
+        <div class="title">📦 Group</div>
+    </div>
+    <div class="body">
+    </div>
+</FlowNode>
+
+<style>
+    .group {
+        min-height: 300px !important;
+        min-width: 300px !important;
+        z-index: -1 !important;
+
+    }
+</style>

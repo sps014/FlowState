@@ -1,0 +1,75 @@
+@using FlowState.Components
+@using FlowState.Models
+
+<FlowSocket Name="@Name" 
+            Class="unity-socket" 
+            Label="@Label" 
+            Type="@Type" 
+            T="@T" 
+            InnerColor="@InnerColor" 
+            AnchorClass="@(Type == SocketType.Output ? "unity-socket-output" : "unity-socket-input")">
+</FlowSocket>
+
+<style>
+.unity-socket-input,
+.unity-socket-output {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+    line-height: 1;
+    cursor: crosshair;
+}
+
+.unity-socket-input {
+    justify-content: flex-start;
+}
+
+.unity-socket-input::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 6px 10px 6px 0;
+    border-color: transparent currentColor transparent transparent;
+}
+
+.unity-socket-output {
+    justify-content: flex-end;
+}
+
+.unity-socket-output::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 6px 0 6px 10px;
+    border-color: transparent transparent transparent currentColor;
+}
+</style>
+
+
+@code
+{
+    [Parameter]
+    public string Name { get; set; }
+
+    [Parameter]
+    public string Label { get; set; }
+
+    [Parameter]
+    public SocketType Type { get; set; }
+
+    [Parameter]
+    public Type T { get; set; }
+
+    [Parameter]
+    public string OuterColor { get; set; }
+
+    [Parameter]
+    public string InnerColor { get; set; }
+
+    [Parameter]
+    public int Size { get; set; } = 14;
+}

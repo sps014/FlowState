@@ -25,12 +25,6 @@ namespace FlowState.Components
         public SocketType Type { get; set; } = SocketType.Input;
 
         /// <summary>
-        /// Gets or sets custom content for the socket
-        /// </summary>
-        [Parameter]
-        public RenderFragment? ChildContent { get; set; }
-
-        /// <summary>
         /// Gets or sets the unique name of this socket within its node
         /// </summary>
         [EditorRequired]
@@ -68,6 +62,18 @@ namespace FlowState.Components
         public int Size { get; set; } = 14;
 
         /// <summary>
+        /// Gets or sets the CSS class for the socket container
+        /// </summary>
+        [Parameter]
+        public string? Class { get; set; }
+
+        /// <summary>
+        /// Gets or sets the CSS class for the socket anchor element
+        /// </summary>
+        [Parameter]
+        public string? AnchorClass { get; set; }
+
+        /// <summary>
         /// Gets the number of connections to this socket
         /// </summary>
         public List<FlowEdge> Connections { get; set; } = new();
@@ -83,10 +89,10 @@ namespace FlowState.Components
         private string? currentInnerColor;
         private string? currentOuterColor;
 
-        private string Class => ChildContent == null ? "socket-default" : string.Empty;
-        private string LayoutClass => ChildContent == null ? "socket-container" : string.Empty;
-        private string SocketStyle =>
-            $"width:{Size}px; height:{Size}px; background-color:{currentInnerColor ?? InnerColor}; border:3px solid {currentOuterColor ?? OuterColor};";
+        private string ComputedAnchorClass => string.IsNullOrEmpty(AnchorClass) ? "socket-default" : AnchorClass;
+        private string LayoutClass => "socket-container";
+        private string SocketStyle => AnchorClass==null?
+            $"width:{Size}px; height:{Size}px; background-color:{currentInnerColor ?? InnerColor}; border:2px solid {currentOuterColor ?? OuterColor};":string.Empty;
 
         // Lifecycle Methods
 

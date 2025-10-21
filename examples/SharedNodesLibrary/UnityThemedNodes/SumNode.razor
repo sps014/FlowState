@@ -1,0 +1,19 @@
+@using FlowState.Components
+@using FlowState.Models
+@inherits ExecutableNodeBase
+
+<FlowNode>
+    <div class="title-container">
+        <div class="title">➕ Sum</div>
+        @if (IsExecuting)
+        {
+            <div class="execution-progress"></div>
+        }
+    </div>
+    <div class="body">
+        <UnitySocket Name="InputA" Label="A" Type="SocketType.Input" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
+        <UnitySocket Name="InputB" Label="B" Type="SocketType.Input" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
+        <UnitySocket Name="Output" Label="Result" Type="SocketType.Output" T="typeof(float)" OuterColor="crimson" InnerColor="deeppink"/>
+    </div>
+</FlowNode>
+

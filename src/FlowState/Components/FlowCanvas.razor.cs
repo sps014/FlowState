@@ -344,7 +344,6 @@ namespace FlowState.Components
         {
             IsReadOnly = canvasProperties.IsReadOnly;
 
-            Console.WriteLine(canvasProperties.OffsetX + canvasProperties.OffsetY);
             StateHasChanged();
             return JsModule.InvokeVoidAsync("setCanvasProperties", canvasProperties);
         }
