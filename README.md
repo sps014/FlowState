@@ -213,17 +213,17 @@ Here's a full working example with multiple node types:
     private async Task OnLoaded()
     {
         // Create initial nodes programmatically
-        var input1 = graph.CreateNode<NumberInputNode>(100, 100, new());
-        var input2 = graph.CreateNode<NumberInputNode>(100, 200, new());
-        var sum = graph.CreateNode<SumNode>(400, 150, new());
-        var display = graph.CreateNode<DisplayNode>(700, 150, new());
+        var input1 = await graph.CreateNodeAsync<NumberInputNode>(100, 100, new());
+        var input2 = await graph.CreateNodeAsync<NumberInputNode>(100, 200, new());
+        var sum = await graph.CreateNodeAsync<SumNode>(400, 150, new());
+        var display = await graph.CreateNodeAsync<DisplayNode>(700, 150, new());
 
         await Task.Delay(100); // Wait for DOM
 
         // Connect nodes
-        graph.Connect(input1.Id, sum.Id, "Output", "InputA");
-        graph.Connect(input2.Id, sum.Id, "Output", "InputB");
-        graph.Connect(sum.Id, display.Id, "Output", "Input");
+        await graph.ConnectAsync(input1.Id, sum.Id, "Output", "InputA");
+        await graph.ConnectAsync(input2.Id, sum.Id, "Output", "InputB");
+        await graph.ConnectAsync(sum.Id, display.Id, "Output", "Input");
     }
 
     private async Task ExecuteGraph()
@@ -388,16 +388,16 @@ Customize your nodes with CSS:
 
 ```csharp
 // Create node - Generic (recommended)
-NodeInfo node = graph.CreateNode<MyNodeType>(x, y, data);
+NodeInfo node = await graph.CreateNodeAsync<MyNodeType>(x, y, data);
 
 // Create node - By Type
-NodeInfo node = graph.CreateNode(typeof(MyNodeType), x, y, data);
+NodeInfo node = await graph.CreateNodeAsync(typeof(MyNodeType), x, y, data);
 
 // Create node - By string type name
-NodeInfo node = graph.CreateNode("MyNamespace.MyNodeType", x, y, data);
+NodeInfo node = await graph.CreateNodeAsync("MyNamespace.MyNodeType", x, y, data);
 
 // Optional: suppress event firing
-NodeInfo node = graph.CreateNode<MyNodeType>(x, y, data, supressEvent: true);
+NodeInfo node = await graph.CreateNodeAsync<MyNodeType>(x, y, data, supressEvent: true);
 
 // Remove node
 graph.RemoveNode(nodeId);
@@ -410,13 +410,13 @@ FlowNodeBase? node = graph.GetNodeById(nodeId);
 
 ```csharp
 // Connect by node IDs and socket names
-(EdgeInfo? edge, string? error) = graph.Connect(fromNodeId, toNodeId, "OutputSocket", "InputSocket");
+(EdgeInfo? edge, string? error) = await graph.ConnectAsync(fromNodeId, toNodeId, "OutputSocket", "InputSocket");
 
 // Connect by socket references
-(EdgeInfo? edge, string? error) = graph.Connect(fromSocket, toSocket);
+(EdgeInfo? edge, string? error) = await graph.ConnectAsync(fromSocket, toSocket);
 
 // Optional: enable type checking
-(EdgeInfo? edge, string? error) = graph.Connect(fromNodeId, toNodeId, "Output", "Input", checkDataType: true);
+(EdgeInfo? edge, string? error) = await graph.ConnectAsync(fromNodeId, toNodeId, "Output", "Input", checkDataType: true);
 
 // Remove edge
 graph.RemoveEdge(edgeId);
@@ -646,7 +646,7 @@ Sockets with type `object` can connect to **any** socket type without registrati
 // With type conversion: Connection succeeds ✅
 
 graph.TypeCompatibiltyRegistry.Register<float>(typeof(int));
-graph.Connect(nodeA.Id, nodeB.Id, "IntOutput", "FloatInput");  // Now works!
+await graph.ConnectAsync(nodeA.Id, nodeB.Id, "IntOutput", "FloatInput");  // Now works!
 ```
 
 ### Execution with Progress

@@ -585,19 +585,19 @@ namespace FlowState.Components
         /// Called from JavaScript to delete an edge
         /// </summary>
         [JSInvokable]
-        public void DeleteEdge(string edgeId)
+        public async ValueTask DeleteEdge(string edgeId)
         {
             if (IsReadOnly || Graph == null)
                 return;
 
-            Graph.RemoveEdge(edgeId);
+            await Graph.RemoveEdgeAsync(edgeId);
         }
 
         /// <summary>
         /// Called from JavaScript when an edge connection is requested
         /// </summary>
         [JSInvokable]
-        public async ValueTask EdgeConnectRequest(string fromNodeId, string toNodeId, string fromSocketName, string toSocketName)
+        public async Task EdgeConnectRequest(string fromNodeId, string toNodeId, string fromSocketName, string toSocketName)
         {
             if (IsReadOnly)
                 return;
@@ -608,24 +608,24 @@ namespace FlowState.Components
                 await OnEdgeConnectRequest.InvokeAsync(e);
 
                 if (!e.Handled)
-                    Graph!.Connect(e.FromSocket, e.ToSocket, EdgeShouldMatchDataType);
+                    await Graph!.ConnectAsync(e.FromSocket, e.ToSocket, EdgeShouldMatchDataType);
             }
             else
-                Graph!.Connect(fromNodeId, toNodeId, fromSocketName, toSocketName, EdgeShouldMatchDataType);
+                await Graph!.ConnectAsync(fromNodeId, toNodeId, fromSocketName, toSocketName, EdgeShouldMatchDataType);
         }
 
         /// <summary>
         /// Called from JavaScript when nodes should be deleted (Delete key pressed)
         /// </summary>
         [JSInvokable]
-        public void DeleteNodes(string[] nodeIds)
+        public async Task DeleteNodes(string[] nodeIds)
         {
             if (IsReadOnly || Graph == null || nodeIds == null || nodeIds.Length == 0)
                 return;
 
             foreach (var nodeId in nodeIds)
             {
-                Graph.RemoveNode(nodeId);
+                await Graph.RemoveNodeAsync(nodeId);
             }
         }
 

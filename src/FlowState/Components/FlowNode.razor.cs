@@ -60,14 +60,18 @@ namespace FlowState.Components
             
         }
 
-        private ValueTask InitAsync()
+        private async ValueTask InitAsync()
         {
             if (Node != null && Node.Graph != null)
             {
                 Node.DomElement = this;
-                return MoveNodeAsync(Node.X, Node.Y);
+                await MoveNodeAsync(Node.X, Node.Y);
+
+                var nodeInfo = Node.Graph.GetNodeInfoById(Node.Id);
+                if (nodeInfo != null)
+                    nodeInfo.Parameters.Clear();
+
             }
-            return ValueTask.CompletedTask;
         }
 
         // Public Methods

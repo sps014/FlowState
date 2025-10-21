@@ -130,11 +130,6 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     public async ValueTask<NodeProperties> GetSerializableObjectAsync()
     {
 
-        var position = await DomElement!.GetTransformPositionAsync();
-        X = position.X;
-        Y = position.Y;
-
-
         var properties = this.GetType().GetProperties();
 
         var parameterProperties = properties
@@ -152,6 +147,12 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         {
             data[k] = new StoredProperty(v.Type.AssemblyQualifiedName!, v.Value);
         }
+
+        var position = await DomElement!.GetTransformPositionAsync();
+
+
+        data[nameof(FlowNodeBase.X)] = new StoredProperty(typeof(double).AssemblyQualifiedName!, position.X);
+        data[nameof(FlowNodeBase.Y)] = new StoredProperty(typeof(double).AssemblyQualifiedName!, position.Y);
 
         return new NodeProperties(GetType().AssemblyQualifiedName!, Id, data);
     }

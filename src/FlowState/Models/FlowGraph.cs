@@ -76,7 +76,7 @@ public class FlowGraph : ISerializable<GraphData>
     /// <param name="data">Initial data for the node</param>
     /// <param name="supressEvent">If true, does not fire NodeAdded event</param>
     /// <returns>Information about the created node</returns>
-    public NodeInfo CreateNode(Type type, double x, double y, Dictionary<string, object?> data, bool supressEvent = false)
+    public async ValueTask<NodeInfo> CreateNodeAsync(Type type, double x, double y, Dictionary<string, object?> data, bool supressEvent = false)
     {
         var id = Guid.CreateVersion7().ToString();
 
@@ -113,13 +113,13 @@ public class FlowGraph : ISerializable<GraphData>
     /// <param name="data">Initial data for the node</param>
     /// <param name="supressEvent">If true, does not fire NodeAdded event</param>
     /// <returns>Information about the created node</returns>
-    public NodeInfo CreateNode(string type, double x, double y, Dictionary<string, object?> data, bool supressEvent = false)
+    public ValueTask<NodeInfo> CreateNodeAsync(string type, double x, double y, Dictionary<string, object?> data, bool supressEvent = false)
     {
         var parsedType = Type.GetType(type);
         if (parsedType == null)
             throw new Exception("Invalid type: " + type);
 
-        return CreateNode(parsedType, x, y, data, supressEvent);
+        return CreateNodeAsync(parsedType, x, y, data, supressEvent);
     }
 
     /// <summary>
@@ -131,16 +131,16 @@ public class FlowGraph : ISerializable<GraphData>
     /// <param name="data">Initial data for the node</param>
     /// <param name="supressEvent">If true, does not fire NodeAdded event</param>
     /// <returns>Information about the created node</returns>
-    public NodeInfo CreateNode<T>(double x, double y, Dictionary<string, object?> data, bool supressEvent = false) where T : FlowNodeBase
+    public ValueTask<NodeInfo> CreateNodeAsync<T>(double x, double y, Dictionary<string, object?> data, bool supressEvent = false) where T : FlowNodeBase
     {
-        return CreateNode(typeof(T), x, y, data, supressEvent);
+        return CreateNodeAsync(typeof(T), x, y, data, supressEvent);
     }
 
     /// <summary>
     /// Removes a node from the graph by its ID and all connected edges
     /// </summary>
     /// <param name="id">The ID of the node to remove</param>
-    public void RemoveNode(string id)
+    public async ValueTask RemoveNodeAsync(string id)
     {
         var node = GetNodeById(id);
 
@@ -153,11 +153,12 @@ public class FlowGraph : ISerializable<GraphData>
 
         foreach (var edge in edges)
         {
-            RemoveEdge(edge.Key);
+            await RemoveEdgeAsync(edge.Key);
         }
 
         NodesInfo.Remove(id);
         NodeRemoved?.Invoke(this, new NodeRemovedEventArgs { NodeId = id });
+
     }
 
     /// <summary>
@@ -188,6 +189,19 @@ public class FlowGraph : ISerializable<GraphData>
         return null;
     }
 
+    /// <summary>
+    /// Gets a node info by its ID
+    /// </summary>
+    /// <param name="id">The ID of the node</param>
+    /// <returns>The node info, or null if not found</returns>
+    public NodeInfo? GetNodeInfoById(string id)
+    {
+        if (NodesInfo.ContainsKey(id))
+            return NodesInfo[id];
+        return null;
+    }
+ 
+
     // Edge Management Methods
 
     /// <summary>
@@ -197,9 +211,9 @@ public class FlowGraph : ISerializable<GraphData>
     /// <param name="to">The destination socket</param>
     /// <param name="checkDataType">If true, validates data type compatibility</param>
     /// <returns>A tuple containing the edge info and any error message</returns>
-    public (EdgeInfo? Edge, string? Error) Connect(FlowSocket from, FlowSocket to, bool checkDataType = false)
+    public ValueTask<(EdgeInfo? Edge, string? Error)> ConnectAsync(FlowSocket from, FlowSocket to, bool checkDataType = false)
     {
-        return Connect(from.FlowNode!.Id, to.FlowNode!.Id, from.Name, to.Name, checkDataType);
+        return ConnectAsync(from.FlowNode!.Id, to.FlowNode!.Id, from.Name, to.Name, checkDataType);
     }
 
     /// <summary>
@@ -211,7 +225,7 @@ public class FlowGraph : ISerializable<GraphData>
     /// <param name="toSocketName">The name of the destination socket</param>
     /// <param name="checkDataType">If true, validates data type compatibility</param>
     /// <returns>A tuple containing the edge info and any error message</returns>
-    public (EdgeInfo? Edge, string? Error) Connect(string fromNodeId, string toNodeId, string fromSocketName, string toSocketName, bool checkDataType = false)
+    public async ValueTask<(EdgeInfo? Edge, string? Error)> ConnectAsync(string fromNodeId, string toNodeId, string fromSocketName, string toSocketName, bool checkDataType = false)
     {
         var fromNode = GetNodeById(fromNodeId);
         var toNode = GetNodeById(toNodeId);
@@ -246,7 +260,7 @@ public class FlowGraph : ISerializable<GraphData>
             // Clean up socket connections lazily
             _ = existingEdge.CleanupConnectionsAsync();
             
-            RemoveEdge(existingEdge.Id);
+            await RemoveEdgeAsync(existingEdge.Id);
         }
 
         var id = Guid.CreateVersion7().ToString();
@@ -274,13 +288,15 @@ public class FlowGraph : ISerializable<GraphData>
     /// Removes an edge from the graph by its ID
     /// </summary>
     /// <param name="id">The ID of the edge to remove</param>
-    public void RemoveEdge(string id)
+    public ValueTask RemoveEdgeAsync(string id)
     {
         if (!EdgesInfo.ContainsKey(id))
-            return;
+            return ValueTask.CompletedTask;
 
         EdgesInfo.Remove(id);
         EdgeRemoved?.Invoke(this, new EdgeRemovedEventArgs { EdgeId = id });
+
+        return ValueTask.CompletedTask;
     }
 
     /// <summary>
@@ -429,7 +445,7 @@ public class FlowGraph : ISerializable<GraphData>
         foreach (var node in graphData.Nodes)
         {
             var type = Type.GetType(node.Type)!;
-            _ = CreateNode(type, node.X, node.Y, node.GetRawDictionary());
+            _ = await CreateNodeAsync(type, node.X, node.Y, node.GetRawDictionary());
         }
 
         ForcedRequestDomStateChanged?.Invoke(this, EventArgs.Empty);
@@ -438,7 +454,7 @@ public class FlowGraph : ISerializable<GraphData>
 
         foreach (var edge in graphData.Edges)
         {
-            _ = Connect(edge.FromNodeId, edge.ToNodeId, edge.FromSocketName, edge.ToSocketName);
+            _ = await ConnectAsync(edge.FromNodeId, edge.ToNodeId, edge.FromSocketName, edge.ToSocketName);
         }
 
         ForcedRequestDomStateChanged?.Invoke(this, EventArgs.Empty);

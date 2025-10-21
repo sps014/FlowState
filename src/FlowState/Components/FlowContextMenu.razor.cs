@@ -227,7 +227,11 @@ public partial class FlowContextMenu : ComponentBase, IAsyncDisposable
     private async Task HandleNodeClick(NodeDefinition nodeDef)
     {
         // Create the node directly
-        Graph?.CreateNode(nodeDef.NodeType, CanvasX, CanvasY, new Dictionary<string, object?>());
+
+        if (Graph == null)
+            return;
+            
+        await Graph.CreateNodeAsync(nodeDef.NodeType, CanvasX, CanvasY, new Dictionary<string, object?>());
         await HideAsync();
     }
 }
