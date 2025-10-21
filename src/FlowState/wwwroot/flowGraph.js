@@ -21,6 +21,8 @@ let isPanning = false;
 let isNodeDragging = false;
 let isConnectingNodes = false;
 let isRectangleSelecting = false;
+let isGroupNodeDragging = false;
+let groupedNodes = new Set();
 
 // Panning State
 let startX = 0;
@@ -33,6 +35,7 @@ let selectedNodes = new Set();
 let dragStartPositions = new Map();
 let lastMouseX = 0;
 let lastMouseY = 0;
+
 
 // Edge Hover State
 let hoveredEdgeEl = null;
@@ -162,11 +165,13 @@ function isMultiSelectionKeyPressed(e) {
 
 function pointerdown(e) {
   // Prevent event bubbling to parent elements
+
   e.stopPropagation();
   
   // Focus canvas to enable keyboard events (delete, arrows, etc.)
   canvasEl?.focus();
-  
+
+
   const socket = getClickedSocket(e);
   const node = getClickedNode(e);
 
@@ -531,6 +536,18 @@ function dragNodeStart(e, node) {
     dotnetRef.invokeMethodAsync("NotifyNodeSelected", [node.id]);
   }
 
+  const nodes = flowContentEl.querySelectorAll('.flow-node');
+
+  for(const n of selectedNodes) {
+    if(n.getAttribute('kind') === 'Group') {
+      isGroupNodeDragging = true;
+      const childNodes = getNodesContainedInGroup(n,nodes);
+      childNodes.forEach(node => { groupedNodes.add(node); selectedNodes.add(node); });
+    }
+
+  }
+
+
   isNodeDragging = true;
   lastMouseX = e.clientX;
   lastMouseY = e.clientY;
@@ -544,6 +561,32 @@ function dragNodeStart(e, node) {
 
   e.stopPropagation();
 }
+
+
+function getNodesContainedInGroup(groupNode,nodes) {
+    const groupNodeRect = groupNode.getBoundingClientRect();
+    const result = new Set();
+
+    for (const n of nodes) {
+      if (n === groupNode) continue;      
+      const nodeRect = n.getBoundingClientRect();
+      
+      // Check if rectangles intersect (any overlap)
+      const isIntersecting = !(
+        nodeRect.right < groupNodeRect.left ||   // node is completely to the left
+        nodeRect.left > groupNodeRect.right ||   // node is completely to the right
+        nodeRect.bottom < groupNodeRect.top ||   // node is completely above
+        nodeRect.top > groupNodeRect.bottom      // node is completely below
+      );
+      
+      if (isIntersecting) {
+        result.add(n);
+      }
+    }
+
+    return result;
+}
+
 
 function dragNodeMove(e) {
   if (!isNodeDragging || selectedNodes.size === 0) return;
@@ -570,6 +613,17 @@ function dragNodeStop(e) {
   if (!isNodeDragging) return;
 
   isNodeDragging = false;
+
+  if(isGroupNodeDragging)
+  {
+    for (const n of groupedNodes) {
+      selectedNodes.delete(n);
+    }
+
+    groupedNodes.clear();
+    isGroupNodeDragging = false;
+
+  }
 
   for (const n of selectedNodes) {
     const pos = dragStartPositions.get(n);

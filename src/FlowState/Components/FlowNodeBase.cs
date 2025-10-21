@@ -60,7 +60,14 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     private Dictionary<string, FlowSocket> inputSockets = new();
     private Dictionary<string, FlowSocket> outputSockets = new();
 
+    /// <summary>
+    /// Gets or sets the kind of node
+    /// </summary>
+    public virtual NodeKind NodeKind { get; } = NodeKind.Regular;
+
+
     // Abstract Methods
+
 
     /// <summary>
     /// Executes the node's logic

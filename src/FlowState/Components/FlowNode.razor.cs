@@ -1,6 +1,7 @@
 using FlowState.Models.Dom;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using FlowState.Models;
 
 namespace FlowState.Components
 {
@@ -23,17 +24,24 @@ namespace FlowState.Components
         [CascadingParameter]
         public FlowNodeBase? Node { get; set; }
 
+
+        /// <summary>
+        /// Gets or sets the kind of node
+        /// </summary>
+        [Parameter]
+        public NodeKind Kind { get; set; } = NodeKind.Regular;
+
+        /// <summary>
+        /// Gets or sets the class of the node
+        /// </summary>
+        [Parameter]
+        public string Class { get; set; } = string.Empty;
+
         internal ElementReference nodeRef;
+
 
         // Lifecycle Methods
 
-        /// <summary>
-        /// Initializes the node component
-        /// </summary>
-        protected override void OnInitialized()
-        {
-            base.OnInitialized();
-        }
 
         /// <summary>
         /// Performs initialization after the component has rendered
@@ -41,7 +49,7 @@ namespace FlowState.Components
         /// <param name="firstRender">Whether this is the first time the component has rendered</param>
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-
+             // on web assembly it takes many render calls before parameters are set
             if(OperatingSystem.IsBrowser() && Node!=null && Node.DomElement==null)
                 await InitAsync();
 

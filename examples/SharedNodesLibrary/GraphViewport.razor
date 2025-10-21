@@ -47,6 +47,7 @@
         graph.RegisterNode<IfElseNode>();
         graph.RegisterNode<SumNode>();
         graph.RegisterNode<WatchNode>();
+        graph.RegisterNode<GroupNode>();
     }
     private NodeInfo? fromNodeInfo,toNodeInfo;
     private EdgeInfo? edgeInfo;
@@ -173,6 +174,7 @@
   user-select: none;
   cursor: grab;
   backdrop-filter: blur(8px);
+  z-index: 10; /* Default z-index for regular nodes */
   
   /* PERFORMANCE OPTIMIZATIONS */
   /* GPU acceleration with proper text rendering */
@@ -194,6 +196,11 @@
   
   /* Prevent layout thrashing */
   isolation: isolate;
+}
+
+/* Group nodes should be behind edges and regular nodes */
+.flow-node[kind="Group"] {
+    z-index: 1 !important;
 }
 
 
