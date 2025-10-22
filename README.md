@@ -19,7 +19,7 @@ A modern, high-performance node-based visual programming library for Blazor appl
 - 🔐 **Read-Only Mode** - Lock graphs for viewing without editing
 - ↩️ **Undo/Redo** - Full command pattern implementation with unlimited undo/redo history
 
-##  Easy Customize with with html and css
+##  Easy Customization with html and css
 
 ![Screen Recording 2025-10-22 at 7 38 05 PM (1)](https://github.com/user-attachments/assets/bc1aa472-1c67-4b68-9f12-510a64584abd)
 
