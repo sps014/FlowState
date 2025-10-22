@@ -11,13 +11,17 @@ A modern, high-performance node-based visual programming library for Blazor appl
 
 - 🎨 **Fully Customizable UI** - Complete control over styles, colors, and appearance
 - 🚀 **High Performance** - Optimized for large graphs with hundreds of nodes
-- 🔌 **Custom Nodes** - Easily create your own node types with full Blazor component support
+- 🔌 **Custom Nodes** - Easily create your own node types including group node with full Blazor component support
 - 🎯 **Type-Safe Connections** - Automatic type checking and conversion for socket connections
 - 📊 **Visual Execution Flow** - Real-time visualization of node execution with progress indicators
 - 🖱️ **Intuitive Interactions** - Pan, zoom, drag, select, and connect with familiar gestures
 - 💾 **Serialization** - Save and load graphs with full state preservation
 - 🔐 **Read-Only Mode** - Lock graphs for viewing without editing
 - ↩️ **Undo/Redo** - Full command pattern implementation with unlimited undo/redo history
+
+##  Easy Customize with with html and css
+
+![Screen Recording 2025-10-22 at 7 38 05 PM (1)](https://github.com/user-attachments/assets/bc1aa472-1c67-4b68-9f12-510a64584abd)
 
 ## 📦 Installation
 
