@@ -30,12 +30,6 @@ A modern, high-performance node-based visual programming library for Blazor appl
 dotnet add package FlowState
 ```
 
-### From Source
-```bash
-git clone https://github.com/yourusername/FlowState.git
-cd FlowState
-dotnet build
-```
 
 ## 🚀 Quick Start
 
