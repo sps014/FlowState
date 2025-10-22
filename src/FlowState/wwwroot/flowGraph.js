@@ -1156,7 +1156,7 @@ function getClickedResizeHandler(e) {
 
 function isInteractiveElement(target) {
   const tagName = target.tagName.toLowerCase();
-  const interactiveTags = ['input', 'textarea', 'select', 'button', 'a'];
+  const interactiveTags = ['input', 'textarea', 'select', 'button', 'a','canvas'];
   
   // Check if it's an interactive element
   if (interactiveTags.includes(tagName)) {
@@ -1173,6 +1173,11 @@ function isInteractiveElement(target) {
   if (role && ['button', 'textbox', 'slider', 'spinbutton'].includes(role)) {
     return true;
   }
+
+  //if draggable attribute is false , it is interactive
+  if(target.getAttribute('draggable') === 'false')
+    return true;
+
 
   if(target.closest('.resize-handle'))
     return true;

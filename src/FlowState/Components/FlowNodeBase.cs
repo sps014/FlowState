@@ -92,7 +92,7 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
 
 
     /// <summary>
-    /// Get called when component is rendered for first time
+    /// Get called when Node UI is rendered for the first time
     /// </summary>
     /// <returns></returns>
     public virtual ValueTask OnRenderedAsync()
