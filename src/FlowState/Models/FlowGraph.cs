@@ -24,7 +24,7 @@ public class FlowGraph : ISerializable<GraphData>
     /// <summary>
     /// Manager for managing commands for undo and redo
     /// </summary>
-    public CommandManager CommandManager { get; } = new CommandManager();
+    public CommandManager CommandManager { get; }
 
     /// <summary>
     /// Registry for managing type compatibility between sockets
@@ -60,6 +60,7 @@ public class FlowGraph : ISerializable<GraphData>
     public FlowGraph()
     {
         ExecutionFlow = new FlowGraphExecution(this);
+        CommandManager = new CommandManager(this);
     }
 
     // Node Management Methods
@@ -80,7 +81,7 @@ public class FlowGraph : ISerializable<GraphData>
     /// <param name="x">The X coordinate</param>
     /// <param name="y">The Y coordinate</param>
     /// <param name="data">Initial data for the node</param>
-    /// <param name="supressEvent">If true, does not fire NodeAdded event</param>
+    /// <param name="suppressEvent">If true, does not fire NodeAdded event</param>
     /// <param name="suppressAddingToCommandStack">If true, does not add to command stack</param>
     /// <returns>Information about the created node</returns>
     public async ValueTask<NodeInfo> CreateNodeAsync(Type type, double x, double y, Dictionary<string, object?> data, bool suppressEvent = false, bool suppressAddingToCommandStack = false)
@@ -107,6 +108,12 @@ public class FlowGraph : ISerializable<GraphData>
                 X = x,
                 Y = y
             });
+
+        if (!suppressAddingToCommandStack)
+        {
+            var command = new NodeAddedCommand(type,id, x, y, data, this);
+            CommandManager.AddCommand(command);
+        }
 
         return NodesInfo[id];
     }
@@ -162,9 +169,17 @@ public class FlowGraph : ISerializable<GraphData>
             && (x.Value.Instance.ToSocket?.FlowNode == node
             || x.Value.Instance.FromSocket?.FlowNode == node));
 
+        List<EdgeProperties> edgeProperties = [];
         foreach (var edge in edges)
         {
+            edgeProperties.Add(await edge.Value.Instance!.GetSerializableObjectAsync()); 
             await RemoveEdgeAsync(edge.Key, suppressEvent: true, suppressAddingToCommandStack: true);
+        }
+
+        if(!suppressAddingToCommandStack)
+        {
+            var nodeProps = await node.GetSerializableObjectAsync();
+            CommandManager.AddCommand(new NodeRemovedCommand(nodeProps, edgeProperties, this));
         }
 
         NodesInfo.Remove(id);
@@ -501,6 +516,7 @@ public class FlowGraph : ISerializable<GraphData>
         }
 
         ForcedRequestDomStateChanged?.Invoke(this, EventArgs.Empty);
+
     }
 
 
@@ -512,6 +528,7 @@ public class FlowGraph : ISerializable<GraphData>
     {
         if (Canvas == null)
             throw new Exception("Canvas is not set");
+        
         return Canvas.ClearAsync();
     }
 

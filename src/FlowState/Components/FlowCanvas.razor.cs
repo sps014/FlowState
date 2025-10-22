@@ -407,8 +407,9 @@ namespace FlowState.Components
             if (Graph == null)
                 return ValueTask.CompletedTask;
 
-            Graph.NodesInfo.Clear();
-            Graph.EdgesInfo.Clear();
+            Graph.CommandManager.ClearStacks();
+            Graph.RemoveAllNodes();
+            Graph.RemoveAllEdges();
 
             return SetViewportPropertiesAsync(new CanvasProperties { Zoom = 1.0, MinZoom = MinZoom, MaxZoom = MaxZoom, OffsetX = 0, OffsetY = 0, IsReadOnly = IsReadOnly });
         }
