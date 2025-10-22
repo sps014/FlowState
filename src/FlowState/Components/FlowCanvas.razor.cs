@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Threading.Tasks;
 using FlowState.Models;
 using FlowState.Models.Dom;
 using FlowState.Models.Events;
@@ -646,6 +647,18 @@ namespace FlowState.Components
         public ValueTask<CanvasProperties> GetSerializableObjectAsync()
         {
             return GetViewportPropertiesAsync();
+        }
+
+
+        private async Task HandleKeyDown(KeyboardEventArgs e)
+        {
+            if (OnKeyDown.HasDelegate)
+                await OnKeyDown.InvokeAsync(e);
+
+            if ((e.CtrlKey || e.MetaKey) && e.Key == "z" && !e.ShiftKey)
+                await Graph.CommandManager.UndoAsync();
+            else if ((e.CtrlKey || e.MetaKey) && (e.Key == "y" || (e.Key == "z" && e.ShiftKey)))
+                await Graph.CommandManager.RedoAsync();
         }
 
         // Disposal

@@ -17,6 +17,7 @@ A modern, high-performance node-based visual programming library for Blazor appl
 - 🖱️ **Intuitive Interactions** - Pan, zoom, drag, select, and connect with familiar gestures
 - 💾 **Serialization** - Save and load graphs with full state preservation
 - 🔐 **Read-Only Mode** - Lock graphs for viewing without editing
+- ↩️ **Undo/Redo** - Full command pattern implementation with unlimited undo/redo history
 
 ## 📦 Installation
 
@@ -605,6 +606,42 @@ The context menu automatically displays all registered nodes grouped by category
     --node-item-hover-bg: #7c3aed;
 }
 ```
+
+### Undo/Redo
+
+FlowState includes a built-in command manager that tracks all graph modifications and enables unlimited undo/redo operations:
+
+**Automatic Tracking**
+
+The following operations are automatically tracked:
+- Node addition and removal
+- Edge connection and disconnection
+- Graph state changes (via StateSnapshotCommand)
+
+**Basic Usage**
+
+```csharp
+@code {
+    private FlowGraph graph = new();
+
+    // Undo the last action
+    private async Task Undo()
+    {
+        await graph.CommandManager.UndoAsync();
+    }
+
+    // Redo the last undone action
+    private async Task Redo()
+    {
+        await graph.CommandManager.RedoAsync();
+    }
+}
+```
+
+**Notes:**
+- Undo/Redo is automatically disabled in read-only mode
+- The redo stack is cleared when new commands are executed after an undo
+- Use `CommandManager.ClearStacks()` to clear all undo/redo history
 
 ### Type Conversion
 
