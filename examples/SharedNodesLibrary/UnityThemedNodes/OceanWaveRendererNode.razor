@@ -1,0 +1,161 @@
+@using FlowState.Components
+@using FlowState.Models
+@using System.Text
+@using SharedNodesLibrary.UnityThemedNodes
+@inherits FlowNodeBase
+
+<FlowNode>
+    <div class="title-container">
+        <div class="title">🖼️ Wave Renderer</div>
+    </div>
+    <div class="body">
+        <UnitySocket Name="WaveConfig" Label="Wave" Type="SocketType.Input" T="typeof(WaveConfig)" OuterColor="#4FC3F7" InnerColor="#81D4FA"/>
+        <UnitySocket Name="GradientConfig" Label="Colors" Type="SocketType.Input" T="typeof(GradientConfig)" OuterColor="#E91E63" InnerColor="#F48FB1"/>
+        
+        <div class="controls">
+            <button @onclick="ToggleAnimation" class="control-button" draggable="false">
+                @(IsPlaying ? "⏸️ Pause" : "▶️ Play")
+            </button>
+            <button @onclick="ResetWave" class="control-button" draggable="false">
+                🔄 Reset
+            </button>
+        </div>
+        
+        <div class="render-modes">
+            <label>Render Mode</label>
+            <select @bind="RenderMode" class="mode-select" draggable="false">
+                <option value="fill">Fill</option>
+                <option value="stroke">Stroke</option>
+                <option value="both">Both</option>
+            </select>
+        </div>
+        
+        <div class="wave-preview">
+            <svg width="140" height="60" viewBox="0 0 140 60">
+                <defs>
+                    <linearGradient id="preview-gradient-@Id" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:@(currentGradient?.SurfaceColor ?? "#4FC3F7");stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:@(currentGradient?.DeepColor ?? "#0277BD");stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="@GeneratePreviewPath()" 
+                      fill="@(RenderMode != "stroke" ? $"url(#preview-gradient-{Id})" : "none")"
+                      stroke="@(RenderMode != "fill" ? (currentGradient?.FoamColor ?? "#E1F5FE") : "none")"
+                      stroke-width="2"
+                      opacity="@(currentGradient?.Opacity ?? 0.9)">
+                    @if (IsPlaying)
+                    {
+                        <animateTransform
+                            attributeName="transform"
+                            attributeType="XML"
+                            type="translate"
+                            from="0 0"
+                            to="-140 0"
+                            dur="@(currentWave != null ? (4f / currentWave.Speed).ToString("F1") : "2")s"
+                            repeatCount="indefinite"/>
+                    }
+                </path>
+                <path d="@GeneratePreviewPath()" 
+                      fill="@(RenderMode != "stroke" ? $"url(#preview-gradient-{Id})" : "none")"
+                      stroke="@(RenderMode != "fill" ? (currentGradient?.FoamColor ?? "#E1F5FE") : "none")"
+                      stroke-width="2"
+                      opacity="@(currentGradient?.Opacity ?? 0.9)"
+                      transform="translate(140, 0)">
+                    @if (IsPlaying)
+                    {
+                        <animateTransform
+                            attributeName="transform"
+                            attributeType="XML"
+                            type="translate"
+                            from="140 0"
+                            to="0 0"
+                            dur="@(currentWave != null ? (4f / currentWave.Speed).ToString("F1") : "2")s"
+                            repeatCount="indefinite"/>
+                    }
+                </path>
+            </svg>
+        </div>
+        
+        <div class="status">
+            Status: <span class="@(IsPlaying ? "status-playing" : "status-paused")">@(IsPlaying ? "Playing" : "Paused")</span>
+        </div>
+    </div>
+</FlowNode>
+
+<style>
+    .controls {
+        display: flex;
+        gap: 4px;
+        margin: 8px 0;
+    }
+    
+    .control-button {
+        flex: 1;
+        padding: 6px;
+        background: rgba(79, 195, 247, 0.2);
+        border: 1px solid rgba(79, 195, 247, 0.4);
+        border-radius: 4px;
+        color: #4FC3F7;
+        font-size: 11px;
+        cursor: pointer;
+        pointer-events: auto;
+        transition: all 0.2s;
+    }
+    
+    .control-button:hover {
+        background: rgba(79, 195, 247, 0.3);
+    }
+    
+    .control-button:active {
+        transform: scale(0.95);
+    }
+    
+    .render-modes {
+        margin: 8px 0;
+    }
+    
+    .render-modes label {
+        display: block;
+        font-size: 11px;
+        color: #aaa;
+        margin-bottom: 4px;
+    }
+    
+    .mode-select {
+        width: 100%;
+        padding: 6px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 4px;
+        color: #fff;
+        font-size: 12px;
+        pointer-events: auto;
+        cursor: pointer;
+    }
+    
+    .wave-preview {
+        margin: 8px 0;
+        background: #1a1a1a;
+        border-radius: 4px;
+        padding: 4px;
+        border: 1px solid rgba(255,255,255,0.1);
+        overflow: hidden;
+    }
+    
+    .status {
+        font-size: 11px;
+        color: #888;
+        margin-top: 8px;
+    }
+    
+    .status-playing {
+        color: #4CAF50;
+        font-weight: bold;
+    }
+    
+    .status-paused {
+        color: #FFC107;
+        font-weight: bold;
+    }
+</style>
+

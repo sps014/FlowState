@@ -1,0 +1,75 @@
+@using FlowState.Components
+@using FlowState.Models
+@using SharedNodesLibrary.UnityThemedNodes
+@inherits FlowNodeBase
+
+<FlowNode>
+    <div class="title-container">
+        <div class="title">🌊 Wave Parameters</div>
+    </div>
+    <div class="body">
+        <div class="parameter-group">
+            <label>Amplitude: @Amplitude.ToString("F0")px</label>
+            <input type="range" min="10" max="100" step="5" @bind="Amplitude" @bind:event="oninput" @onchange="OnParameterChanged" class="wave-slider" draggable="false" />
+        </div>
+        
+        <div class="parameter-group">
+            <label>Frequency: @Frequency.ToString("F2")</label>
+            <input type="range" min="0.005" max="0.1" step="0.005" @bind="Frequency" @bind:event="oninput" @onchange="OnParameterChanged" class="wave-slider" draggable="false" />
+        </div>
+        
+        <div class="parameter-group">
+            <label>Speed: @Speed.ToString("F1")x</label>
+            <input type="range" min="0.5" max="5" step="0.5" @bind="Speed" @bind:event="oninput" @onchange="OnParameterChanged" class="wave-slider" draggable="false" />
+        </div>
+        
+        <div class="parameter-group">
+            <label>Wave Count: @WaveCount</label>
+            <input type="range" min="1" max="5" step="1" @bind="WaveCount" @bind:event="oninput" @onchange="OnParameterChanged" class="wave-slider" draggable="false" />
+        </div>
+        
+        <UnitySocket Name="WaveConfig" Label="Config" Type="SocketType.Output" T="typeof(WaveConfig)" OuterColor="#4FC3F7" InnerColor="#81D4FA"/>
+    </div>
+</FlowNode>
+
+<style>
+    .parameter-group {
+        margin: 8px 0;
+    }
+    
+    .parameter-group label {
+        display: block;
+        font-size: 11px;
+        color: #aaa;
+        margin-bottom: 4px;
+    }
+    
+    .wave-slider {
+        width: 100%;
+        height: 4px;
+        background: rgba(255,255,255,0.1);
+        outline: none;
+        border-radius: 2px;
+        pointer-events: auto;
+        cursor: pointer;
+    }
+    
+    .wave-slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        background: #4FC3F7;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+    
+    .wave-slider::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        background: #4FC3F7;
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+    }
+</style>
+

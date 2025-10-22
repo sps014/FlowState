@@ -48,57 +48,34 @@
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        graph.RegisterNode<InputNode>();
-        graph.RegisterNode<IfElseNode>();
-        graph.RegisterNode<SumNode>();
-        graph.RegisterNode<WatchNode>();
-        graph.RegisterNode<GroupNode>();
+        graph.RegisterNode<WaveParametersNode>();
+        graph.RegisterNode<ColorGradientNode>();
+        graph.RegisterNode<OceanWaveRendererNode>();
     }
     private NodeInfo? fromNodeInfo,toNodeInfo;
 
     private async Task OnLoaded()
     {
-
         await Runtime.InvokeAsync<IJSObjectReference>("import","/_content/SharedNodesLibrary/graphLine.js");
 
-        graph.TypeCompatibiltyRegistry.Register<float>(typeof(int));
+        // Create ocean wave visualization system
         
-        // Create flow: Sum two inputs, compare with threshold, display result
+        // Wave parameters controller
+        fromNodeInfo = await graph.CreateNodeAsync<WaveParametersNode>(100, 10, []);
         
-        // Two input nodes for Sum
-        fromNodeInfo = await graph.CreateNodeAsync<InputNode>(50, 80, []);
-        toNodeInfo = await graph.CreateNodeAsync<InputNode>(50, 220, []);
+        // Color gradient controller
+        toNodeInfo = await graph.CreateNodeAsync<ColorGradientNode>(300, 300, []);
         
-        // Sum node
-        var sumNode = await graph.CreateNodeAsync<SumNode>(350, 150, []);
-        
-        // Threshold input for comparison
-        var thresholdNode = await graph.CreateNodeAsync<InputNode>(350, 320, []);
-        
-        // If-Else comparison node
-        var ifElseNode = await graph.CreateNodeAsync<IfElseNode>(650, 200, []);
-        
-        // Watch nodes for true and false paths
-        var watchTrue = await graph.CreateNodeAsync<WatchNode>(950, 120, []);
-        var watchFalse = await graph.CreateNodeAsync<WatchNode>(950, 280, []);
+        // Wave renderer with animated preview
+        var rendererNode = await graph.CreateNodeAsync<OceanWaveRendererNode>(900, 40, []);
 
         await Task.Delay(100);
 
-        // Connect: Input1 + Input2 -> Sum
-        await graph.ConnectAsync(fromNodeInfo.Id, sumNode.Id, "Output", "InputA");
-        await graph.ConnectAsync(toNodeInfo.Id, sumNode.Id, "Output", "InputB");
+        // Connect wave parameters to renderer
+        await graph.ConnectAsync(fromNodeInfo.Id, rendererNode.Id, "WaveConfig", "WaveConfig");
         
-        // Connect: Sum result -> IfElse InputA (value to compare)
-        await graph.ConnectAsync(sumNode.Id, ifElseNode.Id, "Output", "InputA");
-        
-        // Connect: Threshold -> IfElse InputB (compare against this)
-        await graph.ConnectAsync(thresholdNode.Id, ifElseNode.Id, "Output", "InputB");
-        
-        // Connect: IfElse True path -> Watch (when condition is true)
-        await graph.ConnectAsync(ifElseNode.Id, watchTrue.Id, "OutputTrue", "Input");
-        
-        // Connect: IfElse False path -> Watch (when condition is false)
-        await graph.ConnectAsync(ifElseNode.Id, watchFalse.Id, "OutputFalse", "Input"); 
+        // Connect color gradient to renderer
+        await graph.ConnectAsync(toNodeInfo.Id, rendererNode.Id, "GradientConfig", "GradientConfig");
     }
 
 
