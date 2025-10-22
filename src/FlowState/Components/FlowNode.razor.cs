@@ -68,9 +68,10 @@ namespace FlowState.Components
                 await MoveNodeAsync(Node.X, Node.Y);
 
                 var nodeInfo = Node.Graph.GetNodeInfoById(Node.Id);
+
                 if (nodeInfo != null)
                     nodeInfo.Parameters.Clear();
-
+                Node.IsInitialized = true;
             }
         }
 

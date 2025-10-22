@@ -65,6 +65,11 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     /// </summary>
     public virtual NodeKind NodeKind { get; } = NodeKind.Regular;
 
+    /// <summary>
+    /// When UI of the Node id Rendered this property is true
+    /// </summary>
+    public bool IsInitialized { get; internal set; }
+
 
     // Abstract Methods
 
