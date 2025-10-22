@@ -28,6 +28,13 @@
         <span class="dismiss">🗙</span>
     </div>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <script>
+        Blazor.start({
+            loadBootResource: function (type, name, defaultUri, integrity) {
+                return `${defaultUri}?v=2`;
+            }
+        })
+    </script>
 </body>
 
 </html>
