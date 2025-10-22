@@ -562,6 +562,15 @@ function dragNodeStart(e, node) {
   e.stopPropagation();
 }
 
+function getNodesInGroup(node) {
+ if(node.getAttribute('kind') !== 'Group') return [];
+ const nodes = flowContentEl.querySelectorAll('.flow-node');
+ const result = getNodesContainedInGroup(node,nodes);
+
+ return [...result.map(node => node.id)];
+}
+
+
 
 function getNodesContainedInGroup(groupNode,nodes) {
     const groupNodeRect = groupNode.getBoundingClientRect();

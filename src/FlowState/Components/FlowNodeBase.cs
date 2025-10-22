@@ -177,6 +177,18 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
             Graph.Canvas.Refresh();
     }
 
+    /// <summary>
+    /// Gets the nodes in the current node group
+    /// </summary>
+    /// <returns>An array of node IDs</returns>
+    public ValueTask<string[]> GetNodesInGroupAsync()
+    {
+        if (Graph == null || Graph.Canvas == null || Graph.Canvas.JsModule == null || DomElement==null)
+            return ValueTask.FromResult(Array.Empty<string>());
+
+        return Graph.Canvas.JsModule.InvokeAsync<string[]>("getNodesInGroup",DomElement.nodeRef);
+    }
+
 
     /// <summary>
     /// Disposes of the node and clears all sockets

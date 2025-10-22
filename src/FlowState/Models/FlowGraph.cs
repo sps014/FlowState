@@ -125,7 +125,7 @@ public class FlowGraph : ISerializable<GraphData>
     /// <param name="x">The X coordinate</param>
     /// <param name="y">The Y coordinate</param>
     /// <param name="data">Initial data for the node</param>
-    /// <param name="supressEvent">If true, does not fire NodeAdded event</param>
+    /// <param name="suppressEvent">If true, does not fire NodeAdded event</param>
     /// <param name="suppressAddingToCommandStack">If true, does not add to command stack</param>
     /// <returns>Information about the created node</returns>
     public ValueTask<NodeInfo> CreateNodeAsync(string type, double x, double y, Dictionary<string, object?> data, bool suppressEvent = false, bool suppressAddingToCommandStack = false)
