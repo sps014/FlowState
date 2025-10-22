@@ -1,7 +1,7 @@
 @using FlowState.Components
 @using FlowState.Models
 
-@inherits FlowNodeBase
+@inherits FlowGroupNodeBase
 
 <FlowNode Kind="@NodeKind" Class="group">
 
@@ -9,7 +9,13 @@
         <div class="title">📦 Group</div>
     </div>
     <div class="body">
+        <p>Width: @Width</p>
+        <p>Height: @Height</p>
     </div>
+
+    
+
+    <FlowResizeHandle/>
 </FlowNode>
 
 <style>
@@ -17,6 +23,5 @@
         min-height: 300px !important;
         min-width: 300px !important;
         z-index: -1 !important;
-
     }
 </style>

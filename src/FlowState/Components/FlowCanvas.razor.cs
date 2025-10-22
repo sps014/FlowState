@@ -638,6 +638,21 @@ namespace FlowState.Components
             }
         }
 
+        /// <summary>
+        /// Called from JavaScript when a node is resized
+        /// </summary>
+        [JSInvokable]
+        public async Task NotifyNodeResized(string nodeId, double width, double height)
+        {
+            if (Graph == null)
+                return;
+
+            var node = Graph.GetNodeById(nodeId);
+            if (node == null || node is not FlowGroupNodeBase group)
+                return;
+            group.OnResized(width, height);
+        }
+
         // Serialization
 
         /// <summary>

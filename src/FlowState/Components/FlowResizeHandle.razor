@@ -1,0 +1,26 @@
+<div class="resize-handle @Class" style="@Style">
+</div>
+
+@code
+{
+    [Parameter]
+    public string Class {get;set;} = "resizer";
+
+
+    [Parameter]
+    public string Style {get;set;} = string.Empty;
+    
+}
+
+<style>
+ .resizer {
+    width: 12px;
+    height: 12px;
+    background: #111827;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    cursor: se-resize;
+    border-radius: 2px;
+  }
+  </style>

@@ -68,7 +68,7 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     /// <summary>
     /// When UI of the Node id Rendered this property is true
     /// </summary>
-    public bool IsInitialized { get; internal set; }
+    public bool IsRendered { get; internal set; }
 
 
     // Abstract Methods
@@ -86,6 +86,16 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     /// </summary>
     /// <returns>A task representing the asynchronous operation</returns>
     public virtual ValueTask BeforeGraphExecutionAsync()
+    {
+        return ValueTask.CompletedTask;
+    }
+
+
+    /// <summary>
+    /// Get called when component is rendered for first time
+    /// </summary>
+    /// <returns></returns>
+    public virtual ValueTask OnRenderedAsync()
     {
         return ValueTask.CompletedTask;
     }
@@ -156,8 +166,8 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         var position = await DomElement!.GetTransformPositionAsync();
 
 
-        data[nameof(FlowNodeBase.X)] = new StoredProperty(typeof(double).AssemblyQualifiedName!, position.X);
-        data[nameof(FlowNodeBase.Y)] = new StoredProperty(typeof(double).AssemblyQualifiedName!, position.Y);
+        data[nameof(X)] = new StoredProperty(typeof(double).AssemblyQualifiedName!, position.X);
+        data[nameof(Y)] = new StoredProperty(typeof(double).AssemblyQualifiedName!, position.Y);
 
         return new NodeProperties(GetType().AssemblyQualifiedName!, Id, data);
     }
@@ -176,19 +186,6 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         if (Graph != null && Graph.Canvas != null)
             Graph.Canvas.Refresh();
     }
-
-    /// <summary>
-    /// Gets the nodes in the current node group
-    /// </summary>
-    /// <returns>An array of node IDs</returns>
-    public ValueTask<string[]> GetNodesInGroupAsync()
-    {
-        if (Graph == null || Graph.Canvas == null || Graph.Canvas.JsModule == null || DomElement==null)
-            return ValueTask.FromResult(Array.Empty<string>());
-
-        return Graph.Canvas.JsModule.InvokeAsync<string[]>("getNodesInGroup",DomElement.nodeRef);
-    }
-
 
     /// <summary>
     /// Disposes of the node and clears all sockets

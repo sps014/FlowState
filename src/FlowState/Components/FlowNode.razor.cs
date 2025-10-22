@@ -37,6 +37,7 @@ namespace FlowState.Components
         [Parameter]
         public string Class { get; set; } = string.Empty;
 
+
         internal ElementReference nodeRef;
 
 
@@ -71,7 +72,8 @@ namespace FlowState.Components
 
                 if (nodeInfo != null)
                     nodeInfo.Parameters.Clear();
-                Node.IsInitialized = true;
+                Node.IsRendered = true;
+                await Node.OnRenderedAsync();
             }
         }
 

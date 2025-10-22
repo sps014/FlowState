@@ -22,6 +22,10 @@ let isNodeDragging = false;
 let isConnectingNodes = false;
 let isRectangleSelecting = false;
 let isGroupNodeDragging = false;
+let isResizing = false;
+
+let resizeNodeEl =null;
+
 let groupedNodes = new Set();
 
 // Panning State
@@ -55,6 +59,7 @@ let tempEdgeElement = null;
 let longPressTimer = null;
 let longPressStartX = 0;
 let longPressStartY = 0;
+
 const LONG_PRESS_DURATION = 1000; // milliseconds
 const LONG_PRESS_MOVE_THRESHOLD = 10; // pixels
 
@@ -172,6 +177,16 @@ function pointerdown(e) {
   canvasEl?.focus();
 
 
+  const resizeHandler = getClickedResizeHandler(e);
+
+  if(resizeHandler)
+  {
+    resizeNodeEl = resizeHandler;
+    isResizing = true;
+    canvasEl.style.cursor = 'se-resize';
+    return;
+  }
+
   const socket = getClickedSocket(e);
   const node = getClickedNode(e);
 
@@ -210,6 +225,13 @@ function pointermove(e) {
   e.stopPropagation();
   
   checkLongPressMove(e);
+
+
+  if(isResizing)
+  {
+    resizeNode(e);
+    return;
+  }
   
   if (isConnectingNodes) {
     updateTempConnection(e);
@@ -233,7 +255,10 @@ function pointerup(e) {
   e.stopPropagation();
   
   cancelLongPress();
-  
+
+  if(isResizing){
+    stopResize();
+  }
   if (isConnectingNodes) {
     stopTempConnection(e);
   } else if (isNodeDragging) {
@@ -250,7 +275,10 @@ function pointerleave(e) {
   e.stopPropagation();
   
   cancelLongPress();
-  
+
+  if(isResizing){
+    stopResize();
+  }
   if (isConnectingNodes) {
     stopTempConnection(e);
   } else if (isNodeDragging) {
@@ -321,6 +349,25 @@ function onContextMenu(e) {
   
   // Notify C# about the context menu event
   dotnetRef.invokeMethodAsync("NotifyContextMenu", x, y, clientX, clientY);
+}
+
+function resizeNode(e)
+{
+    const rect = resizeNodeEl.getBoundingClientRect();
+    setGroupNodeSize(resizeNodeEl,e.pageX - rect.left,e.pageY - rect.top);
+}
+
+function stopResize(e)
+{
+  const width = splitNumberAndUnit(resizeNodeEl.style.width).number;
+  const height = splitNumberAndUnit(resizeNodeEl.style.height).number;
+
+
+  dotnetRef.invokeMethodAsync("NotifyNodeResized", resizeNodeEl.id, width, height);
+  isResizing = false;
+  resizeNodeEl = null;
+  canvasEl.style.cursor = 'grab';
+
 }
 
 function deleteSelectedNodes() {
@@ -1101,6 +1148,12 @@ function getClickedSocket(e) {
   return e.target.closest(".socket-anchor");
 }
 
+function getClickedResizeHandler(e) {
+  if(e.target.closest(".resize-handle"))
+    return getClickedNode(e);
+  return null;
+}
+
 function isInteractiveElement(target) {
   const tagName = target.tagName.toLowerCase();
   const interactiveTags = ['input', 'textarea', 'select', 'button', 'a'];
@@ -1120,6 +1173,10 @@ function isInteractiveElement(target) {
   if (role && ['button', 'textbox', 'slider', 'spinbutton'].includes(role)) {
     return true;
   }
+
+  if(target.closest('.resize-handle'))
+    return true;
+
   
   return false;
 }
@@ -1166,3 +1223,9 @@ window.flowContextMenuCleanup = function() {
   contextMenuElement = null;
   contextMenuDotNetRef = null;
 };
+
+export function setGroupNodeSize(el,w,h)
+{
+  el.style.width = w + 'px';
+  el.style.height = h + 'px';
+}
