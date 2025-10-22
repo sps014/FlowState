@@ -202,6 +202,13 @@ namespace FlowState.Components
         [Parameter]
         public EventCallback<CanvasContextMenuEventArgs> OnContextMenu { get; set; }
 
+
+        /// <summary>
+        /// Event fired when a key is pressed (Delete key or Backspace on Mac)
+        /// </summary>
+        [Parameter]
+        public EventCallback<KeyboardEventArgs> OnKeyDown { get; set; }
+
         private FlowEdge? TempEdge = null;
         private ElementReference canvasRef;
         private ElementReference flowContentRef;

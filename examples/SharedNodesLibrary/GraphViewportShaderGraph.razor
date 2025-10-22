@@ -14,6 +14,8 @@
     <button class="btn btn-info" @onclick="LoadGraph">📂 Load Graph</button>
     <button class="btn btn-execute" @onclick="ExecuteGraph">▶️ Execute Graph</button>
     <button class="btn btn-secondary" @onclick="ToggleReadOnly">@(isReadOnly ? "🔓 Enable Editing" : "🔒 Read-Only")</button>
+    <button class="btn btn-secondary" @onclick="Undo"> Undo </button>
+    <button class="btn btn-secondary" @onclick="Redo"> Redo </button>
 </div>
 
 <FlowCanvas @ref="canvas" 
@@ -142,6 +144,16 @@
             // Pass both screen coords (for menu positioning) and canvas coords (for node creation)
             await contextMenu.ShowAsync(e.ClientX, e.ClientY, e.X, e.Y);
         }
+    }
+
+    private async Task Undo()
+    {
+        await graph.CommandManager.UndoAsync();
+    }
+
+    private async Task Redo()
+    {
+        await graph.CommandManager.RedoAsync();
     }
 }
 

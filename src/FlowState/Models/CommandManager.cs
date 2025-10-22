@@ -1,3 +1,5 @@
+using FlowState.Models.Commands;
+
 namespace FlowState.Models;
 
 /// <summary>
@@ -10,14 +12,22 @@ public class CommandManager
 
 
     /// <summary>
-    /// Executes a command and adds it to the undo stack
+    /// command added to the undo stack
     /// </summary>
     /// <param name="command">The command to execute</param>
-    /// <returns>A task representing the asynchronous operation</returns>
-    public async ValueTask ExecuteCommandAsync(ICommand command)
+    public void AddCommand(ICommand command)
     {
-        await command.ExecuteAsync();
+        //await command.ExecuteAsync();
         undoStack.Push(command);
+        redoStack.Clear();
+    }
+
+    /// <summary>
+    /// Clears the undo and redo stacks
+    /// </summary>
+    public void ClearStacks()
+    {
+        undoStack.Clear();
         redoStack.Clear();
     }
 
@@ -48,23 +58,4 @@ public class CommandManager
         await command.ExecuteAsync();
         undoStack.Push(command);
     }
-}
-
-
-/// <summary>
-/// Interface for commands that can be executed and undone
-/// </summary>
-public interface ICommand
-{
-    /// <summary>
-    /// Executes the command
-    /// </summary>
-    /// <returns>A task representing the asynchronous operation</returns>
-    ValueTask ExecuteAsync();
-
-    /// <summary>
-    /// Undoes the command
-    /// </summary>
-    /// <returns>A task representing the asynchronous operation</returns>
-    ValueTask UndoAsync();
 }
