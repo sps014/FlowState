@@ -733,6 +733,9 @@ function onWheel(e) {
   // Always prevent default to stop page scroll
   e.preventDefault();
   e.stopPropagation();
+
+  if(isInteractiveElement(e.target))
+    return;
   
   const delta = e.deltaY < 0 ? 0.02 : -0.02;
   const newZoom = clamp(zoom + delta, minZoom, maxZoom);

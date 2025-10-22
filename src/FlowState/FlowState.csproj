@@ -32,4 +32,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.0-preview.6.25358.103" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="wwwroot\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
