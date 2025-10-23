@@ -84,7 +84,7 @@ public class FlowGraph : ISerializable<GraphData>
     /// <param name="suppressEvent">If true, does not fire NodeAdded event</param>
     /// <param name="suppressAddingToCommandStack">If true, does not add to command stack</param>
     /// <returns>Information about the created node</returns>
-    public async ValueTask<NodeInfo> CreateNodeAsync(Type type, double x, double y, Dictionary<string, object?> data, bool suppressEvent = false, bool suppressAddingToCommandStack = false)
+    public ValueTask<NodeInfo> CreateNodeAsync(Type type, double x, double y, Dictionary<string, object?> data, bool suppressEvent = false, bool suppressAddingToCommandStack = false)
     {
         var id = Guid.CreateVersion7().ToString();
 
@@ -115,7 +115,7 @@ public class FlowGraph : ISerializable<GraphData>
             CommandManager.AddCommand(command);
         }
 
-        return NodesInfo[id];
+        return ValueTask.FromResult(NodesInfo[id]);
     }
 
     /// <summary>

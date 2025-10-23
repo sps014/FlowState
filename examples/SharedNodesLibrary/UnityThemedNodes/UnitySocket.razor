@@ -1,5 +1,6 @@
 @using FlowState.Components
 @using FlowState.Models
+@using Microsoft.AspNetCore.Components
 
 <FlowSocket Name="@Name" 
             Class="unity-socket" 
@@ -53,22 +54,27 @@
 @code
 {
     [Parameter]
-    public string Name { get; set; }
+    [EditorRequired]
+    public required string Name { get; set; }
 
     [Parameter]
-    public string Label { get; set; }
+    [EditorRequired]
+    public required string Label { get; set; }
 
     [Parameter]
     public SocketType Type { get; set; }
 
     [Parameter]
-    public Type T { get; set; }
+    [EditorRequired]
+    public required Type T { get; set; }
 
     [Parameter]
-    public string OuterColor { get; set; }
+    [EditorRequired]
+    public required string OuterColor { get; set; }
 
     [Parameter]
-    public string InnerColor { get; set; }
+    [EditorRequired]
+    public required string InnerColor { get; set; }
 
     [Parameter]
     public int Size { get; set; } = 14;

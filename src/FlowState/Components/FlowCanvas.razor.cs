@@ -1,4 +1,3 @@
-using System.Drawing;
 using System.Threading.Tasks;
 using FlowState.Models;
 using FlowState.Models.Dom;
@@ -642,7 +641,7 @@ namespace FlowState.Components
         /// Called from JavaScript when a node is resized
         /// </summary>
         [JSInvokable]
-        public async Task NotifyNodeResized(string nodeId, double width, double height)
+        public void NotifyNodeResized(string nodeId, double width, double height)
         {
             if (Graph == null)
                 return;
@@ -651,6 +650,7 @@ namespace FlowState.Components
             if (node == null || node is not FlowGroupNodeBase group)
                 return;
             group.OnResized(width, height);
+            return;
         }
 
         // Serialization

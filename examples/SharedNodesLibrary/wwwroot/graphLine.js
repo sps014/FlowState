@@ -24,11 +24,8 @@ function createUnityStylePath(from, to) {
           L ${to.x} ${to.y}`;
 }
 
-
-
 window.EdgePathFunc = createUnityStylePath;
 
-export function Load()
-{
-
+export function Load() {
+  // for future initialization logic
 }

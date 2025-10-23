@@ -24,7 +24,7 @@ let isRectangleSelecting = false;
 let isGroupNodeDragging = false;
 let isResizing = false;
 
-let resizeNodeEl =null;
+let resizeNodeEl = null;
 
 let groupedNodes = new Set();
 
@@ -591,9 +591,7 @@ function dragNodeStart(e, node) {
       const childNodes = getNodesContainedInGroup(n,nodes);
       childNodes.forEach(node => { groupedNodes.add(node); selectedNodes.add(node); });
     }
-
   }
-
 
   isNodeDragging = true;
   lastMouseX = e.clientX;
@@ -609,15 +607,13 @@ function dragNodeStart(e, node) {
   e.stopPropagation();
 }
 
-function getNodesInGroup(node) {
+export function getNodesInGroup(node) {
  if(node.getAttribute('kind') !== 'Group') return [];
  const nodes = flowContentEl.querySelectorAll('.flow-node');
  const result = getNodesContainedInGroup(node,nodes);
 
  return [...result.map(node => node.id)];
 }
-
-
 
 function getNodesContainedInGroup(groupNode,nodes) {
     const groupNodeRect = groupNode.getBoundingClientRect();
