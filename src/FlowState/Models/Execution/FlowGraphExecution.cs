@@ -317,9 +317,11 @@ public class FlowGraphExecution
     }
 
     /// <summary>
-    /// Get execution order using topological sort
+    /// Gets the execution order of nodes using topological sort based on dependencies
+    /// Throws InvalidOperationException if circular dependencies are detected
     /// </summary>
-    private string[] GetExecutionOrder()
+    /// <returns>Array of node IDs in execution order</returns>
+    public string[] GetExecutionOrder()
     {
         var visited = new HashSet<string>();
         var visiting = new HashSet<string>();
@@ -376,6 +378,36 @@ public class FlowGraphExecution
         }
         
         return result.ToArray();
+    }
+
+    /// <summary>
+    /// Gets the execution order of nodes (based on dependencies using topological sort)
+    /// </summary>
+    /// <returns>Array of nodes in execution order</returns>
+    public FlowNodeBase[] GetExecutionOrderNodes()
+    {
+        var order = GetExecutionOrder();
+        return order
+            .Select(id => Graph.GetNodeById(id))
+            .Where(node => node != null)
+            .ToArray()!;
+    }
+
+    /// <summary>
+    /// Checks if the graph has circular dependencies (uses topological sort)
+    /// </summary>
+    /// <returns>True if circular dependencies exist</returns>
+    public bool HasCircularDependencies()
+    {
+        try
+        {
+            GetExecutionOrder();
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            return true;
+        }
     }
 
     /// <summary>
