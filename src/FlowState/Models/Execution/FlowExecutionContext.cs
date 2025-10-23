@@ -43,6 +43,56 @@ public class FlowExecutionContext
     {
         _node = node;
     }
+
+    // =================== State Management (Convenience Methods) ===================
+
+    /// <summary>
+    /// Gets a value from the shared execution state
+    /// Convenience wrapper around Execution.GetState
+    /// </summary>
+    /// <typeparam name="T">The type of the value to retrieve</typeparam>
+    /// <param name="key">The key to look up</param>
+    /// <returns>The value if found, otherwise default(T)</returns>
+    public T GetState<T>(string key)
+    {
+        if (Execution == null)
+            return default!;
+        return Execution.GetState<T>(key);
+    }
+
+    /// <summary>
+    /// Sets a value in the shared execution state
+    /// Convenience wrapper around Execution.SetState
+    /// </summary>
+    /// <typeparam name="T">The type of the value to store</typeparam>
+    /// <param name="key">The key to store the value under</param>
+    /// <param name="value">The value to store</param>
+    public void SetState<T>(string key, T value)
+    {
+        Execution?.SetState(key, value);
+    }
+
+    /// <summary>
+    /// Checks if a key exists in the execution state
+    /// Convenience wrapper around Execution.HasState
+    /// </summary>
+    /// <param name="key">The key to check</param>
+    /// <returns>True if the key exists, false otherwise</returns>
+    public bool HasState(string key)
+    {
+        return Execution?.HasState(key) ?? false;
+    }
+
+    /// <summary>
+    /// Removes a key from the execution state
+    /// Convenience wrapper around Execution.RemoveState
+    /// </summary>
+    /// <param name="key">The key to remove</param>
+    /// <returns>True if the key was removed, false if it didn't exist</returns>
+    public bool RemoveState(string key)
+    {
+        return Execution?.RemoveState(key) ?? false;
+    }
     
     /// <summary>
     /// Gets data from an input socket by name.

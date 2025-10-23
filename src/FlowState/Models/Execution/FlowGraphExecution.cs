@@ -31,6 +31,12 @@ public class FlowGraphExecution
     private HashSet<string> executingEdgeIds = new();
 
     /// <summary>
+    /// Shared state dictionary that persists across all nodes during a single execution run
+    /// Cleared at the start of each execution
+    /// </summary>
+    private Dictionary<string, object?> executionState = new();
+
+    /// <summary>
     /// The parent FlowGraph instance
     /// </summary>
     public FlowGraph Graph { get; }
@@ -42,6 +48,81 @@ public class FlowGraphExecution
     public FlowGraphExecution(FlowGraph graph)
     {
         Graph = graph;
+    }
+
+    // =================== State Management ===================
+
+    /// <summary>
+    /// Gets a value from the shared execution state
+    /// </summary>
+    /// <typeparam name="T">The type of the value to retrieve</typeparam>
+    /// <param name="key">The key to look up</param>
+    /// <returns>The value if found, otherwise default(T)</returns>
+    public T GetState<T>(string key)
+    {
+        if (executionState.TryGetValue(key, out var value))
+        {
+            if (value is T typedValue)
+                return typedValue;
+
+            // Try conversion for compatible types
+            try
+            {
+                return (T)Convert.ChangeType(value, typeof(T))!;
+            }
+            catch
+            {
+                return default!;
+            }
+        }
+        return default!;
+    }
+
+    /// <summary>
+    /// Sets a value in the shared execution state
+    /// </summary>
+    /// <typeparam name="T">The type of the value to store</typeparam>
+    /// <param name="key">The key to store the value under</param>
+    /// <param name="value">The value to store</param>
+    public void SetState<T>(string key, T value)
+    {
+        executionState[key] = value;
+    }
+
+    /// <summary>
+    /// Checks if a key exists in the execution state
+    /// </summary>
+    /// <param name="key">The key to check</param>
+    /// <returns>True if the key exists, false otherwise</returns>
+    public bool HasState(string key)
+    {
+        return executionState.ContainsKey(key);
+    }
+
+    /// <summary>
+    /// Removes a key from the execution state
+    /// </summary>
+    /// <param name="key">The key to remove</param>
+    /// <returns>True if the key was removed, false if it didn't exist</returns>
+    public bool RemoveState(string key)
+    {
+        return executionState.Remove(key);
+    }
+
+    /// <summary>
+    /// Clears all state values
+    /// </summary>
+    public void ClearState()
+    {
+        executionState.Clear();
+    }
+
+    /// <summary>
+    /// Gets a read-only view of all current state
+    /// </summary>
+    public IReadOnlyDictionary<string, object?> GetAllState()
+    {
+        return executionState;
     }
 
     /// <summary>
@@ -59,6 +140,7 @@ public class FlowGraphExecution
         
         // Clear previous execution state
         ClearBranchTracking();
+        ClearState();
         
         // Call BeforeGraphExecutionAsync on all nodes to allow them to reset state
         foreach (var node in Graph.Nodes)
