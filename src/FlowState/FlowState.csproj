@@ -12,8 +12,8 @@
     <Authors>sps014</Authors>
     <Description>A modern, high-performance node-based visual programming library for Blazor applications. Build interactive flow-based editors with custom nodes, real-time execution, and a beautiful theme UI.</Description>
     <PackageTags>blazor;node-editor;visual-programming;flow-graph;node-graph;blazor-component</PackageTags>
-    <PackageProjectUrl>https://github.com/yourusername/FlowState</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/yourusername/FlowState</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/sps014/FlowState</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sps014/FlowState</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
