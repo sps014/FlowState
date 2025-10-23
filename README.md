@@ -1,70 +1,61 @@
 # FlowState
 
-A modern, high-performance node-based visual programming library for Blazor applications. Build interactive flow-based editors with custom nodes, real-time execution, and a beautiful theme UI.
+A high-performance node editor for Blazor. Build visual programming tools, node-based workflows, and interactive graph editors with complete styling control.
 
+<img width="1217" height="587" alt="FlowState Demo" src="https://github.com/user-attachments/assets/57d6fecb-5d84-4f17-ad90-cee3cf881f48" />
 
-<img width="1217" height="587" alt="Image" src="https://github.com/user-attachments/assets/57d6fecb-5d84-4f17-ad90-cee3cf881f48" />
+![Blazor](https://img.shields.io/badge/Blazor-.NET%2010.0-purple?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square) ![NuGet](https://img.shields.io/nuget/v/FlowState?style=flat-square)
 
-![FlowState Banner](https://img.shields.io/badge/Blazor-.NET%2010.0-purple?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
+## What you get
 
-## ✨ Features
+- **Full customization** - Style everything with regular HTML/CSS, no framework-specific styling
+- **High performance** - Handles graphs with hundreds of nodes smoothly
+- **Custom nodes** - Create any node type using Blazor components
+- **Type safety** - Automatic type checking between connections with custom type conversion
+- **Execution engine** - Built-in graph execution with visual progress feedback  
+- **Group nodes** - Resizable container nodes to organize your graph
+- **Undo/Redo** - Command pattern with unlimited history
+- **Serialization** - Save and restore complete graph state
+- **Read-only mode** - Lock graphs for presentation
+- **Touch support** - Works on desktop and mobile
 
-- 🎨 **Fully Customizable UI** - Complete control over styles, colors, and appearance
-- 🚀 **High Performance** - Optimized for large graphs with hundreds of nodes
-- 🔌 **Custom Nodes** - Easily create your own node types including group node with full Blazor component support
-- 🎯 **Type-Safe Connections** - Automatic type checking and conversion for socket connections
-- 📊 **Visual Execution Flow** - Real-time visualization of node execution with progress indicators
-- 🖱️ **Intuitive Interactions** - Pan, zoom, drag, select, and connect with familiar gestures
-- 💾 **Serialization** - Save and load graphs with full state preservation
-- 🔐 **Read-Only Mode** - Lock graphs for viewing without editing
-- ↩️ **Undo/Redo** - Full command pattern implementation with unlimited undo/redo history
+![Customization Demo](https://github.com/user-attachments/assets/bc1aa472-1c67-4b68-9f12-510a64584abd)
 
-##  Easy Customization with html and css
+## Installation
 
-![Screen Recording 2025-10-22 at 7 38 05 PM (1)](https://github.com/user-attachments/assets/bc1aa472-1c67-4b68-9f12-510a64584abd)
-
-## 📦 Installation
-
-### NuGet Package
 ```bash
 dotnet add package FlowState
 ```
 
+## Quick Start
 
-## 🚀 Quick Start
-
-### 1. Add to your Blazor page
+Here's a minimal working example:
 
 ```razor
-@page "/flow-editor"
+@page "/"
 @using FlowState.Components
 @using FlowState.Models
 
-<FlowCanvas @ref="canvas" 
-            Height="100vh" 
-            Width="100vw" 
-            Graph="graph">
+<FlowCanvas Height="100vh" Width="100vw" Graph="graph">
     <BackgroundContent>
-        <FlowBackground class="custom-grid"/>
+        <FlowBackground class="grid-bg"/>
     </BackgroundContent>
 </FlowCanvas>
 
 @code {
-    private FlowCanvas? canvas;
-    private FlowGraph graph = new();
+    FlowGraph graph = new();
 
-    protected override void OnInitialized()
+    protected override void OnInitialized() 
     {
-        // Register your custom node types
         graph.RegisterNode<MyCustomNode>();
     }
 }
 ```
 
-### 2. Style your canvas
+Style the canvas with CSS:
 
 ```css
-.custom-grid {
+.grid-bg {
     background: #111827;
     background-image: 
         linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
@@ -73,644 +64,222 @@ dotnet add package FlowState
 }
 ```
 
-## 🎯 Creating Custom Nodes
+## Creating Custom Nodes
 
-### Basic Node Example
+Making a node is simple. Create a Razor component that inherits `FlowNodeBase`:
 
-Create a custom node by inheriting from `FlowNodeBase`:
-
+**MyNode.razor.cs**
 ```csharp
-// MyCustomNode.razor.cs
-using FlowState.Attributes;
 using FlowState.Components;
+using FlowState.Attributes;
 using FlowState.Models.Execution;
-using Microsoft.AspNetCore.Components;
 
-[FlowNodeMetadata(
-    Category = "Math",
-    Title = "Double Value",
-    Description = "Doubles the input value",
-    Icon = "🔢",
-    Order = 1)]
-public partial class MyCustomNode : FlowNodeBase
-{
-    [Parameter]
-    public int Value { get; set; } = 0;
-
-    public override async ValueTask ExecuteAsync(FlowExecutionContext context)
-    {
-        // Your execution logic here
-        var result = Value * 2;
-        context.SetOutputSocketData("Output", result);
-        await Task.CompletedTask;
-    }
-}
-```
-
-```razor
-<!-- MyCustomNode.razor -->
-@using FlowState.Components
-@using FlowState.Models
-@inherits FlowNodeBase
-
-<FlowNode>
-    <div class="title">🔢 My Node</div>
-    <div class="body">
-        <input type="number" @bind="Value" />
-        <FlowSocket Name="Output" 
-                    Label="Result" 
-                    Type="SocketType.Output" 
-                    T="typeof(int)" 
-                    OuterColor="#4CAF50" 
-                    InnerColor="#8BC34A"/>
-    </div>
-</FlowNode>
-```
-
-### Advanced Node with Multiple Sockets
-
-```csharp
-// SumNode.razor.cs
-[FlowNodeMetadata(
-    Category = "Math",
-    Title = "Add Numbers",
-    Description = "Adds two numbers together",
-    Icon = "➕",
-    Order = 2)]
+[FlowNodeMetadata(Category = "Math", Title = "Sum", Icon = "➕")]
 public partial class SumNode : FlowNodeBase
 {
     public override async ValueTask ExecuteAsync(FlowExecutionContext context)
     {
-        var a = context.GetInputSocketData<float>("InputA");
-        var b = context.GetInputSocketData<float>("InputB");
-        var sum = a + b;
-        context.SetOutputSocketData("Output", sum);
-        await Task.CompletedTask;
+        var a = context.GetInputSocketData<float>("A");
+        var b = context.GetInputSocketData<float>("B");
+        context.SetOutputSocketData("Result", a + b);
     }
 }
 ```
 
+**MyNode.razor**
 ```razor
-<!-- SumNode.razor -->
-@using FlowState.Components
-@using FlowState.Models
 @inherits FlowNodeBase
 
 <FlowNode>
     <div class="title">➕ Sum</div>
     <div class="body">
-        <FlowSocket Name="InputA" Label="A" Type="SocketType.Input" T="typeof(float)"/>
-        <FlowSocket Name="InputB" Label="B" Type="SocketType.Input" T="typeof(float)"/>
-        <FlowSocket Name="Output" Label="Sum" Type="SocketType.Output" T="typeof(float)"/>
+        <FlowSocket Name="A" Type="SocketType.Input" T="typeof(float)"/>
+        <FlowSocket Name="B" Type="SocketType.Input" T="typeof(float)"/>
+        <FlowSocket Name="Result" Type="SocketType.Output" T="typeof(float)"/>
     </div>
 </FlowNode>
 ```
 
-## 📚 Example
+That's it. The node will appear in the context menu (right-click on canvas) and you can connect it to other nodes.
 
-Here's a full working example with multiple node types:
+## Working with Graphs
 
-```razor
-@page "/editor"
-@using FlowState.Components
-@using FlowState.Models
-@using FlowState.Models.Events
-
-<div style="display: flex; gap: 10px; padding: 10px;">
-    <button @onclick="ExecuteGraph">▶️ Execute</button>
-    <button @onclick="SaveGraph">💾 Save</button>
-    <button @onclick="LoadGraph">📂 Load</button>
-    <button @onclick="ClearGraph">🗑️ Clear</button>
-</div>
-
-<FlowCanvas @ref="canvas" 
-            Height="calc(100vh - 60px)" 
-            Width="100vw" 
-            Graph="graph"
-            OnCanvasLoaded="OnLoaded">
-    <BackgroundContent>
-        <FlowBackground class="flow-grid"/>
-    </BackgroundContent>
-</FlowCanvas>
-
-@code {
-    private FlowCanvas? canvas;
-    private FlowGraph graph = new();
-    private string savedData = "{}";
-
-    protected override void OnInitialized()
-    {
-        // Register all your custom nodes
-        graph.RegisterNode<NumberInputNode>();
-        graph.RegisterNode<SumNode>();
-        graph.RegisterNode<DisplayNode>();
-        
-        // Register type conversions if needed
-        graph.TypeCompatibiltyRegistry.Register<float>(typeof(int));
-    }
-
-    private async Task OnLoaded()
-    {
-        // Create initial nodes programmatically
-        var input1 = await graph.CreateNodeAsync<NumberInputNode>(100, 100, new());
-        var input2 = await graph.CreateNodeAsync<NumberInputNode>(100, 200, new());
-        var sum = await graph.CreateNodeAsync<SumNode>(400, 150, new());
-        var display = await graph.CreateNodeAsync<DisplayNode>(700, 150, new());
-
-        await Task.Delay(100); // Wait for DOM
-
-        // Connect nodes
-        await graph.ConnectAsync(input1.Id, sum.Id, "Output", "InputA");
-        await graph.ConnectAsync(input2.Id, sum.Id, "Output", "InputB");
-        await graph.ConnectAsync(sum.Id, display.Id, "Output", "Input");
-    }
-
-    private async Task ExecuteGraph()
-    {
-        await graph.ExecuteAsync();
-    }
-
-    private async Task SaveGraph()
-    {
-        savedData = await graph.SerializeAsync();
-        Console.WriteLine("Graph saved!");
-    }
-
-    private async Task LoadGraph()
-    {
-        await graph.DeserializeAsync(savedData);
-        Console.WriteLine("Graph loaded!");
-    }
-
-    private async Task ClearGraph()
-    {
-        await graph.ClearAsync();
-    }
-}
-```
-
-```css
-<style>
-.flow-grid {
-    background: #111827;
-    background-image: 
-        linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
-    background-size: 100px 100px;
-}
-
-.flow-node .title { 
-  font-weight: 600; 
-  font-size: 14px; 
-  margin-bottom: 8px; 
-  color: white;
-  padding: 12px 16px 8px;
-  background: linear-gradient(90deg, rgba(124,58,237,0.1), transparent);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  border-radius: 12px 12px 0 0;
-}
-
-# play with look of your nodes
-.flow-node .body { 
-  font-size: 13px; 
-  color: #cbd5e1;
-  padding: 12px 16px;
-}
-
-.flow-node {
-  position: absolute;
-  min-width: 160px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-  border: 1px solid rgba(255,255,255,0.05);
-  box-shadow: 
-    0 8px 32px rgba(2,6,23,0.6),
-    inset 0 1px 0 rgba(255,255,255,0.05);
-  transform-origin: 0 0;
-  user-select: none;
-  cursor: grab;
-  backdrop-filter: blur(8px);
-  
-  /* PERFORMANCE OPTIMIZATIONS */
-  /* GPU acceleration with proper text rendering */
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  
-  /* Text rendering optimizations - prevents blur during zoom */
-  -webkit-font-smoothing: subpixel-antialiased;
-  -moz-osx-font-smoothing: auto;
-  text-rendering: geometricPrecision;
-  
-  /* Force subpixel precision for crisp text at any zoom level */
-  -webkit-transform: translate3d(0, 0, 0);
-  -webkit-perspective: 1000;
-  perspective: 1000;
-  
-  /* CSS containment for better rendering performance */
-  contain: layout style paint;
-  
-  /* Prevent layout thrashing */
-  isolation: isolate;
-}
-</style>
-```
-
-## 🎨 Node Styling
-
-Customize your nodes with CSS:
-
-```css
-.flow-node {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 12px;
-    padding: 12px;
-    min-width: 200px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.flow-node .title {
-    font-weight: 600;
-    color: white;
-    margin-bottom: 8px;
-}
-
-.flow-node .body {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-```
-
-## 🔌 Socket Types and Colors
-
-```razor
-<!-- Input Socket -->
-<FlowSocket Name="Input" 
-            Label="Value" 
-            Type="SocketType.Input" 
-            T="typeof(float)"
-            OuterColor="#2196F3" 
-            InnerColor="#64B5F6"/>
-
-<!-- Output Socket -->
-<FlowSocket Name="Output" 
-            Label="Result" 
-            Type="SocketType.Output" 
-            T="typeof(float)"
-            OuterColor="#4CAF50" 
-            InnerColor="#81C784"/>
-```
-
-## ⚙️ Configuration Options
-
-### FlowCanvas Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `Graph` | `FlowGraph` | Required | The graph data model |
-| `Height` | `string` | `"100%"` | Canvas height (CSS value) |
-| `Width` | `string` | `"100%"` | Canvas width (CSS value) |
-| `CanZoom` | `bool` | `true` | Enable zoom with mouse wheel |
-| `CanPan` | `bool` | `true` | Enable panning |
-| `IsReadOnly` | `bool` | `false` | Lock graph for viewing only |
-| `MinZoom` | `double` | `0.2` | Minimum zoom level |
-| `MaxZoom` | `double` | `2.0` | Maximum zoom level |
-| `PanKey` | `string` | `"alt"` | Key for panning (alt/shift/ctrl/meta) |
-| `NodeSelectionClass` | `string` | `"selected"` | CSS class for selected nodes |
-| `AutoUpdateSocketColors` | `bool` | `false` | Auto-color edges based on socket |
-
-## 📖 API Reference
-
-### FlowGraph Methods
-
-**Node Management**
+**Creating nodes programmatically:**
 
 ```csharp
-// Create node - Generic (recommended)
-NodeInfo node = await graph.CreateNodeAsync<MyNodeType>(x, y, data);
+// Create nodes at specific positions
+var node1 = await graph.CreateNodeAsync<SumNode>(100, 100, new());
+var node2 = await graph.CreateNodeAsync<DisplayNode>(400, 100, new());
 
-// Create node - By Type
-NodeInfo node = await graph.CreateNodeAsync(typeof(MyNodeType), x, y, data);
+// Connect them
+await graph.ConnectAsync(node1.Id, node2.Id, "Result", "Input");
 
-// Create node - By string type name
-NodeInfo node = await graph.CreateNodeAsync("MyNamespace.MyNodeType", x, y, data);
-
-// Optional: suppress event firing
-NodeInfo node = await graph.CreateNodeAsync<MyNodeType>(x, y, data, supressEvent: true);
-
-// Remove node
-graph.RemoveNode(nodeId);
-
-// Get node by ID
-FlowNodeBase? node = graph.GetNodeById(nodeId);
-```
-
-**Edge Management**
-
-```csharp
-// Connect by node IDs and socket names
-(EdgeInfo? edge, string? error) = await graph.ConnectAsync(fromNodeId, toNodeId, "OutputSocket", "InputSocket");
-
-// Connect by socket references
-(EdgeInfo? edge, string? error) = await graph.ConnectAsync(fromSocket, toSocket);
-
-// Optional: enable type checking
-(EdgeInfo? edge, string? error) = await graph.ConnectAsync(fromNodeId, toNodeId, "Output", "Input", checkDataType: true);
-
-// Remove edge
-graph.RemoveEdge(edgeId);
-```
-
-**Execution**
-
-```csharp
-// Execute the entire graph
+// Execute the graph
 await graph.ExecuteAsync();
 ```
 
-**Serialization**
+**Save and restore:**
 
 ```csharp
-// Save graph to JSON (includes all node [Parameter] properties)
+// Serialize to JSON
 string json = await graph.SerializeAsync();
+await File.WriteAllTextAsync("graph.json", json);
 
-// Load graph from JSON (restores all node parameters)
+// Deserialize from JSON
+string json = await File.ReadAllTextAsync("graph.json");
 await graph.DeserializeAsync(json);
-
-// Clear entire graph
-await graph.ClearAsync();
 ```
 
-> **Note:** All `[Parameter]` properties in your custom nodes are automatically serialized and restored. Node positions, connections, and parameter values are preserved.
-
-**Registration**
+**Type conversion for sockets:**
 
 ```csharp
-// Register node type
-graph.RegisterNode<MyNodeType>();
+// Allow int to connect to float sockets
+graph.TypeCompatibiltyRegistry.Register<float>(typeof(int));
 
-// Register type conversion (source → target)
-graph.TypeCompatibiltyRegistry.Register<float>(typeof(int));  // int can connect to float
+// Sockets with type 'object' can connect to anything
+<FlowSocket Name="Any" Type="SocketType.Input" T="typeof(object)"/>
 ```
 
-### FlowNodeBase Lifecycle
+## Canvas Configuration
+
+Customize the canvas behavior:
+
+```razor
+<FlowCanvas Graph="graph"
+            Height="100vh"
+            Width="100vw"
+            IsReadOnly="false"
+            MinZoom="0.2"
+            MaxZoom="2.0"
+            Zoom="1.0"
+            PanKey="alt"
+            NodeSelectionClass="selected"
+            AutoUpdateSocketColors="true"/>
+```
+
+## API Reference
+
+**Graph operations:**
+
+```csharp
+// Nodes
+var node = await graph.CreateNodeAsync<MyNode>(x, y, data);
+await graph.RemoveNodeAsync(nodeId);
+var node = graph.GetNodeById(nodeId);
+graph.RegisterNode<MyNode>();
+
+// Connections
+var (edge, error) = await graph.ConnectAsync(fromId, toId, "Out", "In");
+await graph.RemoveEdgeAsync(edgeId);
+
+// Execution
+await graph.ExecuteAsync();
+
+// Undo/Redo
+await graph.CommandManager.UndoAsync();
+await graph.CommandManager.RedoAsync();
+```
+
+**Node lifecycle hooks:**
 
 ```csharp
 public class MyNode : FlowNodeBase
 {
-    // Called before graph execution starts
-    public override ValueTask BeforeGraphExecutionAsync()
-    {
-        // Reset state, clear previous results
-        return ValueTask.CompletedTask;
-    }
+    // Called before graph execution starts - reset state here
+    public override ValueTask BeforeGraphExecutionAsync() { }
 
     // Main execution logic
-    public override async ValueTask ExecuteAsync(FlowExecutionContext context)
+    public override async ValueTask ExecuteAsync(FlowExecutionContext ctx)
     {
-        // Get input data
-        var input = context.GetInputSocketData<float>("InputName");
-        
-        // Process data
-        var result = input * 2;
-        
-        // Set output data
-        context.SetOutputSocketData("OutputName", result);
-    }
-    
-    // Called after graph execution completes
-    public override ValueTask AfterGraphExecutionAsync()
-    {
-        // Cleanup, finalize
-        return ValueTask.CompletedTask;
+        var input = ctx.GetInputSocketData<float>("In");
+        ctx.SetOutputSocketData("Out", input * 2);
     }
 }
 ```
 
-## 🎯 Events
+## Events
 
-Subscribe to graph events:
+**Graph events:**
 
 ```csharp
-graph.NodeAdded += (sender, e) => Console.WriteLine($"Node added: {e.NodeId}");
-graph.NodeRemoved += (sender, e) => Console.WriteLine($"Node removed: {e.NodeId}");
-graph.EdgeAdded += (sender, e) => Console.WriteLine($"Edge added: {e.EdgeId}");
-graph.EdgeRemoved += (sender, e) => Console.WriteLine($"Edge removed: {e.EdgeId}");
+graph.NodeAdded += (s, e) => { };
+graph.NodeRemoved += (s, e) => { };
+graph.EdgeAdded += (s, e) => { };
+graph.EdgeRemoved += (s, e) => { };
 ```
 
-### FlowCanvas Events
-
-All available events with their parameters:
+**Canvas events:**
 
 ```razor
-<FlowCanvas @ref="canvas"
-            Graph="graph"
-            OnCanvasLoaded="HandleCanvasLoaded"
-            OnPanned="HandlePanned"
-            OnZoomed="HandleZoomed"
-            OnNodeMoved="HandleNodeMoved"
-            OnNodeSelected="HandleNodeSelected"
-            OnNodeDeselected="HandleNodeDeselected"
-            OnSelectionChanged="HandleSelectionChanged"
-            OnNotifyNodesCleared="HandleNodesCleared"
-            OnEdgeConnectRequest="HandleEdgeConnectRequest"
-            OnSocketLongPress="HandleSocketLongPress"
-            OnContextMenu="HandleContextMenu"/>
+<FlowCanvas OnCanvasLoaded="..."
+            OnNodeMoved="..."
+            OnNodeSelected="..."
+            OnSelectionChanged="..."
+            OnContextMenu="..."
+            OnSocketLongPress="..."/>
 ```
 
-**Event Descriptions:**
+## Advanced Features
 
-| Event | Args Type | Description |
-|-------|-----------|-------------|
-| `OnCanvasLoaded` | `CanvasLoadedEventArgs` | Fires when canvas finishes initial setup |
-| `OnPanned` | `PanEventArgs` | Fires when canvas is panned |
-| `OnZoomed` | `ZoomEventArgs` | Fires when zoom level changes |
-| `OnNodeMoved` | `NodeMovedArgs` | Fires when a node is moved |
-| `OnNodeSelected` | `NodeSelectedEventArgs` | Fires when a node is selected |
-| `OnNodeDeselected` | `NodeDeselectedEventArgs` | Fires when a node is deselected |
-| `OnSelectionChanged` | `SelectionChangedEventArgs` | Fires when selection changes (contains all selected nodes) |
-| `OnNotifyNodesCleared` | `NodesClearedEventArgs` | Fires when all nodes are cleared |
-| `OnEdgeConnectRequest` | `ConnectRequestArgs` | Fires when edge connection is requested |
-| `OnSocketLongPress` | `SocketLongPressEventArgs` | Fires when a socket is long-pressed (1 second) |
-| `OnContextMenu` | `CanvasContextMenuEventArgs` | Fires on canvas right-click with X, Y coordinates |
-
-**Example Event Handlers:**
-
-```csharp
-private void HandleCanvasLoaded(CanvasLoadedEventArgs e)
-{
-    Console.WriteLine("Canvas is ready!");
-}
-
-private void HandleNodeMoved(NodeMovedArgs e)
-{
-    Console.WriteLine($"Node {e.NodeId} moved to ({e.X}, {e.Y})");
-}
-
-private void HandleSelectionChanged(SelectionChangedEventArgs e)
-{
-    Console.WriteLine($"Selected nodes: {string.Join(", ", e.SelectedNodeIds)}");
-}
-
-private void HandleSocketLongPress(SocketLongPressEventArgs e)
-{
-    Console.WriteLine($"Socket {e.Socket.Name} long-pressed at ({e.X}, {e.Y})");
-}
-
-private void HandleContextMenu(CanvasContextMenuEventArgs e)
-{
-    Console.WriteLine($"Right-click at canvas: ({e.X}, {e.Y}), client: ({e.ClientX}, {e.ClientY})");
-}
-```
-
-## 🔧 Advanced Features
-
-### Context Menu for Adding Nodes
-
-FlowState includes a built-in context menu component for adding nodes to the canvas:
+**Context menu for node creation:**
 
 ```razor
-<FlowCanvas @ref="canvas" 
-            Graph="graph"
-            OnContextMenu="HandleContextMenu">
-    <BackgroundContent>
-        <FlowBackground/>
-    </BackgroundContent>
-</FlowCanvas>
-
-<FlowContextMenu @ref="contextMenu" Graph="graph" />
+<FlowCanvas Graph="graph" OnContextMenu="ShowMenu"/>
+<FlowContextMenu @ref="menu" Graph="graph"/>
 
 @code {
-    FlowCanvas? canvas;
-    FlowContextMenu? contextMenu;
-    FlowGraph graph = new();
-
-    private async Task HandleContextMenu(CanvasContextMenuEventArgs e)
-    {
-        if (contextMenu != null)
-        {
-            await contextMenu.ShowAsync(e.ClientX, e.ClientY, e.X, e.Y);
-        }
-    }
+    FlowContextMenu? menu;
+    
+    async Task ShowMenu(CanvasContextMenuEventArgs e) =>
+        await menu!.ShowAsync(e.ClientX, e.ClientY, e.X, e.Y);
 }
 ```
 
-The context menu automatically displays all registered nodes grouped by category, with search functionality. Customize appearance using CSS variables:
-
-```css
-:root {
-    --context-menu-bg: #0b1220;
-    --context-menu-border: #94a3b8;
-    --node-item-hover-bg: #7c3aed;
-}
-```
-
-### Undo/Redo
-
-FlowState includes a built-in command manager that tracks all graph modifications and enables unlimited undo/redo operations:
-
-**Automatic Tracking**
-
-The following operations are automatically tracked:
-- Node addition and removal
-- Edge connection and disconnection
-- Graph state changes (via StateSnapshotCommand)
-
-**Basic Usage**
+**Group nodes:**
 
 ```csharp
-@code {
-    private FlowGraph graph = new();
-
-    // Undo the last action
-    private async Task Undo()
-    {
-        await graph.CommandManager.UndoAsync();
-    }
-
-    // Redo the last undone action
-    private async Task Redo()
-    {
-        await graph.CommandManager.RedoAsync();
-    }
-}
-```
-
-**Notes:**
-- Undo/Redo is automatically disabled in read-only mode
-- The redo stack is cleared when new commands are executed after an undo
-- Use `CommandManager.ClearStacks()` to clear all undo/redo history
-
-### Type Conversion
-
-By default, sockets can only connect if their types match exactly. Use type conversion to allow connections between different socket types:
-
-```csharp
-// Allow int sockets to connect to float sockets
-graph.TypeCompatibiltyRegistry.Register<float>(typeof(int));
-
-// Allow int sockets to connect to string sockets
-graph.TypeCompatibiltyRegistry.Register<string>(typeof(int));
-
-// Now these connections work:
-// OutputSocket<int> → InputSocket<float>  ✅
-// OutputSocket<int> → InputSocket<string> ✅
-```
-
-**Special Case: `object` Type**
-
-Sockets with type `object` can connect to **any** socket type without registration:
-
-```csharp
-// Create a universal socket that accepts any type
-<FlowSocket Name="Input" Type="SocketType.Input" T="typeof(object)"/>
-
-// This socket can now connect to:
-// - OutputSocket<int>    ✅
-// - OutputSocket<string> ✅
-// - OutputSocket<float>  ✅
-// - Any other type       ✅
-```
-
-**Example:**
-
-```csharp
-// Node A has: Output socket of type int
-// Node B has: Input socket of type float
-// Without type conversion: Connection fails ❌
-// With type conversion: Connection succeeds ✅
-
-graph.TypeCompatibiltyRegistry.Register<float>(typeof(int));
-await graph.ConnectAsync(nodeA.Id, nodeB.Id, "IntOutput", "FloatInput");  // Now works!
-```
-
-### Execution with Progress
-
-```csharp
-public override async ValueTask ExecuteAsync(FlowExecutionContext context)
+// Create a resizable group node to organize your graph
+public class MyGroupNode : FlowGroupNodeBase
 {
-    // Get input data
-    var input = context.GetInputSocketData<float>("Input");
-    
-    // Process
-    var result = input * 2;
-    
-    // Set output data
-    context.SetOutputSocketData("Output", result);
-    
-    await Task.CompletedTask;
+    // Group nodes can contain other nodes
 }
 ```
 
-## 📄 License
+**Execution state management:**
 
-MIT License - See [LICENSE](LICENSE) for details
+```csharp
+public override async ValueTask ExecuteAsync(FlowExecutionContext ctx)
+{
+    // Store and retrieve shared state across all nodes in execution
+    ctx.SetState("userCount", 42);
+    var count = ctx.GetState<int>("userCount");
+    
+    // Or use CustomData dictionary directly
+    ctx.CustomData["result"] = computedValue;
+    var data = ctx.CustomData["result"];
+}
+```
 
-## 🤝 Contributing
+## Examples
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Check out the example projects in the repo:
+- **Blazor Server** - Full-featured editor with toolbar and custom nodes
+- **Blazor WASM** - Lightweight browser-only version
+- **Unity themed nodes** - Custom styled nodes (ocean wave renderer, color gradients)
+
+Run them with:
+```bash
+cd examples/FlowStateBlazorServer
+dotnet run
+```
+
+## Contributing
+
+Found a bug or want to add a feature? Pull requests are welcome. For major changes, open an issue first.
+
+## License
+
+MIT
 
 ---
-
-Made with ❤️
 
