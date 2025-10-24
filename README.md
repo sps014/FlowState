@@ -27,6 +27,11 @@ A high-performance node editor for Blazor. Build visual programming tools, node-
 dotnet add package FlowState
 ```
 
+In blazor server make sure your page  render mode is interactive server
+```razor
+@rendermode InteractiveServer	
+```
+
 ## Quick Start
 
 Here's a minimal working example:
