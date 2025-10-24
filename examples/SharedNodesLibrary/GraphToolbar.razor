@@ -6,6 +6,16 @@
     <button class="btn btn-secondary" @onclick="OnToggleReadOnly">@(IsReadOnly ? "🔓 Enable Editing" : "🔒 Read-Only")</button>
     <button class="btn btn-secondary" @onclick="OnUndo">↶ Undo</button>
     <button class="btn btn-secondary" @onclick="OnRedo">↷ Redo</button>
+    
+    <!-- Canvas Mode Buttons -->
+    <div class="mode-group">
+        <button class="btn @(CurrentMode == "Select" ? "btn-mode-active" : "btn-mode")" @onclick="OnSetSelectMode">
+            🖱️ Select
+        </button>
+        <button class="btn @(CurrentMode == "Pan" ? "btn-mode-active" : "btn-mode")" @onclick="OnSetPanMode">
+            ✋ Pan
+        </button>
+    </div>
 </div>
 
 @code {
@@ -16,7 +26,10 @@
     [Parameter] public EventCallback OnToggleReadOnly { get; set; }
     [Parameter] public EventCallback OnUndo { get; set; }
     [Parameter] public EventCallback OnRedo { get; set; }
+    [Parameter] public EventCallback OnSetSelectMode { get; set; }
+    [Parameter] public EventCallback OnSetPanMode { get; set; }
     [Parameter] public bool IsReadOnly { get; set; }
+    [Parameter] public string CurrentMode { get; set; } = "Select";
 }
 
 <style>
@@ -120,6 +133,35 @@
 
 .btn-secondary:hover {
     background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+/* Mode group styles */
+.mode-group {
+    display: flex;
+    gap: 4px;
+    margin-left: 16px;
+    padding-left: 16px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-mode {
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-mode:hover {
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+    color: white;
+}
+
+.btn-mode-active {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+}
+
+.btn-mode-active:hover {
+    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
 }
 </style>
 

@@ -403,6 +403,16 @@ namespace FlowState.Components
             return JsModule.InvokeVoidAsync("setReadOnly", isReadOnly);
         }
 
+        /// <summary>
+        /// Sets the canvas interaction mode
+        /// </summary>
+        /// <param name="mode">The canvas mode to set (Select or Pan)</param>
+        /// <returns>A task representing the asynchronous operation</returns>
+        public ValueTask SetCanvasModeAsync(CanvasMode mode)
+        {
+            return JsModule.InvokeVoidAsync("setCanvasMode", (int)mode);
+        }
+
         // Public Methods - Canvas Management
 
         /// <summary>

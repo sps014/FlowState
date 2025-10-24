@@ -16,7 +16,10 @@
               OnToggleReadOnly="ToggleReadOnly"
               OnUndo="Undo"
               OnRedo="Redo"
-              IsReadOnly="isReadOnly" />
+              OnSetSelectMode="SetSelectMode"
+              OnSetPanMode="SetPanMode"
+              IsReadOnly="isReadOnly"
+              CurrentMode="@currentCanvasMode" />
 
 <FlowCanvas @ref="canvas" 
             Height="calc(100vh - 60px)" 
@@ -68,6 +71,7 @@
     private string data="{}";
     private bool isReadOnly = false;
     private double currentZoom = 1.0;
+    private string currentCanvasMode = "Select";
 
     protected override void OnInitialized()
     {
@@ -155,6 +159,24 @@
     private async Task Redo()
     {
         await graph.CommandManager.RedoAsync();
+    }
+
+    private async Task SetSelectMode()
+    {
+        currentCanvasMode = "Select";
+        if (canvas != null)
+        {
+            await canvas.SetCanvasModeAsync(CanvasMode.Select);
+        }
+    }
+
+    private async Task SetPanMode()
+    {
+        currentCanvasMode = "Pan";
+        if (canvas != null)
+        {
+            await canvas.SetCanvasModeAsync(CanvasMode.Pan);
+        }
     }
     
     private async Task ZoomIn()

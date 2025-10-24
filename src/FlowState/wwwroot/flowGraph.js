@@ -72,6 +72,7 @@ let nodeSelectionClass = "selected";
 let autoUpdateSocketColors = false;
 let panKey = "alt"; // "shift", "ctrl", "alt", or "meta"
 let isReadOnly = false;
+let canvasMode = 0; // 0 = Select, 1 = Pan
 
 // Cache
 let cacheGridBackgroundSize = null;
@@ -141,6 +142,23 @@ export function setReadOnly(readOnly) {
   isReadOnly = readOnly;
 }
 
+/**
+ * Sets the canvas interaction mode
+ * @param {number} mode - 0 for Select mode, 1 for Pan mode
+ */
+export function setCanvasMode(mode) {
+  canvasMode = mode;
+  
+  // Update cursor based on mode
+  if (canvasEl) {
+    if (mode === 1) {
+      canvasEl.style.cursor = 'grab';
+    } else {
+      canvasEl.style.cursor = 'default';
+    }
+  }
+}
+
 // =================== Pointer Event Handlers ===================
 
 /**
@@ -199,7 +217,6 @@ function pointerdown(e) {
     tempSocket = socket;
     startTempConnection(e, socket);
   } else if (node) {
-    // Always allow selection
     handleNodeSelection(node, e);
     
     // Only start dragging if not clicking on interactive elements and not in read-only mode
@@ -207,12 +224,12 @@ function pointerdown(e) {
       dragNodeStart(e, node);
     }
   } else {
-    // Clicking on canvas background
-    if (isPanKeyPressed(e)) {
-      // Pan key pressed → pan canvas
+    // Clicking on canvas background (no node)
+    if (canvasMode === 1 || isPanKeyPressed(e)) {
+      // Pan mode active or pan key pressed → pan canvas
       panStart(e);
     } else {
-      // No pan key → rectangle selection (only if not read-only)
+      // Select mode: rectangle selection (only if not read-only)
       if (!isReadOnly) {
         startRectangleSelection(e);
       }
