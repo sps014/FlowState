@@ -29,6 +29,13 @@ namespace FlowState.Components
         [Parameter]
         public RenderFragment? BackgroundContent { get; set; }
 
+
+        /// <summary>
+        /// Panels in the Cavas
+        /// </summary>
+        [Parameter]
+        public RenderFragment? Panels { get; set; }
+
         /// <summary>
         /// Gets or sets the flow graph to display
         /// </summary>

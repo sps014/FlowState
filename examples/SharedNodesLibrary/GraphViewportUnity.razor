@@ -30,6 +30,29 @@
     <BackgroundContent>
         <FlowBackground class="flow-grid-lines"/>
     </BackgroundContent>
+    <Panels>
+        <FlowPanels>
+            <div class="panel-group">
+                <!-- Zoom controls -->
+                <button class="panel-btn" title="Zoom In" @onclick="ZoomIn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <button class="panel-btn" title="Zoom Out" @onclick="ZoomOut">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M3 8H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <button class="panel-btn" title="Reset View" @onclick="ResetView">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M14 8C14 8 12 4 8 4C4 4 2 8 2 8M8 4V1M8 4L5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="zoom-level">@($"{currentZoom:P0}")</div>
+            </div>
+        </FlowPanels>
+    </Panels>
 </FlowCanvas>
 
 <FlowContextMenu @ref="contextMenu"
@@ -44,6 +67,7 @@
     FlowContextMenu? contextMenu;
     private string data="{}";
     private bool isReadOnly = false;
+    private double currentZoom = 1.0;
 
     protected override void OnInitialized()
     {
@@ -131,6 +155,41 @@
     private async Task Redo()
     {
         await graph.CommandManager.RedoAsync();
+    }
+    
+    private async Task ZoomIn()
+    {
+        if (canvas == null) return;
+        
+        var props = await canvas.GetViewportPropertiesAsync();
+        var newZoom = Math.Min(props.MaxZoom, props.Zoom + 0.1);
+        await canvas.SetZoomAsync(newZoom);
+        currentZoom = newZoom;
+    }
+    
+    private async Task ZoomOut()
+    {
+        if (canvas == null) return;
+        
+        var props = await canvas.GetViewportPropertiesAsync();
+        var newZoom = Math.Max(props.MinZoom, props.Zoom - 0.1);
+        await canvas.SetZoomAsync(newZoom);
+        currentZoom = newZoom;
+    }
+    
+    private async Task ResetView()
+    {
+        if (canvas == null) return;
+        
+        await canvas.SetViewportPropertiesAsync(new FlowState.Models.Serializable.CanvasProperties 
+        { 
+            Zoom = 1.0, 
+            OffsetX = 0, 
+            OffsetY = 0,
+            MinZoom = canvas.MinZoom,
+            MaxZoom = canvas.MaxZoom
+        });
+        currentZoom = 1.0;
     }
 }
 
@@ -240,6 +299,69 @@
 }
 .title-container {
     position: relative;
+}
+
+/* Panel Controls */
+.panels {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.panel-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+}
+
+.panel-btn {
+    width: 40px;
+    height: 40px;
+    background: rgba(60, 60, 60, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.panel-btn:hover {
+    background: rgba(80, 80, 80, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.panel-btn:active {
+    transform: scale(0.95);
+}
+
+.panel-btn svg {
+    pointer-events: none;
+}
+
+.zoom-level {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #ffffff;
+    padding: 8px 4px;
+    background: rgba(40, 40, 40, 0.8);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    min-width: 40px;
 }
 
 </style>
