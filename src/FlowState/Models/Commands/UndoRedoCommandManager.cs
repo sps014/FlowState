@@ -49,6 +49,16 @@ public class CommandManager
         redoStack.Clear();
     }
 
+    /// <summary>
+    /// Gets the number of commands in the undo stack
+    /// </summary>
+    public int UndoCount => undoStack.Count;
+
+    /// <summary>
+    /// Gets the number of commands in the redo stack
+    /// </summary>
+    public int RedoCount => redoStack.Count;
+
 
     /// <summary>
     /// Undoes the last command and adds it to the redo stack
