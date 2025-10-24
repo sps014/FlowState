@@ -78,6 +78,13 @@ namespace FlowState.Components
         /// </summary>
         public List<FlowEdge> Connections { get; set; } = new();
 
+
+        /// <summary>
+        /// Gets or sets whether to override the previous name of the socket
+        /// </summary>
+        [Parameter]
+        public bool OverridePreviousName { get; set; } = false;
+
         private string? innerSocketColorCopy;
         
         /// <summary>
@@ -108,7 +115,7 @@ namespace FlowState.Components
                 return;
 
             if (FlowNode != null)
-                FlowNode.AddSocket(this);
+                FlowNode.AddSocket(this, OverridePreviousName);
 
             innerSocketColorCopy = InnerColor;
             outerSocketColorCopy = OuterColor;

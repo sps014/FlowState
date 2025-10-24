@@ -119,11 +119,15 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     /// Adds a socket to this node
     /// </summary>
     /// <param name="flowSocket">The socket to add</param>
+    /// <param name="overridePreviousName">If true, overrides the previous socket with the same name</param>
     /// <exception cref="Exception">Thrown if a socket with the same name and type already exists</exception>
-    public void AddSocket(FlowSocket flowSocket)
+    public void AddSocket(FlowSocket flowSocket, bool overridePreviousName = false)
     {
         if (flowSocket.Type == SocketType.Input)
         {
+            if(overridePreviousName)
+                inputSockets.Remove(flowSocket.Name);
+
             if (!inputSockets.TryAdd(flowSocket.Name, flowSocket))
             {
                 throw new Exception("Already a Socket[type=Input] exists with the same name : " + flowSocket.Name);
@@ -131,6 +135,9 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         }
         else
         {
+            if(overridePreviousName)
+                outputSockets.Remove(flowSocket.Name);
+
             if (!outputSockets.TryAdd(flowSocket.Name, flowSocket))
             {
                 throw new Exception("Already a Socket[type=Output] exists with the same name : " + flowSocket.Name);

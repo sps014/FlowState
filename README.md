@@ -2,6 +2,8 @@
 
 A high-performance node editor for Blazor. Build visual programming tools, node-based workflows, and interactive graph editors with complete styling control.
 
+
+
 <img width="1217" height="587" alt="FlowState Demo" src="https://github.com/user-attachments/assets/57d6fecb-5d84-4f17-ad90-cee3cf881f48" />
 
 ![Blazor](https://img.shields.io/badge/Blazor-.NET%2010.0-purple?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square) ![NuGet](https://img.shields.io/nuget/v/FlowState?style=flat-square)
@@ -20,6 +22,8 @@ A high-performance node editor for Blazor. Build visual programming tools, node-
 - **Touch support** - Works on desktop and mobile
 
 ![Customization Demo](https://github.com/user-attachments/assets/bc1aa472-1c67-4b68-9f12-510a64584abd)
+
+> **⚠️ EXPERIMENTAL** - This project is in active development and the API may change. Builds are nightly and super frequent and may contain breaking changes. Use in production at your own risk.
 
 ## Installation
 
