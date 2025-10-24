@@ -47,7 +47,7 @@ Here's a minimal working example:
 
     protected override void OnInitialized() 
     {
-        graph.RegisterNode<MyCustomNode>();
+        graph.RegisterNode<SumNode>();
     }
 }
 ```
@@ -68,11 +68,13 @@ Style the canvas with CSS:
 
 Making a node is simple. Create a Razor component that inherits `FlowNodeBase`:
 
-**MyNode.razor.cs**
+**SumNode.razor.cs**
 ```csharp
 using FlowState.Components;
 using FlowState.Attributes;
 using FlowState.Models.Execution;
+
+namespace YourNamespace;
 
 [FlowNodeMetadata(Category = "Math", Title = "Sum", Icon = "➕")]
 public partial class SumNode : FlowNodeBase
@@ -82,12 +84,15 @@ public partial class SumNode : FlowNodeBase
         var a = context.GetInputSocketData<float>("A");
         var b = context.GetInputSocketData<float>("B");
         context.SetOutputSocketData("Result", a + b);
+        await ValueTask.CompletedTask;
     }
 }
 ```
 
-**MyNode.razor**
+**SumNode.razor**
 ```razor
+@using FlowState.Components
+@using FlowState.Models
 @inherits FlowNodeBase
 
 <FlowNode>
@@ -182,19 +187,43 @@ await graph.CommandManager.RedoAsync();
 
 **Node lifecycle hooks:**
 
+**MyNode.razor.cs**
 ```csharp
-public class MyNode : FlowNodeBase
+using FlowState.Components;
+using FlowState.Models.Execution;
+
+public partial class MyNode : FlowNodeBase
 {
     // Called before graph execution starts - reset state here
-    public override ValueTask BeforeGraphExecutionAsync() { }
+    public override ValueTask BeforeGraphExecutionAsync() 
+    {
+        // Reset any cached state
+        return ValueTask.CompletedTask;
+    }
 
     // Main execution logic
     public override async ValueTask ExecuteAsync(FlowExecutionContext ctx)
     {
         var input = ctx.GetInputSocketData<float>("In");
         ctx.SetOutputSocketData("Out", input * 2);
+        await ValueTask.CompletedTask;
     }
 }
+```
+
+**MyNode.razor**
+```razor
+@using FlowState.Components
+@using FlowState.Models
+@inherits FlowNodeBase
+
+<FlowNode>
+    <div class="title">My Node</div>
+    <div class="body">
+        <FlowSocket Name="In" Type="SocketType.Input" T="typeof(float)"/>
+        <FlowSocket Name="Out" Type="SocketType.Output" T="typeof(float)"/>
+    </div>
+</FlowNode>
 ```
 
 ## Events
@@ -221,14 +250,66 @@ graph.EdgeRemoved += (s, e) => { };
 
 ## Advanced Features
 
-**Context menu for node creation:**
+**Control panels with zoom/reset buttons:**
+
+Add UI controls for canvas interaction:
 
 ```razor
-<FlowCanvas Graph="graph" OnContextMenu="ShowMenu"/>
+@using FlowState.Components
+@using FlowState.Models
+
+<FlowCanvas Graph="graph" Height="100vh" Width="100vw">
+    <BackgroundContent>
+        <FlowBackground class="grid-bg"/>
+    </BackgroundContent>
+    <Panels>
+        <FlowPanels>
+            <!-- Add custom panel buttons here -->
+            <div class="panel-group">
+                <button class="panel-btn" @onclick="SaveGraph">💾</button>
+                <button class="panel-btn" @onclick="LoadGraph">📂</button>
+            </div>
+        </FlowPanels>
+    </Panels>
+</FlowCanvas>
+
+@code {
+    FlowGraph graph = new();
+    
+    async Task SaveGraph() => await File.WriteAllTextAsync("graph.json", await graph.SerializeAsync());
+    async Task LoadGraph() => await graph.DeserializeAsync(await File.ReadAllTextAsync("graph.json"));
+}
+```
+
+**Context menu for node creation:**
+
+Add a context menu so users can right-click to create nodes:
+
+```razor
+@using FlowState.Components
+@using FlowState.Models
+@using FlowState.Models.Events
+
+<FlowCanvas Graph="graph" 
+            Height="100vh" 
+            Width="100vw"
+            OnContextMenu="ShowMenu">
+    <BackgroundContent>
+        <FlowBackground class="grid-bg"/>
+    </BackgroundContent>
+</FlowCanvas>
+
 <FlowContextMenu @ref="menu" Graph="graph"/>
 
 @code {
+    FlowGraph graph = new();
     FlowContextMenu? menu;
+    
+    protected override void OnInitialized()
+    {
+        graph.RegisterNode<SumNode>();
+        graph.RegisterNode<DisplayNode>();
+    }
     
     async Task ShowMenu(CanvasContextMenuEventArgs e) =>
         await menu!.ShowAsync(e.ClientX, e.ClientY, e.X, e.Y);
@@ -237,27 +318,84 @@ graph.EdgeRemoved += (s, e) => { };
 
 **Group nodes:**
 
+Group nodes are resizable containers to organize your graph.
+
+**MyGroupNode.razor.cs**
 ```csharp
-// Create a resizable group node to organize your graph
-public class MyGroupNode : FlowGroupNodeBase
+using FlowState.Components;
+using FlowState.Attributes;
+
+namespace YourNamespace;
+
+[FlowNodeMetadata(Category = "Layout", Title = "Group", Kind = NodeKind.Group)]
+public partial class MyGroupNode : FlowGroupNodeBase
 {
-    // Group nodes can contain other nodes
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Width = 400;
+        Height = 300;
+    }
+}
+```
+
+**MyGroupNode.razor**
+```razor
+@using FlowState.Components
+@inherits FlowGroupNodeBase
+
+<FlowNode>
+    <div class="group-title">📦 Group</div>
+    <FlowResizeHandle />
+</FlowNode>
+```
+
+Style group nodes to appear behind other nodes:
+```css
+.flow-node[kind="Group"] {
+    z-index: 1 !important;
+    background: rgba(50, 50, 50, 0.5);
+    border: 2px dashed rgba(255, 255, 255, 0.3);
 }
 ```
 
 **Execution state management:**
 
+Share data between nodes during execution:
+
+**StateNode.razor.cs**
 ```csharp
-public override async ValueTask ExecuteAsync(FlowExecutionContext ctx)
+using FlowState.Components;
+using FlowState.Models.Execution;
+
+public partial class StateNode : FlowNodeBase
 {
-    // Store and retrieve shared state across all nodes in execution
-    ctx.SetState("userCount", 42);
-    var count = ctx.GetState<int>("userCount");
-    
-    // Or use CustomData dictionary directly
-    ctx.CustomData["result"] = computedValue;
-    var data = ctx.CustomData["result"];
+    public override async ValueTask ExecuteAsync(FlowExecutionContext ctx)
+    {
+        // Store and retrieve shared state across all nodes in execution
+        ctx.SetState("userCount", 42);
+        var count = ctx.GetState<int>("userCount");
+        
+        // Or use CustomData dictionary directly
+        ctx.CustomData["result"] = "computed value";
+        var data = ctx.CustomData["result"];
+        
+        await ValueTask.CompletedTask;
+    }
 }
+```
+
+**StateNode.razor**
+```razor
+@using FlowState.Components
+@inherits FlowNodeBase
+
+<FlowNode>
+    <div class="title">State Manager</div>
+    <div class="body">
+        <FlowSocket Name="Execute" Type="SocketType.Exec" T="typeof(object)"/>
+    </div>
+</FlowNode>
 ```
 
 ## Examples
