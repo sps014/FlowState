@@ -913,7 +913,7 @@ function handleEdgeMouseLeave(e) {
   }
 }
 
-function updateEdges(nodesEl) {
+export function updateEdges(nodesEl) {
   if (nodesEl == null || nodesEl == undefined) return;
 
   let edgesEl = getEdgesElementsToBeUpdated(nodesEl);
