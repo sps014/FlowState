@@ -75,6 +75,7 @@ public class CommandManager
         var command = undoStack.Pop();
         await command.UndoAsync();
         redoStack.Push(command);
+        UndoRedoStackChanged?.Invoke(this, EventArgs.Empty);
     }
 
 
@@ -89,5 +90,8 @@ public class CommandManager
         var command = redoStack.Pop();
         await command.ExecuteAsync();
         undoStack.Push(command);
+        UndoRedoStackChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    public event EventHandler? UndoRedoStackChanged;
 }

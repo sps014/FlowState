@@ -85,6 +85,14 @@ namespace FlowState.Components
         [Parameter]
         public bool OverridePreviousName { get; set; } = false;
 
+
+        /// <summary>
+        /// Gets or sets the maximum number of connections to this socket
+        /// This is only applicable for output sockets
+        /// </summary>
+        [Parameter]
+        public int MaxConnections { get; set; } = 99;
+
         private string? innerSocketColorCopy;
         
         /// <summary>

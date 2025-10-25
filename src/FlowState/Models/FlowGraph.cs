@@ -287,6 +287,17 @@ public class FlowGraph : ISerializable<GraphData>
         if (checkDataType && !IsDataTypeCompatibile(fromSocket, toSocket))
             return (null, $"Incompatible Data Types {fromSocket.T}->{toSocket.T}");
 
+        // Handle MaxConnections for output socket - disconnect oldest connection if at limit
+        if (fromSocket.MaxConnections > 0 && fromSocket.Connections.Count >= fromSocket.MaxConnections)
+        {
+            var oldestConnection = fromSocket.Connections.FirstOrDefault();
+            if (oldestConnection != null)
+            {
+                await oldestConnection.CleanupConnectionsAsync();
+                await RemoveEdgeAsync(oldestConnection.Id, suppressEvent, suppressAddingToCommandStack);
+            }
+        }
+
         // if tosocket is already connected, delete the edge 
         var existingEdge = toSocket.Connections.FirstOrDefault();
         if (existingEdge != null)
