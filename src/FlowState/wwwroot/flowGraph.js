@@ -913,7 +913,7 @@ function handleEdgeMouseLeave(e) {
   }
 }
 
-export function updateEdges(nodesEl) {
+function updateEdges(nodesEl) {
   if (nodesEl == null || nodesEl == undefined) return;
 
   let edgesEl = getEdgesElementsToBeUpdated(nodesEl);
@@ -923,6 +923,15 @@ export function updateEdges(nodesEl) {
     const data = edgeSocketsMap.get(edgeEl);
     updatePath(data.to, data.from, edgeEl);
   }
+}
+
+export function updateEdge(nodeEl) {
+
+  if (nodeEl == null || nodeEl == undefined) return;
+
+  const nodesEl = [nodeEl];
+
+  updateEdges(nodesEl);
 }
 
 function getEdgesElementsToBeUpdated(nodesEl) {

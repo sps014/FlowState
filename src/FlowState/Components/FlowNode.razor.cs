@@ -115,7 +115,7 @@ namespace FlowState.Components
         {
             if (Node != null && Node.Graph != null && Node.Graph.Canvas != null && Node.Graph.Canvas.JsModule != null)
             {
-                return Node.Graph.Canvas.JsModule.InvokeVoidAsync("updateEdges", [nodeRef]);
+                return Node.Graph.Canvas.JsModule.InvokeVoidAsync("updateEdge", nodeRef);
             }
 
             return ValueTask.CompletedTask;

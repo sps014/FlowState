@@ -32,7 +32,7 @@ public abstract class FlowGroupNodeBase: FlowNodeBase
         if (Graph == null || Graph.Canvas == null || Graph.Canvas.JsModule == null || DomElement == null)
             return ValueTask.FromResult(Array.Empty<string>());
 
-        return Graph.Canvas.JsModule.InvokeAsync<string[]>("getNodesInGroup", [DomElement.nodeRef]);
+        return Graph.Canvas.JsModule.InvokeAsync<string[]>("getNodesInGroup", DomElement.nodeRef);
     }
 
 
