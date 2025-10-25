@@ -53,6 +53,7 @@
     font-size: var(--search-input-font-size, 12px);
     outline: none;
     transition: var(--search-input-transition, border-color 0.2s ease);
+    box-sizing: border-box;
 }
 
 .search-input:focus {

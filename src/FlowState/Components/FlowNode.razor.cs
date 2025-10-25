@@ -106,5 +106,19 @@ namespace FlowState.Components
 
             return ValueTask.FromResult(new DomPoint());
         }
+
+        /// <summary>
+        /// Updates the edges of the node , useful when node is resized externally
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation</returns>
+        public ValueTask UpdateEdgesAsync()
+        {
+            if (Node != null && Node.Graph != null && Node.Graph.Canvas != null && Node.Graph.Canvas.JsModule != null)
+            {
+                return Node.Graph.Canvas.JsModule.InvokeVoidAsync("updateEdges", [nodeRef]);
+            }
+
+            return ValueTask.CompletedTask;
+        }
     }
 }

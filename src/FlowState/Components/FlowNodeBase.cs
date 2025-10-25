@@ -55,7 +55,10 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     /// </summary>
     public IReadOnlyDictionary<string, FlowSocket> OutputSockets => outputSockets;
 
-    internal FlowNode? DomElement;
+    /// <summary>
+    /// Gets or sets the DOM element for the node
+    /// </summary>
+    public FlowNode? DomElement {get; internal set; }
 
     private Dictionary<string, FlowSocket> inputSockets = new();
     private Dictionary<string, FlowSocket> outputSockets = new();
