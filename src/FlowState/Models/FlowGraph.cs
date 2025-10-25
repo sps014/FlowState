@@ -438,11 +438,13 @@ public class FlowGraph : ISerializable<GraphData>
     /// <summary>
     /// Executes the graph
     /// </summary>
-    public ValueTask ExecuteAsync(CancellationToken cancellationToken = default)
+    /// <param name="branchTracking">if true only nodes whose branch is actived will be executed</param>
+    /// <param name="cancellationToken">Cancel the execution of flow </param>
+    public ValueTask ExecuteAsync(bool branchTracking=true,CancellationToken cancellationToken = default)
     {
         if (Canvas == null)
             throw new Exception("Canvas is not set");
-        return ExecutionFlow.ExecuteAsync(cancellationToken);
+        return ExecutionFlow.ExecuteAsync(branchTracking,cancellationToken);
     }
 
     // Serialization Methods

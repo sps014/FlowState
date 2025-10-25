@@ -128,7 +128,9 @@ public class FlowGraphExecution
     /// <summary>
     /// Execute all nodes in the graph in dependency order
     /// </summary>
-    public async ValueTask ExecuteAsync(CancellationToken cancellationToken)
+    /// <param name="branchTracking">if true only nodes whose branch is actived will be executed</param>
+    /// <param name="cancellationToken">Cancel the execution of flow </param>
+    public async ValueTask ExecuteAsync(bool branchTracking=true,CancellationToken cancellationToken=default)
     {
         // Fire start event
         OnExecutionStarted?.Invoke(this, new ExecutionEventArgs
@@ -185,8 +187,8 @@ public class FlowGraphExecution
                 if (node == null)
                     continue;
                 
-                // Check if node should execute based on active branches
-                if (!ShouldNodeExecute(nodeId))
+                // Check if node should execute based on active branches if branch tracking is on
+                if (branchTracking && !ShouldNodeExecute(nodeId))
                     continue;
                 
                 try
