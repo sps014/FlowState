@@ -1,10 +1,10 @@
-<div class="flow-socket @LayoutClass @Class" type="@Type.ToString().ToLower()">
+<div class="flow-socket socket-container @Class" type="@Type.ToString().ToLower()">
     <div class="socket-anchor @ComputedAnchorClass" style="@SocketStyle" @ref="anchorRef" node-id="@FlowNode?.Id" name="@Name"
          type="@Type.ToString().ToLower()" innerColor="@InnerColor" outerColor="@OuterColor">
     </div>
     @if (!string.IsNullOrEmpty(Label))
     {
-        <div class="socket-label">@Label</div>
+        <div class="@LabelClass">@Label</div>
     }
 </div>
 

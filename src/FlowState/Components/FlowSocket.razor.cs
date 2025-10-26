@@ -74,6 +74,12 @@ namespace FlowState.Components
         public string? AnchorClass { get; set; }
 
         /// <summary>
+        /// Gets or sets the CSS class for the socket label element
+        /// </summary>
+        [Parameter]
+        public string LabelClass { get; set; } = "socket-label";
+
+        /// <summary>
         /// Gets the number of connections to this socket
         /// </summary>
         public List<FlowEdge> Connections { get; set; } = new();
@@ -105,7 +111,6 @@ namespace FlowState.Components
         private string? currentOuterColor;
 
         private string ComputedAnchorClass => string.IsNullOrEmpty(AnchorClass) ? "socket-default" : AnchorClass;
-        private string LayoutClass => "socket-container";
         private string SocketStyle => AnchorClass==null?
             $"width:{Size}px; height:{Size}px; background-color:{currentInnerColor ?? InnerColor}; border:2px solid {currentOuterColor ?? OuterColor};":string.Empty;
 
