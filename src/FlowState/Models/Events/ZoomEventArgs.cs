@@ -9,10 +9,5 @@ public class ZoomEventArgs : EventArgs
     /// Gets the current zoom level
     /// </summary>
     public double Zoom { get; init; }
-    
-    /// <summary>
-    /// Gets the zoom level as a percentage
-    /// </summary>
-    public double ZoomPercentage => Zoom * 100;
 }
 
