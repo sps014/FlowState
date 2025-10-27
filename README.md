@@ -25,6 +25,10 @@ A high-performance node editor for Blazor. Build visual programming tools, node-
 
 > **⚠️ EXPERIMENTAL** - This project is in active development and the API may change. Builds are nightly and super frequent and may contain breaking changes. Use in production at your own risk.
 
+
+## Links
+[Documentation](https://sps014.github.io/FlowState/)
+
 ## Installation
 
 ```bash

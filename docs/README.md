@@ -31,11 +31,6 @@ A high-performance node editor for Blazor. Build visual programming tools, node-
 - ✅ **Read-only mode** - Lock graphs for presentation
 - ✅ **Touch support** - Works on desktop and mobile
 
-## Installation
-
-```bash
-dotnet add package FlowState
-```
 
 For detailed installation instructions, see the [Installation Guide](https://sps014.github.io/FlowState/installation.html).
 
