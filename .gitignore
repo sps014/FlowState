@@ -3,6 +3,12 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+
+docs/_site/
+docs/vendor/
+docs/.bundle/
+docs/Gemfile.lock
+
 # dotenv files
 .env
 
