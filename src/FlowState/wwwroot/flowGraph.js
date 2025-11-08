@@ -73,6 +73,7 @@ let autoUpdateSocketColors = false;
 let panKey = "alt"; // "shift", "ctrl", "alt", or "meta"
 let isReadOnly = false;
 let canvasMode = 0; // 0 = Select, 1 = Pan
+let scrollSpeed = 0.02; // Scroll speed for zooming
 
 // Cache
 let cacheGridBackgroundSize = null;
@@ -133,6 +134,7 @@ export function setComponentProperties(props) {
   jsEdgePathFunctionName = props.jsEdgePathFunctionName || null;
   panKey = (props.panKey || "alt").toLowerCase();
   isReadOnly = props.isReadOnly || false;
+  scrollSpeed = props.scrollSpeed || 0.02;
 }
 
 /**
@@ -750,7 +752,7 @@ function onWheel(e) {
   if(isInteractiveElement(e.target))
     return;
   
-  const delta = e.deltaY < 0 ? 0.02 : -0.02;
+  const delta = e.deltaY < 0 ? scrollSpeed : -scrollSpeed;
   const newZoom = clamp(zoom + delta, minZoom, maxZoom);
   
   // If zoom didn't change (at min/max), still prevent scroll but don't update

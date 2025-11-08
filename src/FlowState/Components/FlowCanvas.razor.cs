@@ -112,6 +112,12 @@ namespace FlowState.Components
         public double Zoom { get; set; } = 1.0;
 
         /// <summary>
+        /// Gets or sets the scroll speed for zooming (default is 0.02)
+        /// </summary>
+        [Parameter]
+        public double ScrollSpeed { get; set; } = 0.02;
+
+        /// <summary>
         /// Gets or sets the name of the JavaScript function to use for edge path calculation (should be defined in the js file and must be accessible from Window object)
         /// </summary>
         [Parameter]
@@ -281,7 +287,8 @@ namespace FlowState.Components
                 autoUpdateSocketColors = AutoUpdateSocketColors,
                 jsEdgePathFunctionName = JsEdgePathFunctionName,
                 panKey = PanKey,
-                isReadOnly = IsReadOnly
+                isReadOnly = IsReadOnly,
+                scrollSpeed = ScrollSpeed
             });
             await JsModule.InvokeVoidAsync("setupCanvasEvents", 
                 new

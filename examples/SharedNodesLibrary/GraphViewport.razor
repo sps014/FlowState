@@ -26,6 +26,7 @@
             IsReadOnly="isReadOnly" 
             OnCanvasLoaded="OnLoaded" 
             OnSocketLongPress="HandleSocketLongPress"
+            ScrollSpeed="0.1"
             OnContextMenu="HandleContextMenu">
     <BackgroundContent>
         <FlowBackground class="flow-grid-lines"/>
@@ -44,7 +45,7 @@
     FlowContextMenu? contextMenu;
     private string data="{}";
     private bool isReadOnly = false;
-    private string currentCanvasMode = "Select";
+    private string currentCanvasMode = "Pan";
 
     protected override void OnInitialized()
     {
@@ -57,6 +58,9 @@
     }
     private async Task OnLoaded()
     {
+		if (canvas == null) return;
+        
+        await canvas.SetCanvasModeAsync(CanvasMode.Pan);
 
         graph.TypeCompatibiltyRegistry.Register<float>(typeof(int));
         
