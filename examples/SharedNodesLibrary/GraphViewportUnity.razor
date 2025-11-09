@@ -252,31 +252,6 @@
   box-shadow: 
     0 4px 16px rgba(2,6,23,0.6),
     inset 0 1px 0 rgba(255,255,255,0.05);
-  transform-origin: 0 0;
-  user-select: none;
-  cursor: grab;
-  z-index: 10; /* Default z-index for regular nodes */
-  
-  /* PERFORMANCE OPTIMIZATIONS */
-  /* GPU acceleration with proper text rendering */
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  
-  /* Text rendering optimizations - prevents blur during zoom */
-  -webkit-font-smoothing: subpixel-antialiased;
-  -moz-osx-font-smoothing: auto;
-  text-rendering: geometricPrecision;
-  
-  /* Force subpixel precision for crisp text at any zoom level */
-  -webkit-transform: translate3d(0, 0, 0);
-  -webkit-perspective: 1000;
-  perspective: 1000;
-  
-  /* CSS containment for better rendering performance */
-  contain: layout style paint;
-  
-  /* Prevent layout thrashing */
-  isolation: isolate;
 }
 
 /* Group nodes should be behind edges and regular nodes */

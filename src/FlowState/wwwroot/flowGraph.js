@@ -766,15 +766,22 @@ function onWheel(e) {
   offsetY = mouseY - (mouseY - offsetY) * (newZoom / zoom);
 
   zoom = newZoom;
-  updateTransforms();
+  updateTransforms(true);
 
   dotnetRef.invokeMethodAsync("NotifyZoomed", zoom);
 }
 
 // =================== Transform & Background Updates ===================
 
-function updateTransforms() {
-  flowContentEl.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0px) scale(${zoom})`;
+function updateTransforms(rerender=false) {
+  flowContentEl.style.transform = `translate3d(${offsetX.toFixed(1)}px, ${offsetY.toFixed(1)}px, 0px) scale(${zoom.toFixed(2)})`;
+
+    if (rerender) {
+        // force reflow to ensure smooth update
+        flowContentEl.style.display = 'none';
+        flowContentEl.offsetHeight; // force reflow
+        flowContentEl.style.display = '';
+    }
   panBackgroundPosition();
   scaleBackgroundSize();
 }
@@ -1002,7 +1009,7 @@ export function setCanvasProperties(props) {
   zoom = clamp(props.zoom, minZoom, maxZoom);
   isReadOnly = props.isReadOnly;
 
-  updateTransforms();
+  updateTransforms(true);
 }
 
 /**
@@ -1025,8 +1032,8 @@ export function setOffset(x, y) {
  * Sets the canvas zoom level
  */
 export function setZoom(z) {
-  zoom = clamp(z, minZoom, maxZoom);
-  updateTransforms();
+    zoom = clamp(z, minZoom, maxZoom);
+    updateTransforms(true);
 }
 
 // =================== Rectangle Selection ===================

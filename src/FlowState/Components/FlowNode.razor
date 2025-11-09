@@ -14,4 +14,22 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.05);
         border-color: #7c3aed;
     }
+
+    .flow-node
+    {
+        transform-origin: 0 0;
+        user-select: none;
+        cursor: grab;
+        z-index: 10;
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        -webkit-font-smoothing: subpixel-antialiased;
+        text-rendering: geometricPrecision;
+        /* Force subpixel precision for crisp text at any zoom level */
+        -webkit-transform: translate3d(0, 0, 0);
+        -webkit-perspective: 1000;
+        perspective: 1000;
+        contain: layout style paint;
+        isolation: isolate;
+    }
 </style>
