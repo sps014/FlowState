@@ -93,5 +93,12 @@ public class CommandManager
         UndoRedoStackChanged?.Invoke(this, EventArgs.Empty);
     }
 
+
+    /// <summary>
+    /// Occurs when the state of the undo or redo stack changes.
+    /// </summary>
+    /// <remarks>Subscribe to this event to be notified when actions affecting the undo or redo history occur,
+    /// such as performing, undoing, or redoing an operation. This event can be used to update UI elements or enable and
+    /// disable commands related to undo and redo functionality.</remarks>
     public event EventHandler? UndoRedoStackChanged;
 }

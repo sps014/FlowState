@@ -36,6 +36,8 @@ The main canvas component for rendering and managing flow graphs. This is the pr
 | AutoUpdateSocketColors | bool | true | Automatically update socket colors based on connections |
 | EdgeShouldMatchDataType | bool | true | Validate type compatibility when connecting sockets |
 | JsEdgePathFunctionName | string | null | Custom JavaScript function name for edge rendering |
+| ScrollSpeed | float | 1 | How fast zoom happens in the canvas viewport |
+
 
 ## Methods
 

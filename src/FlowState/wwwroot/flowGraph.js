@@ -73,7 +73,7 @@ let autoUpdateSocketColors = false;
 let panKey = "alt"; // "shift", "ctrl", "alt", or "meta"
 let isReadOnly = false;
 let canvasMode = 0; // 0 = Select, 1 = Pan
-let scrollSpeed = 0.02; // Scroll speed for zooming
+let scrollSpeed = 1; // Scroll speed for zooming
 
 // Cache
 let cacheGridBackgroundSize = null;
@@ -751,8 +751,8 @@ function onWheel(e) {
 
   if(isInteractiveElement(e.target))
     return;
-  
-  const delta = e.deltaY < 0 ? scrollSpeed : -scrollSpeed;
+
+    const delta = e.deltaY * -scrollSpeed*0.001;
   const newZoom = clamp(zoom + delta, minZoom, maxZoom);
   
   // If zoom didn't change (at min/max), still prevent scroll but don't update
