@@ -480,18 +480,18 @@ public class FlowGraph : ISerializable<GraphData>
 
         await Canvas.SetViewportPropertiesAsync(graphData.Canvas);
 
-        var lastNode = Nodes.LastOrDefault();
+        NodeInfo? lastNodeInfo = null;
 
         foreach (var node in graphData.Nodes)
         {
-            var type = Type.GetType(node.Type)!;
-            _ = await CreateNodeAsync(type, node.X, node.Y, node.GetRawDictionary(), suppressEvent: true, suppressAddingToCommandStack: true);
+            var type = NodeRegistry.GetNodeTypeFromName(node.Name);
+            lastNodeInfo = await CreateNodeAsync(type, node.X, node.Y, node.GetRawDictionary(), suppressEvent: true, suppressAddingToCommandStack: true);
         }
 
         ForcedRequestDomStateChanged?.Invoke(this, EventArgs.Empty);
 
-        if(lastNode!=null)
-            await lastNode.WaitUntilRenderedAsync();
+        if(lastNodeInfo != null && lastNodeInfo.Instance!=null)
+            await lastNodeInfo.Instance.WaitUntilRenderedAsync();
 
         foreach (var edge in graphData.Edges)
         {

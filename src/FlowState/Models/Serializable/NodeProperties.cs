@@ -6,9 +6,9 @@ namespace FlowState.Models.Serializable;
 public class NodeProperties
 {
     /// <summary>
-    /// Gets or sets the node type
+    /// Gets or sets the node name
     /// </summary>
-    public string Type { get; set; }
+    public string Name { get; set; }
     
     /// <summary>
     /// Gets or sets the node ID
@@ -33,12 +33,12 @@ public class NodeProperties
     /// <summary>
     /// Initializes a new instance of the NodeProperties class
     /// </summary>
-    /// <param name="type">The node type</param>
+    /// <param name="name">The node type name</param>
     /// <param name="id">The node ID</param>
     /// <param name="data">The stored properties</param>
-    public NodeProperties(string type, string id, Dictionary<string, StoredProperty> data)
+    public NodeProperties(string name, string id, Dictionary<string, StoredProperty> data)
     {
-        Type = type;
+        Name = name;
         Id = id;
         Data = data;
     }

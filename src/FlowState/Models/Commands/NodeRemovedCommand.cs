@@ -58,7 +58,7 @@ public class NodeRemovedCommand : ICommand
             dict.Add(d.Key, d.Value.GetValue());
         }
 
-        await Graph.CreateNodeAsync(NodeProperties.Type, NodeProperties.X, NodeProperties.Y, dict, suppressAddingToCommandStack: true);
+        await Graph.CreateNodeAsync(NodeProperties.Name, NodeProperties.X, NodeProperties.Y, dict, suppressAddingToCommandStack: true);
 
 
         await Task.Delay(50);
