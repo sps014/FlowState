@@ -5,7 +5,7 @@
 @using System.Diagnostics
 
 <path id="@Id"
-    class="edge @(IsExecuting && Graph?.Canvas != null ? Graph.Canvas.ExecutingEdgeClass : "")" 
+    class="edge @(IsExecuting && Canvas != null ? Canvas.ExecutingEdgeClass : "")" 
     style="pointer-events: stroke; @Style" 
     @ref="edgeRef" 
     @key="Id" 

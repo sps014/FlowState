@@ -155,35 +155,7 @@ Gets an edge by its ID.
 var edge = graph.GetEdgeById("edge-id-123");
 ```
 
-## Selection Management
 
-### SelectNodesAsync
-Selects nodes in the canvas.
-
-**Signature**: `ValueTask SelectNodesAsync(params string[] nodeIds)`
-
-```csharp
-await graph.SelectNodesAsync("node1", "node2", "node3");
-```
-
-### ClearNodeSelectionAsync
-Clears the node selection.
-
-**Signature**: `ValueTask ClearNodeSelectionAsync()`
-
-```csharp
-await graph.ClearNodeSelectionAsync();
-```
-
-### GetSelectedNodesAsync
-Gets IDs of selected nodes.
-
-**Signature**: `ValueTask<string[]> GetSelectedNodesAsync()`
-
-```csharp
-var selectedIds = await graph.GetSelectedNodesAsync();
-Console.WriteLine($"Selected: {string.Join(", ", selectedIds)}");
-```
 
 ## Execution
 

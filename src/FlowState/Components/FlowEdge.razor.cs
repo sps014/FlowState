@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using FlowState.Models;
 using FlowState.Models.Serializable;
 using Microsoft.AspNetCore.Components;
@@ -14,6 +15,12 @@ namespace FlowState.Components
         internal ElementReference edgeRef;
 
         // Properties
+
+        /// <summary>
+        /// Current FlowCanvas context 
+        /// </summary>
+        [CascadingParameter]
+        public FlowCanvas? Canvas { get; set; }
 
         /// <summary>
         /// Gets or sets custom CSS styles for the edge
@@ -104,21 +111,21 @@ namespace FlowState.Components
             if (!firstRender)
                 return;
 
-            if (Graph == null || Graph.Canvas == null)
+            if (Canvas == null)
                 return;
 
             strokeColorCopy = Stroke;
 
             if (!IsTempEdge && FromSocket != null && ToSocket != null)
             {
-                await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, FromSocket.FlowNode!);
-                await Graph.Canvas.AddEdgeToNodeEdgeMapAsync(this, ToSocket.FlowNode!);
+                await Canvas.AddEdgeToNodeEdgeMapAsync(this, FromSocket.FlowNode!);
+                await Canvas.AddEdgeToNodeEdgeMapAsync(this, ToSocket.FlowNode!);
                 ToSocket.Connections.Add(this);
                 FromSocket.Connections.Add(this);
                 await UpdatePathAsync();
             }
 
-            if (Graph.Canvas.AutoUpdateSocketColors && FromSocket != null)
+            if (Canvas.AutoUpdateSocketColors && FromSocket != null)
             {
                 Stroke = FromSocket.InnerColor;
 
@@ -137,9 +144,9 @@ namespace FlowState.Components
         /// <returns>A task representing the asynchronous operation</returns>
         public ValueTask UpdatePathAsync()
         {
-            if (Graph == null || Graph.Canvas == null || FromSocket == null || ToSocket == null)
+            if (Canvas == null || FromSocket == null || ToSocket == null)
                 return ValueTask.CompletedTask;
-            return Graph.Canvas.JsModule.InvokeVoidAsync("updatePath", ToSocket.anchorRef, FromSocket.anchorRef, edgeRef);
+            return Canvas.JsModule.InvokeVoidAsync("updatePath", ToSocket.anchorRef, FromSocket.anchorRef, edgeRef);
         }
 
         /// <summary>
@@ -148,10 +155,10 @@ namespace FlowState.Components
         /// <returns>A task representing the asynchronous operation</returns>
         public ValueTask SetTempEdgeElementAsync()
         {
-            if (Graph == null || Graph.Canvas == null)
+            if (Canvas == null)
                 return ValueTask.CompletedTask;
 
-            return Graph.Canvas.JsModule.InvokeVoidAsync("setTempEdgeElement", edgeRef);
+            return Canvas.JsModule.InvokeVoidAsync("setTempEdgeElement", edgeRef);
         }
 
         /// <summary>
@@ -192,16 +199,16 @@ namespace FlowState.Components
         /// </summary>
         private async ValueTask RemoveFromCanvasEdgeMapAsync()
         {
-            if (Graph == null || Graph.Canvas == null)
+            if (Graph == null ||Canvas == null)
                 return;
 
             if (FromSocket != null)
             {
-                await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, FromSocket.FlowNode!);
+                await Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, FromSocket.FlowNode!);
             }
             if (ToSocket != null)
             {
-                await Graph.Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, ToSocket.FlowNode!);
+                await Canvas.RemoveEdgeFromNodeEdgeMapAsync(this, ToSocket.FlowNode!);
             }
         }
 
@@ -211,7 +218,7 @@ namespace FlowState.Components
         /// <returns>A task representing the asynchronous operation</returns>
         public async ValueTask CleanupConnectionsAsync()
         {
-            if (Graph == null || Graph.Canvas == null || IsTempEdge)
+            if (Graph == null ||Canvas == null || IsTempEdge)
                 return;
 
             try
@@ -233,10 +240,10 @@ namespace FlowState.Components
         /// <returns>A task representing the asynchronous operation</returns>
         public async ValueTask DisposeAsync()
         {
-            if (Graph == null || Graph.Canvas == null || IsTempEdge)
+            if (Graph == null ||Canvas == null || IsTempEdge)
                 return;
 
-            if (ToSocket != null && Graph.Canvas.AutoUpdateSocketColors)
+            if (ToSocket != null &&Canvas.AutoUpdateSocketColors)
             {
                 ToSocket.ResetColor();
             }

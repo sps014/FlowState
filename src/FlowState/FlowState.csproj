@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	<LangVersion>14.0</LangVersion>
     
     <!-- NuGet Package Metadata -->
     <PackageId>FlowState</PackageId>

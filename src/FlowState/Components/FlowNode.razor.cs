@@ -13,6 +13,12 @@ namespace FlowState.Components
         // Properties
 
         /// <summary>
+        /// Current FlowCanvas context 
+        /// </summary>
+        [CascadingParameter]
+        public FlowCanvas? Canvas { get; set; }
+
+        /// <summary>
         /// Gets or sets the content to render inside the node
         /// </summary>
         [Parameter]
@@ -87,8 +93,8 @@ namespace FlowState.Components
         /// <returns>A task representing the asynchronous operation</returns>
         public ValueTask MoveNodeAsync(double x, double y)
         {
-            if (Node != null && Node.Graph != null && Node.Graph.Canvas != null && Node.Graph.Canvas.JsModule != null)
-                return Node.Graph.Canvas.JsModule.InvokeVoidAsync("moveNode", nodeRef, x, y);
+            if (Node != null && Node.Graph != null && Canvas != null && Canvas.JsModule != null)
+                return Canvas.JsModule.InvokeVoidAsync("moveNode", nodeRef, x, y);
 
             return ValueTask.CompletedTask;
         }
@@ -99,9 +105,9 @@ namespace FlowState.Components
         /// <returns>The current position as a DomPoint</returns>
         public ValueTask<DomPoint> GetTransformPositionAsync()
         {
-            if (Node != null && Node.Graph != null && Node.Graph.Canvas != null && Node.Graph.Canvas.JsModule != null)
+            if (Node != null && Node.Graph != null && Canvas != null && Canvas.JsModule != null)
             {
-                return Node.Graph.Canvas.JsModule.InvokeAsync<DomPoint>("getTransformPosition", nodeRef);
+                return Canvas.JsModule.InvokeAsync<DomPoint>("getTransformPosition", nodeRef);
             }
 
             return ValueTask.FromResult(new DomPoint());
@@ -113,9 +119,9 @@ namespace FlowState.Components
         /// <returns>A task representing the asynchronous operation</returns>
         public ValueTask UpdateEdgesAsync()
         {
-            if (Node != null && Node.Graph != null && Node.Graph.Canvas != null && Node.Graph.Canvas.JsModule != null)
+            if (Node != null && Node.Graph != null && Canvas != null && Canvas.JsModule != null)
             {
-                return Node.Graph.Canvas.JsModule.InvokeVoidAsync("updateEdge", nodeRef);
+                return Canvas.JsModule.InvokeVoidAsync("updateEdge", nodeRef);
             }
 
             return ValueTask.CompletedTask;

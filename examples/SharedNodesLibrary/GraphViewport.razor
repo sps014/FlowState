@@ -109,7 +109,8 @@
 
     private async Task ClearGraph()
     {
-        await graph.ClearAsync();
+        if(graph.Canvas!=null)
+            await  graph.Canvas.ClearAsync();
     }
 
     private async Task LoadGraph()

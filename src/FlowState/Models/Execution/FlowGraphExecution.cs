@@ -284,7 +284,10 @@ public class FlowGraphExecution
     /// </summary>
     public async Task ExecuteSelectedNodesAsync(CancellationToken cancellationToken = default)
     {
-        var selectedNodeIds = await Graph.GetSelectedNodesAsync();
+        if (Graph.Canvas == null)
+            return;
+
+        var selectedNodeIds = await Graph.Canvas.GetSelectedNodesAsync();
         
         if (selectedNodeIds.Length == 0)
             return;
@@ -537,7 +540,7 @@ public class FlowGraphExecution
     private void MarkNodeEdgesAsExecuting(string nodeId, bool isExecuting)
     {
         var node = Graph.GetNodeById(nodeId);
-        if (node == null || Graph.Canvas == null)
+        if (node == null || Graph == null)
             return;
 
         // Directly access input socket connections - much faster than iterating all edges

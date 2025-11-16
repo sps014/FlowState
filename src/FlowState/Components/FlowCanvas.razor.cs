@@ -133,7 +133,20 @@ namespace FlowState.Components
         /// Gets or sets whether the canvas is in read-only mode. When true, only panning and zooming are allowed.
         /// </summary>
         [Parameter]
-        public bool IsReadOnly { get; set; } = false;
+#pragma warning disable BL0007 // Component parameters should be auto properties
+        public bool IsReadOnly
+#pragma warning restore BL0007 // Component parameters should be auto properties
+        {
+            get => Graph?.IsReadOnly ?? false;
+            set
+            {
+                if (Graph != null)
+                {
+                    Graph.IsReadOnly = value;
+                    if (isInitialized) SetReadOnlyAsync(value);
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets custom CSS styles for the background grid
@@ -229,6 +242,7 @@ namespace FlowState.Components
         private ElementReference edgeHoverDetectorRef;
         private ElementReference edgesSvgRef;
         internal ElementReference gridRef;
+        private bool isInitialized;
 
 #nullable disable
         internal IJSObjectReference JsModule;
@@ -316,6 +330,8 @@ namespace FlowState.Components
                     MinZoom = MinZoom,
                     MaxZoom = MaxZoom
                 });
+
+            isInitialized = true;
         }
         // Event Handlers
 
@@ -406,6 +422,9 @@ namespace FlowState.Components
         /// <returns>A task representing the asynchronous operation</returns>
         public ValueTask SetReadOnlyAsync(bool isReadOnly)
         {
+            if (IsReadOnly == isReadOnly)
+                return ValueTask.CompletedTask;
+
             IsReadOnly = isReadOnly;
             return JsModule.InvokeVoidAsync("setReadOnly", isReadOnly);
         }

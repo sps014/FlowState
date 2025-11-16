@@ -33,7 +33,7 @@ public class CommandManager
     public void AddCommand(ICommand command)
     {
 
-        if(Graph.Canvas==null || Graph.Canvas.IsReadOnly)
+        if(Graph.IsReadOnly)
             return;
         //await command.ExecuteAsync();
         undoStack.Push(command);
@@ -66,7 +66,7 @@ public class CommandManager
     /// <returns>A task representing the asynchronous operation</returns>
     public async ValueTask UndoAsync()
     {
-        if (Graph.Canvas == null || Graph.Canvas.IsReadOnly)
+        if (Graph == null || Graph.IsReadOnly)
             return;
 
         if (undoStack.Count == 0)

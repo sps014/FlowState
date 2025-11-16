@@ -46,6 +46,11 @@ public class FlowGraph : ISerializable<GraphData>
     /// </summary>
     public FlowCanvas? Canvas { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the Graph is read-only.
+    /// </summary>
+    public bool IsReadOnly { get; set; } = false;
+
     internal Dictionary<string, NodeInfo> NodesInfo { get; } = new();
     internal Dictionary<string, EdgeInfo> EdgesInfo { get; } = new();
 
@@ -396,43 +401,6 @@ public class FlowGraph : ISerializable<GraphData>
         return null;
     }
 
-    // Selection Methods
-
-    /// <summary>
-    /// Selects nodes in the canvas by their IDs
-    /// </summary>
-    /// <param name="nodeIds">The IDs of the nodes to select</param>
-    /// <returns>A task representing the asynchronous operation</returns>
-    public ValueTask SelectNodesAsync(params string[] nodeIds)
-    {
-        if (Canvas == null)
-            return ValueTask.CompletedTask;
-        return Canvas.SelectNodesAsync(nodeIds);
-    }
-
-    /// <summary>
-    /// Clears the current node selection in the canvas
-    /// </summary>
-    /// <returns>A task representing the asynchronous operation</returns>
-    public ValueTask ClearNodeSelectionAsync()
-    {
-        if (Canvas == null)
-            return ValueTask.CompletedTask;
-        return Canvas.ClearNodeSelectionAsync();
-    }
-
-    /// <summary>
-    /// Gets the IDs of currently selected nodes
-    /// </summary>
-    /// <returns>An array of selected node IDs</returns>
-    public ValueTask<string[]> GetSelectedNodesAsync()
-    {
-        if (Canvas == null)
-            throw new Exception("Canvas is not set");
-        return Canvas.GetSelectedNodesAsync();
-    }
-
-
     // Graph Execution Methods
 
     /// <summary>
@@ -442,8 +410,6 @@ public class FlowGraph : ISerializable<GraphData>
     /// <param name="cancellationToken">Cancel the execution of flow </param>
     public ValueTask ExecuteAsync(bool branchTracking=true,CancellationToken cancellationToken = default)
     {
-        if (Canvas == null)
-            throw new Exception("Canvas is not set");
         return ExecutionFlow.ExecuteAsync(branchTracking,cancellationToken);
     }
 
@@ -457,6 +423,7 @@ public class FlowGraph : ISerializable<GraphData>
     {
         if (Canvas == null)
             throw new Exception("Canvas is not set");
+
         var canvas = await Canvas.GetViewportPropertiesAsync();
 
         var nodesProperties = new List<NodeProperties>();
@@ -509,7 +476,7 @@ public class FlowGraph : ISerializable<GraphData>
         if (Canvas == null)
             throw new Exception("Canvas is not set");
 
-        await ClearAsync();
+        await Canvas.ClearAsync();
 
         await Canvas.SetViewportPropertiesAsync(graphData.Canvas);
 
@@ -532,18 +499,6 @@ public class FlowGraph : ISerializable<GraphData>
 
     }
 
-
-    /// <summary>
-    /// Clears the entire graph including all nodes and edges
-    /// </summary>
-    /// <returns>A task representing the asynchronous operation</returns>
-    public ValueTask ClearAsync()
-    {
-        if (Canvas == null)
-            throw new Exception("Canvas is not set");
-        
-        return Canvas.ClearAsync();
-    }
 
     // Private Helper Methods
 

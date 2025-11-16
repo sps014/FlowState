@@ -10,6 +10,7 @@ namespace FlowState.Components;
 public abstract class FlowGroupNodeBase: FlowNodeBase
 {
 
+
     /// <summary>
     /// Gets or sets the width of the node
     /// </summary>
@@ -29,10 +30,10 @@ public abstract class FlowGroupNodeBase: FlowNodeBase
     /// <returns>An array of node IDs</returns>
     public ValueTask<string[]> GetNodesInGroupAsync()
     {
-        if (Graph == null || Graph.Canvas == null || Graph.Canvas.JsModule == null || DomElement == null)
+        if (Graph == null || Canvas == null || Canvas.JsModule == null || DomElement == null)
             return ValueTask.FromResult(Array.Empty<string>());
 
-        return Graph.Canvas.JsModule.InvokeAsync<string[]>("getNodesInGroup", DomElement.nodeRef);
+        return Canvas.JsModule.InvokeAsync<string[]>("getNodesInGroup", DomElement.nodeRef);
     }
 
 
@@ -68,13 +69,13 @@ public abstract class FlowGroupNodeBase: FlowNodeBase
     /// <returns>A task representing the asynchronous operation</returns>
     public ValueTask SetSizeAsync(double width, double height)
     {
-        if (Graph == null || Graph.Canvas == null || Graph.Canvas.JsModule == null || DomElement == null)
+        if (Graph == null || Canvas == null || Canvas.JsModule == null || DomElement == null)
             return ValueTask.CompletedTask;
 
         Width = width;
         Height = height;
 
-        return Graph.Canvas.JsModule.InvokeVoidAsync("setGroupNodeSize", DomElement.nodeRef, width, height);
+        return Canvas.JsModule.InvokeVoidAsync("setGroupNodeSize", DomElement.nodeRef, width, height);
     }
 
 

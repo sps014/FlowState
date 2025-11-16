@@ -114,7 +114,7 @@
 
     private async Task ClearGraph()
     {
-        await graph.ClearAsync();
+        await graph.Canvas.ClearAsync();
     }
 
     private async Task LoadGraph()
@@ -130,6 +130,7 @@
     private async Task ToggleReadOnly()
     {
         isReadOnly = !isReadOnly;
+
         if (canvas != null)
         {
             await canvas.SetReadOnlyAsync(isReadOnly);

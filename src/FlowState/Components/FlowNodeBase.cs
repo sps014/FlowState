@@ -16,6 +16,12 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     // Properties
 
     /// <summary>
+    /// Current FlowCanvas context 
+    /// </summary>
+    [CascadingParameter]
+    public FlowCanvas? Canvas { get; set; }
+
+    /// <summary>
     /// Gets or sets the X coordinate of the node
     /// </summary>
     [Parameter]
@@ -193,8 +199,8 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         if (!firstRender)
             return;
 
-        if (Graph != null && Graph.Canvas != null)
-            Graph.Canvas.Refresh();
+        if (Canvas != null)
+            Canvas.Refresh();
     }
 
     /// <summary>
