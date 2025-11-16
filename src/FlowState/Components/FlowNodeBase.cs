@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Xml.Linq;
 using FlowState.Models;
 using FlowState.Models.Execution;
 using FlowState.Models.Serializable;
@@ -68,6 +69,10 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
 
     private Dictionary<string, FlowSocket> inputSockets = new();
     private Dictionary<string, FlowSocket> outputSockets = new();
+
+
+    internal TaskCompletionSource renderCompletionSource = new TaskCompletionSource();
+
 
     /// <summary>
     /// Gets or sets the kind of node
@@ -202,6 +207,22 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         if (Canvas != null)
             Canvas.Refresh();
     }
+
+    /// <summary>
+    /// Asynchronously waits until the component has finished rendering.
+    /// </summary>
+    /// <returns>A task that completes when the component is fully rendered.</returns>
+    public Task WaitUntilRenderedAsync()
+    {
+        if (IsRendered)
+        {
+            renderCompletionSource.SetResult();
+            return renderCompletionSource.Task;
+        }
+
+        return renderCompletionSource.Task;
+    }
+
 
     /// <summary>
     /// Disposes of the node and clears all sockets

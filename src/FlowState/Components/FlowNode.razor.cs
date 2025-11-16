@@ -76,9 +76,14 @@ namespace FlowState.Components
 
                 var nodeInfo = Node.Graph.GetNodeInfoById(Node.Id);
 
+                //clear parameters to fix serialization issues on multple canvas renders
                 if (nodeInfo != null)
                     nodeInfo.Parameters.Clear();
+
                 Node.IsRendered = true;
+
+                Node.renderCompletionSource.SetResult();
+
                 await Node.OnRenderedAsync();
             }
         }

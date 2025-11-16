@@ -639,7 +639,7 @@ function getNodesContainedInGroup(groupNode,nodes) {
     const result = new Set();
 
     for (const n of nodes) {
-      if (n === groupNode) continue;      
+        if (n === groupNode || n.getAttribute('kind')==='Group') continue;      
       const nodeRect = n.getBoundingClientRect();
       
       // Check if rectangles intersect (any overlap)
