@@ -64,7 +64,7 @@ public class NodeRemovedCommand : ICommand
         await Task.Delay(50);
         foreach(var e in Edges)
         {
-            await Graph.ConnectAsync(e.FromNodeId, e.ToNodeId, e.FromSocketName, e.ToSocketName, suppressAddingToCommandStack: false);
+            await Graph.ConnectAsync(e.FromNodeId, e.ToNodeId, e.FromSocketName, e.ToSocketName, suppressAddingToCommandStack: true);
         }
     }
 
