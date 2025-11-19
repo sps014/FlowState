@@ -295,6 +295,8 @@ namespace FlowState.Components
                 throw new Exception("Flow Canvas Background is null");
 
             JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowGraph.js");
+            JsModule = await JsModule.InvokeAsync<IJSObjectReference>("createFlowCanvas");
+            
             await JsModule.InvokeVoidAsync("setComponentProperties", new
             {
                 nodeSelectionClass = NodeSelectionClass,
