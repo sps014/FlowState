@@ -126,18 +126,18 @@ public class FlowGraph : ISerializable<GraphData>
     /// <summary>
     /// Creates a new node in the graph at the specified position
     /// </summary>
-    /// <param name="type">The fully qualified type name of the node</param>
+    /// <param name="name">name of the node</param>
     /// <param name="x">The X coordinate</param>
     /// <param name="y">The Y coordinate</param>
     /// <param name="data">Initial data for the node</param>
     /// <param name="suppressEvent">If true, does not fire NodeAdded event</param>
     /// <param name="suppressAddingToCommandStack">If true, does not add to command stack</param>
     /// <returns>Information about the created node</returns>
-    public ValueTask<NodeInfo> CreateNodeAsync(string type, double x, double y, Dictionary<string, object?> data, bool suppressEvent = false, bool suppressAddingToCommandStack = false)
+    public ValueTask<NodeInfo> CreateNodeAsync(string name, double x, double y, Dictionary<string, object?> data, bool suppressEvent = false, bool suppressAddingToCommandStack = false)
     {
-        var parsedType = Type.GetType(type);
+        var parsedType = NodeRegistry.GetNodeTypeFromName(name);
         if (parsedType == null)
-            throw new Exception("Invalid type: " + type);
+            throw new Exception("Invalid type: " + name);
 
         return CreateNodeAsync(parsedType, x, y, data, suppressEvent, suppressAddingToCommandStack);
     }
