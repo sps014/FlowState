@@ -3,6 +3,7 @@ import { SelectionController } from "./selectionController.js";
 import { NodeController } from "./nodeController.js";
 import { EdgeController } from "./edgeController.js";
 import { SpatialGrid } from "./spatialGrid.js";
+import { ViewportVirtualization } from "./viewportVirtualization.js";
 import { setupGlobalDebugging } from "./spatialGridUtils.js";
 
 class FlowCanvas {
@@ -72,6 +73,7 @@ class FlowCanvas {
     this.nodeController = new NodeController(this);
     this.edgeController = new EdgeController(this);
     this.spatialGrid = new SpatialGrid(this);
+    this.viewportVirtualization = new ViewportVirtualization(this);
 
     this.setupGlobalWindowFunctions();
   }
@@ -117,6 +119,7 @@ class FlowCanvas {
     // to ensure all nodes are rendered
     setTimeout(() => {
       this.spatialGrid.rebuild();
+      this.viewportVirtualization.scheduleUpdate();
       // Setup debugging tools in development
       if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
         setupGlobalDebugging(this);

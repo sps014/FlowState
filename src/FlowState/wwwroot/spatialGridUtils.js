@@ -157,7 +157,6 @@ export function printSpatialGrid(canvas) {
     console.log('📊 Grid Configuration:');
     console.log(`   Cell Size: ${grid.cellSize}px`);
     console.log(`   Canvas Size: ${grid.canvasWidth}px × ${grid.canvasHeight}px`);
-    console.log(`   Cache Timeout: ${grid.cacheTimeout}ms`);
 
     // Statistics
     const stats = grid.getStats();
@@ -341,6 +340,16 @@ export function setupGlobalDebugging(canvas) {
             cleanup: () => canvas.spatialGrid?.cleanupStaleNodes()
         };
 
+        window.viewportDebug = {
+            enable: () => canvas.viewportVirtualization?.enable(),
+            disable: () => canvas.viewportVirtualization?.disable(),
+            update: () => canvas.viewportVirtualization?.update(),
+            stats: () => canvas.viewportVirtualization?.getStats(),
+            print: () => canvas.viewportVirtualization?.printStats(),
+            setPadding: (padding) => canvas.viewportVirtualization?.setPadding(padding),
+            get enabled() { return canvas.viewportVirtualization?.enabled; }
+        };
+
         // console.log('%c Spatial Grid Debug Tools! ', 'background: #4CAF50; color: white; font-size: 14px; padding: 5px;');
         // console.log('Use window.spatialGridDebug for debugging:');
         // console.log('  • .visualize()      - Show grid visualization');
@@ -352,6 +361,16 @@ export function setupGlobalDebugging(canvas) {
         // console.log('  • .rebuild()        - Rebuild grid');
         // console.log('  • .cleanup()        - Remove stale nodes');
         // console.log('  • .clear()          - Clear grid');
+        // console.log('');
+        // console.log('%c Viewport Virtualization Debug Tools! ', 'background: #2196F3; color: white; font-size: 14px; padding: 5px;');
+        // console.log('Use window.viewportDebug for debugging:');
+        // console.log('  • .enable()         - Enable virtualization');
+        // console.log('  • .disable()        - Disable virtualization');
+        // console.log('  • .update()         - Force update');
+        // console.log('  • .stats()          - Get statistics');
+        // console.log('  • .print()          - Print statistics');
+        // console.log('  • .setPadding(px)   - Set viewport padding');
+        // console.log('  • .enabled          - Check if enabled');
     }
 }
 

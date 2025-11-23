@@ -125,6 +125,8 @@ export class SpatialGrid {
                 }
                 this.mutationCleanupTimer = setTimeout(() => {
                     this.cleanupStaleNodes();
+                    // Update viewport virtualization after DOM changes
+                    this.canvas.viewportVirtualization?.scheduleUpdate();
                 }, 100);
             }
         });

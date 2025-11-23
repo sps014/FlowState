@@ -146,6 +146,9 @@ export class NodeController {
 
         // Update spatial grid with all dirty nodes at once
         this.canvas.spatialGrid.updateDirtyNodes();
+        
+        // Update viewport virtualization after node moves
+        this.canvas.viewportVirtualization.scheduleUpdate();
 
         if (this.isGroupNodeDragging) {
             for (const n of this.groupedNodes) {

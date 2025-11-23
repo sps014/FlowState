@@ -81,6 +81,7 @@ export class ViewportController {
         this.canvas.offsetY = this.lastOffsetY + (e.clientY - this.startY);
 
         this.updateTransforms();
+        this.canvas.viewportVirtualization.scheduleUpdate();
 
         e.stopPropagation();
         e.preventDefault();
@@ -96,6 +97,8 @@ export class ViewportController {
         this.isPanning = false;
         this.canvas.canvasEl.classList.remove("is-panning");
         this.canvas.flowContentEl.style.willChange = "auto";
+
+        this.canvas.viewportVirtualization.scheduleUpdate();
 
         this.canvas.dotnetRef.invokeMethodAsync(
             "NotifyPanned",
@@ -148,6 +151,7 @@ export class ViewportController {
 
         this.canvas.zoom = newZoom;
         this.updateTransforms(true);
+        this.canvas.viewportVirtualization.scheduleUpdate();
 
         // Throttle notification to Blazor
         if (!this.zoomNotifyTimer) {
