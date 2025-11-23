@@ -339,37 +339,45 @@ namespace FlowState.Components
 
         private void ForcedRequestDomStateChanged(object? _, EventArgs e)
         {
-            StateHasChanged();
+            NotifyStateHasChanged();
         }
 
         private void RefreshOnAllEdgesCleared(object? _, EventArgs e)
         {
-            StateHasChanged();
+            NotifyStateHasChanged();
         }
 
         private void RefreshOnNodeAdded(object? _, NodeAddedEventArgs e)
         {
-            StateHasChanged();
+            NotifyStateHasChanged();
         }
 
         private void RefreshOnNodeRemoved(object? _, NodeRemovedEventArgs e)
         {
-            StateHasChanged();
+            NotifyStateHasChanged();
         }
 
         private void RefreshOnEdgeAdded(object? _, EdgeAddedEventArgs e)
         {
-            StateHasChanged();
+            NotifyStateHasChanged();
         }
 
         private void RefreshOnEdgeRemoved(object? _, EdgeRemovedEventArgs e)
         {
-            StateHasChanged();
+            NotifyStateHasChanged();
         }
 
         private void RefreshOnAllNodesCleared(object? _, EventArgs e)
         {
-            StateHasChanged();
+            NotifyStateHasChanged();
+        }
+
+        /// <summary>
+        /// Notifies the canvas that its state has changed and it should re-render
+        /// </summary>
+        public void NotifyStateHasChanged()
+        {
+            base.StateHasChanged();
         }
 
         // Public Methods - Viewport

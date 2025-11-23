@@ -81,18 +81,18 @@
             // Alternate between node types for variety
             NodeInfo nodeInfo;
             if (i % 4 == 0)
-                nodeInfo = await graph.CreateNodeAsync<InputNode>(x, y, []);
+                nodeInfo = await graph.CreateNodeAsync<InputNode>(x, y, [],supressEvent:true,true);
             else if (i % 4 == 1)
-                nodeInfo = await graph.CreateNodeAsync<SumNode>(x, y, []);
+                nodeInfo = await graph.CreateNodeAsync<SumNode>(x, y, [],supressEvent:true,true);
             else if (i % 4 == 2)
-                nodeInfo = await graph.CreateNodeAsync<IfElseNode>(x, y, []);
+                nodeInfo = await graph.CreateNodeAsync<IfElseNode>(x, y, [],supressEvent:true,true);
             else
-                nodeInfo = await graph.CreateNodeAsync<WatchNode>(x, y, []);
+                nodeInfo = await graph.CreateNodeAsync<WatchNode>(x, y, [],supressEvent:true,true);
                 
             nodeInfos.Add(nodeInfo);
         }
 
-        await Task.Delay(60); 
+        canvas.NotifyStateHasChanged();
 
         await nodeInfos.Last().Instance!.WaitUntilRenderedAsync();
 
@@ -119,6 +119,9 @@
                 await TryConnectNodes(fromNodeInfo.Instance, toNodeInfo.Instance);
             }
         }
+
+        canvas.NotifyStateHasChanged();
+
     }
     
     private async Task TryConnectNodes(FlowNodeBase? from, FlowNodeBase? to)
@@ -132,7 +135,7 @@
         {
             try
             {
-                await graph.ConnectAsync(from.Id, to.Id, fromSocket.Name, toSocket.Name, false);
+                await graph.ConnectAsync(from.Id, to.Id, fromSocket.Name, toSocket.Name, false,true,true);
             }
             catch
             {

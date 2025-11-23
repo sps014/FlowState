@@ -18,10 +18,9 @@ export class SpatialGrid {
         this.nodeToCell = new WeakMap(); // WeakMap<nodeElement, Set<cellKeys>>
 
         // Bounding rect cache with WeakMap to prevent memory leaks
-        /** @type {WeakMap<HTMLElement, {rect: object, timestamp: number}>} Cache of node bounding rects */
-        this.rectCache = new WeakMap(); // WeakMap<nodeElement, {rect: DOMRect, timestamp: number}>
-        /** @type {number} Cache validity duration in ms */
-        this.cacheTimeout = 100; // Cache validity in ms
+        // Caches screen-space dimensions (zoom-independent) and world position
+        /** @type {WeakMap<HTMLElement, {worldX: number, worldY: number, screenWidth: number, screenHeight: number}>} */
+        this.rectCache = new WeakMap();
 
         // Canvas dimensions
         /** @type {number} Canvas width */
@@ -285,38 +284,43 @@ export class SpatialGrid {
 
     /**
      * Get cached or fresh bounding rect for a node
+     * Caches screen-space dimensions and calculates world-space on demand
      * @param {HTMLElement} nodeElement - The node.
-     * @returns {object} The bounding rect.
+     * @returns {object} The bounding rect in world space.
      */
     getNodeRect(nodeElement) {
-        const now = performance.now();
-        const cached = this.rectCache.get(nodeElement);
+        let cached = this.rectCache.get(nodeElement);
 
-        // Use cached rect if still valid
-        if (cached && (now - cached.timestamp) < this.cacheTimeout) {
-            return cached.rect;
+        // Only recalculate if cache doesn't exist
+        // Cache is invalidated on node move/resize, but NOT on zoom/pan
+        if (!cached) {
+            const bounds = nodeElement.getBoundingClientRect();
+            
+            cached = {
+                worldX: nodeElement.dataX,
+                worldY: nodeElement.dataY,
+                screenWidth: bounds.width,
+                screenHeight: bounds.height
+            };
+            
+            this.rectCache.set(nodeElement, cached);
         }
 
-        // Calculate fresh rect from dataX/dataY or transform
-        let x = nodeElement.dataX;
-        let y = nodeElement.dataY;
+        // Calculate world-space dimensions from cached screen-space
+        // This is fast (just division) and always uses current zoom
+        const worldWidth = cached.screenWidth / this.canvas.zoom;
+        const worldHeight = cached.screenHeight / this.canvas.zoom;
 
-        const bounds = nodeElement.getBoundingClientRect();
-        const rect = {
-            x: x,
-            y: y,
-            width: bounds.width / this.canvas.zoom,
-            height: bounds.height / this.canvas.zoom,
-            left: x,
-            top: y,
-            right: x + (bounds.width / this.canvas.zoom),
-            bottom: y + (bounds.height / this.canvas.zoom)
+        return {
+            x: cached.worldX,
+            y: cached.worldY,
+            width: worldWidth,
+            height: worldHeight,
+            left: cached.worldX,
+            top: cached.worldY,
+            right: cached.worldX + worldWidth,
+            bottom: cached.worldY + worldHeight
         };
-
-        // Cache the result
-        this.rectCache.set(nodeElement, { rect, timestamp: now });
-
-        return rect;
     }
 
     /**
@@ -325,13 +329,6 @@ export class SpatialGrid {
      */
     invalidateRect(nodeElement) {
         this.rectCache.delete(nodeElement);
-    }
-
-    /**
-     * Clear all cached rects
-     */
-    clearRectCache() {
-        // WeakMap doesn't have clear()
     }
 
     // =================== Spatial Queries ===================
@@ -575,7 +572,7 @@ export class SpatialGrid {
 
         this.grid.clear();
         this.nodeToCell = new WeakMap();
-        this.clearRectCache();
+        this.rectCache = new WeakMap(); // Reset cache
         this.dirtyNodes.clear();
         this.isDirty = false;
     }
