@@ -2,6 +2,9 @@ import { ViewportController } from "./viewportController.js";
 import { SelectionController } from "./selectionController.js";
 import { NodeController } from "./nodeController.js";
 import { EdgeController } from "./edgeController.js";
+import { SpatialGrid } from "./spatialGrid.js";
+import { setupGlobalDebugging } from "./spatialGridUtils.js";
+
 class FlowCanvas {
   // DOM Elements
   canvasEl = null;
@@ -41,6 +44,7 @@ class FlowCanvas {
     this.selectionController = new SelectionController(this);
     this.nodeController = new NodeController(this);
     this.edgeController = new EdgeController(this);
+    this.spatialGrid = new SpatialGrid(this);
 
     this.setupGlobalWindowFunctions();
   }
@@ -73,6 +77,19 @@ class FlowCanvas {
     this.canvasEl.addEventListener("keydown", this.onKeyDown);
 
     this.edgeController.setupEdgeHoverDetection();
+    
+    // Setup spatial grid mutation observer now that flowContentEl is available
+    this.spatialGrid.setupMutationObserver();
+    
+    // Initialize spatial grid with existing nodes after a short delay
+    // to ensure all nodes are rendered
+    setTimeout(() => {
+      this.spatialGrid.rebuild();
+      // Setup debugging tools in development
+      if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+        setupGlobalDebugging(this);
+      }
+    }, 100);
   };
 
   removeCanvasEvents = (el) => {
@@ -409,6 +426,15 @@ class FlowCanvas {
 
   getTransformPosition = (nodeEl) => {
     return { x: nodeEl.dataX || 0, y: nodeEl.dataY || 0 };
+  };
+  
+  // =================== Spatial Grid Management ===================
+  
+  /**
+   * Rebuild spatial grid from scratch
+   */
+  rebuildSpatialGrid = () => {
+    this.spatialGrid.rebuild();
   };
 
   setupGlobalWindowFunctions = () => {

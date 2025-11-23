@@ -28,14 +28,14 @@ export class NodeController {
 
     resizeNode = (e) => {
         const rect = this.resizeNodeEl.getBoundingClientRect();
-        this.canvas.setGroupNodeSize(this.resizeNodeEl, e.pageX - rect.left, e.pageY - rect.top);
+        this.canvas.setGroupNodeSize(this.resizeNodeEl, (e.pageX - rect.left) / this.canvas.zoom, (e.pageY - rect.top) / this.canvas.zoom);
     }
 
     stopResize = (e) => {
         const width = this.canvas.splitNumberAndUnit(this.resizeNodeEl.style.width).number;
         const height = this.canvas.splitNumberAndUnit(this.resizeNodeEl.style.height).number;
 
-        this.canvas.dotnetRef.invokeMethodAsync("NotifyNodeResized", this.resizeNodeEl.id, width, height);
+        this.canvas.dotnetRef.invokeMethodAsync("NotifyNodeResized", this.resizeNodeEl.id, width, height);        
         this.isResizing = false;
         this.resizeNodeEl = null;
         this.canvas.canvasEl.style.cursor = 'grab';
@@ -52,12 +52,13 @@ export class NodeController {
             this.canvas.dotnetRef.invokeMethodAsync("NotifyNodeSelected", [node.id]);
         }
 
-        const nodes = this.canvas.flowContentEl.querySelectorAll('.flow-node');
-
+        // Use spatial grid for efficient group node containment queries
         for (const n of selectionCtrl.selectedNodes) {
             if (n.getAttribute('kind') === 'Group') {
                 this.isGroupNodeDragging = true;
-                const childNodes = this.getNodesContainedInGroup(n, nodes);
+                // Use spatial grid
+                const childNodes = this.canvas.spatialGrid.queryNodesInNode(n);
+                    
                 childNodes.forEach(child => {
                     this.groupedNodes.add(child);
                     selectionCtrl.selectedNodes.add(child);
@@ -92,6 +93,9 @@ export class NodeController {
             const newY = startPos.y + deltaY;
             this.moveNode(n, newX, newY, false);
             this.dragStartPositions.set(n, { x: newX, y: newY });
+            
+            // Mark node as dirty in spatial grid for batch update
+            this.canvas.spatialGrid.markDirty(n);
         }
 
         this.canvas.edgeController.updateEdges(this.canvas.selectionController.selectedNodes);
@@ -101,6 +105,9 @@ export class NodeController {
     dragNodeStop = (e) => {
         if (!this.isNodeDragging) return;
         this.isNodeDragging = false;
+
+        // Update spatial grid with all dirty nodes at once
+        this.canvas.spatialGrid.updateDirtyNodes();
 
         if (this.isGroupNodeDragging) {
             for (const n of this.groupedNodes) {
@@ -131,29 +138,20 @@ export class NodeController {
         e.stopPropagation();
     }
 
-    getNodesContainedInGroup = (groupNode, nodes) => {
-        const groupNodeRect = groupNode.getBoundingClientRect();
-        const result = new Set();
-        for (const n of nodes) {
-            if (n === groupNode || n.getAttribute('kind') === 'Group') continue;
-            const nodeRect = n.getBoundingClientRect();
-            const isIntersecting = !(
-                nodeRect.right < groupNodeRect.left ||
-                nodeRect.left > groupNodeRect.right ||
-                nodeRect.bottom < groupNodeRect.top ||
-                nodeRect.top > groupNodeRect.bottom
-            );
-            if (isIntersecting) result.add(n);
-        }
-        return result;
-    }
 
     moveNode = (nodeEl, x, y, updateEdges = true) => {
         nodeEl.style.transform = `translate3d(${x}px, ${y}px, 0px)`;
         nodeEl.dataX = x;
         nodeEl.dataY = y;
 
-        if (updateEdges)
+        if (updateEdges) {
             this.canvas.edgeController.updateEdges([nodeEl]);
+        }
+        
+        // Update spatial grid immediately for single node moves
+        // (batch operations will use markDirty instead)
+        if (!this.isNodeDragging) {
+            this.canvas.spatialGrid.updateNode(nodeEl);
+        }
     }
 }

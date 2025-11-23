@@ -58,8 +58,17 @@ export class SelectionController {
     deleteSelectedNodes = () => {
         if (this.canvas.isReadOnly || this.selectedNodes.size === 0) return;
         const nodeIds = [...this.selectedNodes].map(node => node.id);
+        const nodeCount = nodeIds.length;
+        
         this.clearSelection();
-        this.canvas.dotnetRef.invokeMethodAsync("DeleteNodes", nodeIds);
+        
+        // Call C# to delete nodes
+        this.canvas.dotnetRef.invokeMethodAsync("DeleteNodes", nodeIds).then(() => {
+            // After C# removes nodes and Blazor updates DOM, cleanup stale spatial grid refs
+            setTimeout(() => {
+                this.canvas.spatialGrid.cleanupStaleNodes();
+            }, 60); // Small delay to let Blazor update DOM
+        });
     }
 
     notifySelectionChanged = () => {
@@ -135,19 +144,12 @@ export class SelectionController {
     }
 
     getNodesIntersectingRectangle = (rectLeft, rectTop, rectRight, rectBottom) => {
-        const nodes = this.canvas.flowContentEl.querySelectorAll('.flow-node');
-        const intersectingNodes = [];
-        for (const node of nodes) {
-            const nodeRect = node.getBoundingClientRect();
-            const canvasRect = this.canvas.canvasEl.getBoundingClientRect();
-            const nodeLeft = nodeRect.left - canvasRect.left;
-            const nodeTop = nodeRect.top - canvasRect.top;
-            const nodeRight = nodeRect.right - canvasRect.left;
-            const nodeBottom = nodeRect.bottom - canvasRect.top;
-
-            const intersects = !(nodeRight < rectLeft || nodeLeft > rectRight || nodeBottom < rectTop || nodeTop > rectBottom);
-            if (intersects) intersectingNodes.push(node);
-        }
-        return intersectingNodes;
+        // Convert screen coordinates to world coordinates for spatial grid query
+        const x = (rectLeft - this.canvas.offsetX) / this.canvas.zoom;
+        const y = (rectTop - this.canvas.offsetY) / this.canvas.zoom;
+        const width = (rectRight - rectLeft) / this.canvas.zoom;
+        const height = (rectBottom - rectTop) / this.canvas.zoom;
+        
+        return this.canvas.spatialGrid.queryRect(x, y, width, height);
     }
 }

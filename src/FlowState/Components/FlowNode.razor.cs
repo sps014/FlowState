@@ -8,7 +8,7 @@ namespace FlowState.Components
     /// <summary>
     /// Represents the DOM wrapper for a flow node in the canvas
     /// </summary>
-    public partial class FlowNode
+    public partial class FlowNode : IAsyncDisposable
     {
         // Properties
 
@@ -129,6 +129,18 @@ namespace FlowState.Components
                 return Canvas.JsModule.InvokeVoidAsync("updateEdge", nodeRef);
             }
 
+            return ValueTask.CompletedTask;
+        }
+
+        /// <summary>
+        /// Cleanup when the node is removed
+        /// </summary>
+        public ValueTask DisposeAsync()
+        {
+            if (Node != null)
+            {
+                Node.DomElement = null;
+            }
             return ValueTask.CompletedTask;
         }
     }

@@ -25,7 +25,7 @@
                     @foreach (var nodeInfo in Graph.NodesInfo)
                     {
                         <CascadingValue TValue="FlowNodeBase" Value="@nodeInfo.Value.Instance" @key="nodeInfo.Key">
-                            <DynamicComponent Type="nodeInfo.Value.NodeType" @ref="nodeInfo.Value.Component"
+                            <DynamicComponent Type="nodeInfo.Value.NodeType" @ref="nodeInfo.Value.Component" @key="nodeInfo.Key"
                                 Parameters="nodeInfo.Value.Parameters" />
                         </CascadingValue>
                     }

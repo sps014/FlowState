@@ -169,7 +169,8 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         var properties = GetType().GetProperties();
 
         var parameterProperties = properties
-            .Where(p => p.GetCustomAttributes(typeof(ParameterAttribute), false).Any()).ToList();
+            .Where(p => p.GetCustomAttributes(typeof(ParameterAttribute), false).Any());
+            
         var parameterValues = parameterProperties
             .ToDictionary(p => p.Name, p => new { Value = p.GetValue(this), Type = p.PropertyType });
 
