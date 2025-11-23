@@ -561,6 +561,24 @@ namespace FlowState.Components
         }
 
         /// <summary>
+        /// Called from JavaScript when multiple nodes are moved
+        /// </summary>
+        [JSInvokable]
+        public async Task NotifyNodesMoved(string[] nodeIds, double[] xs, double[] ys)
+        {
+            if (IsReadOnly)
+                return;
+
+            if (OnNodeMoved.HasDelegate)
+            {
+                for (int i = 0; i < nodeIds.Length; i++)
+                {
+                    await OnNodeMoved.InvokeAsync(new NodeMovedArgs(nodeIds[i], xs[i], ys[i]));
+                }
+            }
+        }
+
+        /// <summary>
         /// Called from JavaScript when a node is selected
         /// </summary>
         [JSInvokable]

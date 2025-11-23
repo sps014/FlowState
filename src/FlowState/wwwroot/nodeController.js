@@ -45,7 +45,7 @@ export class NodeController {
 
     dragNodeStart = (e, node) => {
         const selectionCtrl = this.canvas.selectionController;
-        
+
         if (selectionCtrl.selectedNodes.size === 0) {
             selectionCtrl.selectedNodes.add(node);
             node.classList.add(this.canvas.nodeSelectionClass);
@@ -110,12 +110,23 @@ export class NodeController {
             this.isGroupNodeDragging = false;
         }
 
+        const ids = [];
+        const xs = [];
+        const ys = [];
+
         for (const n of this.canvas.selectionController.selectedNodes) {
             const pos = this.dragStartPositions.get(n);
             if (pos) {
-                this.canvas.dotnetRef.invokeMethodAsync("NotifyNodeMoved", n.id, pos.x, pos.y);
+                ids.push(n.id);
+                xs.push(pos.x);
+                ys.push(pos.y);
             }
         }
+
+        if (ids.length > 0) {
+            this.canvas.dotnetRef.invokeMethodAsync("NotifyNodesMoved", ids, xs, ys);
+        }
+
         this.dragStartPositions.clear();
         e.stopPropagation();
     }
@@ -137,12 +148,12 @@ export class NodeController {
         return result;
     }
 
-    moveNode = (nodeEl, x, y,updateEdges=true) => {
+    moveNode = (nodeEl, x, y, updateEdges = true) => {
         nodeEl.style.transform = `translate3d(${x}px, ${y}px, 0px)`;
         nodeEl.dataX = x;
         nodeEl.dataY = y;
 
-        if(updateEdges)
+        if (updateEdges)
             this.canvas.edgeController.updateEdges([nodeEl]);
     }
 }
