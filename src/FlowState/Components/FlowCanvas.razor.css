@@ -8,8 +8,9 @@
 
 .flow-grid {
     pointer-events: none;
-    /* background shouldn’t block clicks */
+    /* background shouldn't block clicks */
     background-repeat: repeat;
+    will-change: background-position, background-size;
 }
 
 .flow-content {
