@@ -370,9 +370,7 @@ class FlowCanvas {
     moveNode = (nodeEl, x, y) => this.nodeController.moveNode(nodeEl, x, y);
 
     getTransformPosition = (nodeEl) => {
-        const style = window.getComputedStyle(nodeEl);
-        const matrix = new DOMMatrixReadOnly(style.transform);
-        return { x: matrix.m41, y: matrix.m42 };
+        return { x: nodeEl.dataX || 0, y: nodeEl.dataY || 0 };
     }
 
     setupGlobalWindowFunctions = () => {

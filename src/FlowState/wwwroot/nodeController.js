@@ -90,7 +90,7 @@ export class NodeController {
             const startPos = this.dragStartPositions.get(n);
             const newX = startPos.x + deltaX;
             const newY = startPos.y + deltaY;
-            n.style.transform = `translate3d(${newX}px, ${newY}px, 0px)`;
+            this.moveNode(n, newX, newY, false);
             this.dragStartPositions.set(n, { x: newX, y: newY });
         }
 
@@ -137,8 +137,12 @@ export class NodeController {
         return result;
     }
 
-    moveNode = (nodeEl, x, y) => {
+    moveNode = (nodeEl, x, y,updateEdges=true) => {
         nodeEl.style.transform = `translate3d(${x}px, ${y}px, 0px)`;
-        this.canvas.edgeController.updateEdges([nodeEl]);
+        nodeEl.dataX = x;
+        nodeEl.dataY = y;
+
+        if(updateEdges)
+            this.canvas.edgeController.updateEdges([nodeEl]);
     }
 }

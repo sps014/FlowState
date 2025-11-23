@@ -4,7 +4,7 @@ Handles Zooming, Panning, and Grid Background
 export class ViewportController {
     constructor(canvas) {
         this.canvas = canvas;
-        
+
         // Panning State
         this.isPanning = false;
         this.startX = 0;
@@ -83,9 +83,11 @@ export class ViewportController {
         this.canvas.flowContentEl.style.transform = `translate3d(${this.canvas.offsetX.toFixed(1)}px, ${this.canvas.offsetY.toFixed(1)}px, 0px) scale(${this.canvas.zoom.toFixed(2)})`;
 
         if (rerender) {
-            this.canvas.flowContentEl.style.display = 'none';
-            this.canvas.flowContentEl.offsetHeight; // force reflow
-            this.canvas.flowContentEl.style.display = '';
+
+            requestAnimationFrame(() => {
+                this.canvas.flowContentEl.style.willChange = 'transform';
+                this.canvas.flowContentEl.style.willChange = 'auto';
+            });
         }
         this.panBackgroundPosition();
         this.scaleBackgroundSize();
