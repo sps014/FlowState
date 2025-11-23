@@ -23,6 +23,7 @@
             Height="calc(100vh - 60px)" 
             Width="100vw" 
             MinZoom="0.5"
+            MaxZoom="3"
             Graph="graph" 
             IsReadOnly="isReadOnly" 
             OnCanvasLoaded="OnLoaded" 
@@ -70,7 +71,7 @@
         int spacing = 250;
         
         // Create 1000 nodes in a grid
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 200; i++)
         {
             int row = i / gridSize;
             int col = i % gridSize;

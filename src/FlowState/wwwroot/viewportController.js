@@ -18,6 +18,14 @@ export class ViewportController {
 
         // Reflow debounce timer
         this.reflowTimer = null;
+
+        // Animation Frame State
+        this.ticking = false;
+        this.pendingRerender = false;
+
+        // Zoom state
+        this.zoomTimer = null;
+        this.zoomNotifyTimer = null;
     }
 
     initGrid() {
@@ -31,6 +39,9 @@ export class ViewportController {
         this.startY = e.clientY;
         this.lastOffsetX = this.canvas.offsetX;
         this.lastOffsetY = this.canvas.offsetY;
+
+        this.canvas.canvasEl.classList.add("is-panning");
+        this.canvas.flowContentEl.style.willChange = "transform";
 
         e.stopPropagation();
         e.preventDefault();
@@ -52,6 +63,9 @@ export class ViewportController {
         if (!this.isPanning) return;
 
         this.isPanning = false;
+        this.canvas.canvasEl.classList.remove("is-panning");
+        this.canvas.flowContentEl.style.willChange = "auto";
+
         this.canvas.dotnetRef.invokeMethodAsync(
             "NotifyPanned",
             this.canvas.offsetX,
@@ -67,6 +81,17 @@ export class ViewportController {
         e.stopPropagation();
 
         if (this.canvas.isInteractiveElement(e.target)) return;
+
+        // Set zooming state
+        this.canvas.canvasEl.classList.add("is-zooming");
+        this.canvas.flowContentEl.style.willChange = "transform";
+
+        if (this.zoomTimer) clearTimeout(this.zoomTimer);
+        this.zoomTimer = setTimeout(() => {
+            this.canvas.canvasEl.classList.remove("is-zooming");
+            this.canvas.flowContentEl.style.willChange = "auto";
+            this.zoomTimer = null;
+        }, 150);
 
         const delta = e.deltaY * -this.canvas.scrollSpeed * 0.001;
         const newZoom = this.canvas.clamp(
@@ -89,27 +114,30 @@ export class ViewportController {
         this.canvas.zoom = newZoom;
         this.updateTransforms(true);
 
-        this.canvas.dotnetRef.invokeMethodAsync("NotifyZoomed", this.canvas.zoom);
+        // Throttle notification to Blazor
+        if (!this.zoomNotifyTimer) {
+            this.zoomNotifyTimer = setTimeout(() => {
+                this.canvas.dotnetRef.invokeMethodAsync("NotifyZoomed", this.canvas.zoom);
+                this.zoomNotifyTimer = null;
+            }, 60);
+        }
     };
 
     updateTransforms = (rerender = false) => {
-        this.canvas.flowContentEl.style.transform = `translate3d(${this.canvas.offsetX}px, ${this.canvas.offsetY}px, 0px) scale(${this.canvas.zoom})`;
+        if (rerender) this.pendingRerender = true;
 
-        if (rerender) {
-            // Clear previous timeout
-            if (this.reflowTimer) {
-                clearTimeout(this.reflowTimer);
-            }
-
-            // Set new timeout to trigger reflow after interaction settles
-            this.reflowTimer = setTimeout(() => {
-                requestAnimationFrame(() => {
-                    this.canvas.flowContentEl.style.willChange = "transform";
-                    this.canvas.flowContentEl.style.willChange = "auto";
-                    this.reflowTimer = null;
-                });
-            }, 200);
+        if (!this.ticking) {
+            requestAnimationFrame(() => {
+                this._performUpdateTransforms(this.pendingRerender);
+                this.pendingRerender = false;
+                this.ticking = false;
+            });
+            this.ticking = true;
         }
+    };
+
+    _performUpdateTransforms = (rerender) => {
+        this.canvas.flowContentEl.style.transform = `translate3d(${this.canvas.offsetX}px, ${this.canvas.offsetY}px, 0px) scale(${this.canvas.zoom})`;
         this.panBackgroundPosition();
         this.scaleBackgroundSize();
     };

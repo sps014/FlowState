@@ -87,16 +87,41 @@
     0% {
         stroke-dashoffset: 0;
     }
+
     100% {
         stroke-dashoffset: 15;
     }
 }
 
 @keyframes edge-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.7;
     }
+}
+
+
+/* Performance optimizations during interaction */
+.flow-canvas.is-panning .flow-node,
+.flow-canvas.is-zooming .flow-node {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    transition: none !important;
+}
+
+.flow-canvas.is-panning input,
+.flow-canvas.is-panning textarea,
+.flow-canvas.is-zooming input,
+.flow-canvas.is-zooming textarea {
+  pointer-events: none;   /* disable mouse */
+  user-select: none;      /* prevent selection */
+}
+.flow-canvas.is-panning input:focus,
+.flow-canvas.is-zooming input:focus {
+  outline: none;
 }
