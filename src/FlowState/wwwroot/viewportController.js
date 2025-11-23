@@ -181,9 +181,8 @@ export class ViewportController {
 
     /**
      * Performs the actual transform update.
-     * @param {boolean} rerender - Whether to force a rerender of background.
      */
-    _performUpdateTransforms = (rerender) => {
+    _performUpdateTransforms = () => {
         this.canvas.flowContentEl.style.transform = `translate3d(${this.canvas.offsetX}px, ${this.canvas.offsetY}px, 0px) scale(${this.canvas.zoom})`;
         this.panBackgroundPosition();
         this.scaleBackgroundSize();

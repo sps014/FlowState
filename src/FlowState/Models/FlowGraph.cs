@@ -116,7 +116,7 @@ public class FlowGraph : ISerializable<GraphData>
 
         if (!suppressAddingToCommandStack)
         {
-            var command = new NodeAddedCommand(type,id, x, y, data, this);
+            var command = new NodeAddedCommand(type, id, x, y, data, this);
             CommandManager.AddCommand(command);
         }
 
@@ -177,11 +177,11 @@ public class FlowGraph : ISerializable<GraphData>
         List<EdgeProperties> edgeProperties = [];
         foreach (var edge in edges)
         {
-            edgeProperties.Add(await edge.Value.Instance!.GetSerializableObjectAsync()); 
+            edgeProperties.Add(await edge.Value.Instance!.GetSerializableObjectAsync());
             await RemoveEdgeAsync(edge.Key, suppressEvent: true, suppressAddingToCommandStack: true);
         }
 
-        if(!suppressAddingToCommandStack)
+        if (!suppressAddingToCommandStack)
         {
             var nodeProps = await node.GetSerializableObjectAsync();
             CommandManager.AddCommand(new NodeRemovedCommand(nodeProps, edgeProperties, this));
@@ -189,7 +189,7 @@ public class FlowGraph : ISerializable<GraphData>
 
         NodesInfo.Remove(id);
 
-        if(!suppressEvent)
+        if (!suppressEvent)
         {
             NodeRemoved?.Invoke(this, new NodeRemovedEventArgs { NodeId = id });
         }
@@ -309,7 +309,7 @@ public class FlowGraph : ISerializable<GraphData>
         {
             await existingEdge.CleanupConnectionsAsync();
 
-            await RemoveEdgeAsync(existingEdge.Id,suppressEvent, suppressAddingToCommandStack);
+            await RemoveEdgeAsync(existingEdge.Id, suppressEvent, suppressAddingToCommandStack);
         }
 
         var id = Guid.CreateVersion7().ToString();
@@ -369,7 +369,7 @@ public class FlowGraph : ISerializable<GraphData>
         {
             EdgeRemoved?.Invoke(this, new EdgeRemovedEventArgs { EdgeId = id });
         }
-        
+
         return ValueTask.CompletedTask;
     }
 
@@ -408,9 +408,9 @@ public class FlowGraph : ISerializable<GraphData>
     /// </summary>
     /// <param name="branchTracking">if true only nodes whose branch is actived will be executed</param>
     /// <param name="cancellationToken">Cancel the execution of flow </param>
-    public ValueTask ExecuteAsync(bool branchTracking=true,CancellationToken cancellationToken = default)
+    public ValueTask ExecuteAsync(bool branchTracking = true, CancellationToken cancellationToken = default)
     {
-        return ExecutionFlow.ExecuteAsync(branchTracking,cancellationToken);
+        return ExecutionFlow.ExecuteAsync(branchTracking, cancellationToken);
     }
 
     // Serialization Methods
@@ -480,6 +480,8 @@ public class FlowGraph : ISerializable<GraphData>
 
         await Canvas.SetViewportPropertiesAsync(graphData.Canvas);
 
+        await Task.Delay(50); // allow time for canvas to scale and render
+
         NodeInfo? lastNodeInfo = null;
 
         foreach (var node in graphData.Nodes)
@@ -490,7 +492,7 @@ public class FlowGraph : ISerializable<GraphData>
 
         ForcedRequestDomStateChanged?.Invoke(this, EventArgs.Empty);
 
-        if(lastNodeInfo != null && lastNodeInfo.Instance!=null)
+        if (lastNodeInfo != null && lastNodeInfo.Instance != null)
             await lastNodeInfo.Instance.WaitUntilRenderedAsync();
 
         foreach (var edge in graphData.Edges)

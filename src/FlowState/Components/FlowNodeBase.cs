@@ -217,7 +217,7 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     {
         if (IsRendered)
         {
-            renderCompletionSource.SetResult();
+            renderCompletionSource.TrySetResult();
             return renderCompletionSource.Task;
         }
 

@@ -82,7 +82,7 @@ namespace FlowState.Components
 
                 Node.IsRendered = true;
 
-                Node.renderCompletionSource.SetResult();
+                Node.renderCompletionSource.TrySetResult();
 
                 await Node.OnRenderedAsync();
             }
