@@ -2,40 +2,65 @@
 Handles Dragging, Moving, and Resizing Nodes
 **/
 export class NodeController {
+    /**
+     * @param {FlowCanvas} canvas - The main canvas instance.
+     */
     constructor(canvas) {
+        /** @type {FlowCanvas} */
         this.canvas = canvas;
 
         // Dragging State
+        /** @type {boolean} Whether a node is being dragged */
         this.isNodeDragging = false;
+        /** @type {boolean} Whether a group node is being dragged */
         this.isGroupNodeDragging = false;
+        /** @type {Map<HTMLElement, {x: number, y: number}>} Initial positions of dragged nodes */
         this.dragStartPositions = new Map();
+        /** @type {number} Last mouse X position */
         this.lastMouseX = 0;
+        /** @type {number} Last mouse Y position */
         this.lastMouseY = 0;
+        /** @type {Set<HTMLElement>} Nodes grouped within the dragged group node */
         this.groupedNodes = new Set();
 
         // Resizing State
+        /** @type {boolean} Whether a node is being resized */
         this.isResizing = false;
+        /** @type {HTMLElement} Node being resized */
         this.resizeNodeEl = null;
     }
 
     // --- Resizing ---
 
+    /**
+     * Starts resizing a node.
+     * @param {MouseEvent} e - The mouse event.
+     * @param {HTMLElement} resizeHandler - The node to resize.
+     */
     startResize(e, resizeHandler) {
         this.resizeNodeEl = resizeHandler;
         this.isResizing = true;
         this.canvas.canvasEl.style.cursor = 'se-resize';
     }
 
+    /**
+     * Updates the node size during resize.
+     * @param {MouseEvent} e - The mouse event.
+     */
     resizeNode = (e) => {
         const rect = this.resizeNodeEl.getBoundingClientRect();
         this.canvas.setGroupNodeSize(this.resizeNodeEl, (e.pageX - rect.left) / this.canvas.zoom, (e.pageY - rect.top) / this.canvas.zoom);
     }
 
+    /**
+     * Stops resizing the node.
+     * @param {MouseEvent} e - The mouse event.
+     */
     stopResize = (e) => {
         const width = this.canvas.splitNumberAndUnit(this.resizeNodeEl.style.width).number;
         const height = this.canvas.splitNumberAndUnit(this.resizeNodeEl.style.height).number;
 
-        this.canvas.dotnetRef.invokeMethodAsync("NotifyNodeResized", this.resizeNodeEl.id, width, height);        
+        this.canvas.dotnetRef.invokeMethodAsync("NotifyNodeResized", this.resizeNodeEl.id, width, height);
         this.isResizing = false;
         this.resizeNodeEl = null;
         this.canvas.canvasEl.style.cursor = 'grab';
@@ -43,6 +68,11 @@ export class NodeController {
 
     // --- Dragging ---
 
+    /**
+     * Starts dragging a node.
+     * @param {MouseEvent} e - The mouse event.
+     * @param {HTMLElement} node - The node to drag.
+     */
     dragNodeStart = (e, node) => {
         const selectionCtrl = this.canvas.selectionController;
 
@@ -58,7 +88,7 @@ export class NodeController {
                 this.isGroupNodeDragging = true;
                 // Use spatial grid
                 const childNodes = this.canvas.spatialGrid.queryNodesInNode(n);
-                    
+
                 childNodes.forEach(child => {
                     this.groupedNodes.add(child);
                     selectionCtrl.selectedNodes.add(child);
@@ -79,6 +109,10 @@ export class NodeController {
         e.stopPropagation();
     }
 
+    /**
+     * Updates node positions during drag.
+     * @param {MouseEvent} e - The mouse event.
+     */
     dragNodeMove = (e) => {
         if (!this.isNodeDragging || this.canvas.selectionController.selectedNodes.size === 0) return;
 
@@ -93,7 +127,7 @@ export class NodeController {
             const newY = startPos.y + deltaY;
             this.moveNode(n, newX, newY, false);
             this.dragStartPositions.set(n, { x: newX, y: newY });
-            
+
             // Mark node as dirty in spatial grid for batch update
             this.canvas.spatialGrid.markDirty(n);
         }
@@ -102,6 +136,10 @@ export class NodeController {
         e.stopPropagation();
     }
 
+    /**
+     * Stops dragging nodes.
+     * @param {MouseEvent} e - The mouse event.
+     */
     dragNodeStop = (e) => {
         if (!this.isNodeDragging) return;
         this.isNodeDragging = false;
@@ -139,6 +177,13 @@ export class NodeController {
     }
 
 
+    /**
+     * Moves a node to a specific position.
+     * @param {HTMLElement} nodeEl - The node element.
+     * @param {number} x - The x coordinate.
+     * @param {number} y - The y coordinate.
+     * @param {boolean} updateEdges - Whether to update connected edges.
+     */
     moveNode = (nodeEl, x, y, updateEdges = true) => {
         nodeEl.style.transform = `translate3d(${x}px, ${y}px, 0px)`;
         nodeEl.dataX = x;
@@ -147,7 +192,7 @@ export class NodeController {
         if (updateEdges) {
             this.canvas.edgeController.updateEdges([nodeEl]);
         }
-        
+
         // Update spatial grid immediately for single node moves
         // (batch operations will use markDirty instead)
         if (!this.isNodeDragging) {

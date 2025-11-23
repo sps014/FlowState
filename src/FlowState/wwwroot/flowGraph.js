@@ -7,37 +7,64 @@ import { setupGlobalDebugging } from "./spatialGridUtils.js";
 
 class FlowCanvas {
   // DOM Elements
+  /** @type {HTMLElement} Canvas element */
   canvasEl = null;
+  /** @type {HTMLElement} Grid background element */
   gridEl = null;
+  /** @type {HTMLElement} Container for flow content */
   flowContentEl = null;
+  /** @type {object} DotNet reference for interop */
   dotnetRef = null;
 
   // Configuration
+  /** @type {string|null} Name of custom JS function for edge paths */
   jsEdgePathFunctionName = null;
+  /** @type {number} Current X offset */
   offsetX = 0;
+  /** @type {number} Current Y offset */
   offsetY = 0;
+  /** @type {number} Current zoom level */
   zoom = 1;
+  /** @type {number} Minimum zoom level */
   minZoom = 0.2;
+  /** @type {number} Maximum zoom level */
   maxZoom = 2.0;
+  /** @type {string} CSS class for selected nodes */
   nodeSelectionClass = "selected";
+  /** @type {boolean} Whether to auto-update socket colors */
   autoUpdateSocketColors = false;
+  /** @type {string} Key to hold for panning (alt, shift, ctrl, meta) */
   panKey = "alt";
+  /** @type {boolean} Read-only mode flag */
   isReadOnly = false;
+  /** @type {number} Canvas mode (0: Default, 1: Pan) */
   canvasMode = 0;
+  /** @type {number} Scroll speed multiplier */
   scrollSpeed = 1;
 
   // Long Press State (kept here as it spans multiple concepts)
+  /** @type {number|null} Timer ID for long press */
   longPressTimer = null;
+  /** @type {number} X position at start of long press */
   longPressStartX = 0;
+  /** @type {number} Y position at start of long press */
   longPressStartY = 0;
+  /** @type {number} Duration in ms to trigger long press */
   LONG_PRESS_DURATION = 1000;
+  /** @type {number} Movement threshold in pixels to cancel long press */
   LONG_PRESS_MOVE_THRESHOLD = 10;
 
   // Context Menu Helpers
+  /** @type {HTMLElement} Context menu element */
   contextMenuElement = null;
+  /** @type {object} DotNet reference for context menu */
   contextMenuDotNetRef = null;
+  /** @type {function} Handler for clicking outside context menu */
   clickOutsideHandler = null;
 
+  /**
+   * Initializes the FlowCanvas and its controllers.
+   */
   constructor() {
     // Initialize Controllers
     this.viewportController = new ViewportController(this);
@@ -51,6 +78,11 @@ class FlowCanvas {
 
   // =================== Initialization ===================
 
+  /**
+   * Sets up event listeners and initializes references.
+   * @param {object} elements - Object containing DOM elements.
+   * @param {object} dotnetReference - DotNet reference for interop.
+   */
   setupCanvasEvents = (elements, dotnetReference) => {
     this.canvasEl = elements.canvasElement;
     this.flowContentEl = elements.flowContentElement;
@@ -77,10 +109,10 @@ class FlowCanvas {
     this.canvasEl.addEventListener("keydown", this.onKeyDown);
 
     this.edgeController.setupEdgeHoverDetection();
-    
+
     // Setup spatial grid mutation observer now that flowContentEl is available
     this.spatialGrid.setupMutationObserver();
-    
+
     // Initialize spatial grid with existing nodes after a short delay
     // to ensure all nodes are rendered
     setTimeout(() => {
@@ -92,6 +124,10 @@ class FlowCanvas {
     }, 100);
   };
 
+  /**
+   * Removes event listeners from the canvas element.
+   * @param {HTMLElement} el - The canvas element.
+   */
   removeCanvasEvents = (el) => {
     el.removeEventListener("pointerdown", this.pointerdown);
     el.removeEventListener("pointermove", this.pointermove);
@@ -102,6 +138,10 @@ class FlowCanvas {
     el.removeEventListener("keydown", this.onKeyDown);
   };
 
+  /**
+   * Sets component properties from C#.
+   * @param {object} props - Properties object.
+   */
   setComponentProperties = (props) => {
     this.nodeSelectionClass = props.nodeSelectionClass || "selected";
     this.autoUpdateSocketColors = props.autoUpdateSocketColors || false;
@@ -111,10 +151,18 @@ class FlowCanvas {
     this.scrollSpeed = props.scrollSpeed || 0.02;
   };
 
+  /**
+   * Sets the read-only state of the canvas.
+   * @param {boolean} readOnly - Whether the canvas is read-only.
+   */
   setReadOnly = (readOnly) => {
     this.isReadOnly = readOnly;
   };
 
+  /**
+   * Sets the canvas interaction mode.
+   * @param {number} mode - 0: Default, 1: Pan.
+   */
   setCanvasMode = (mode) => {
     this.canvasMode = mode;
     if (this.canvasEl) {
@@ -124,6 +172,10 @@ class FlowCanvas {
 
   // =================== Event Router ===================
 
+  /**
+   * Handles pointer down events.
+   * @param {PointerEvent} e - The pointer event.
+   */
   pointerdown = (e) => {
     e.stopPropagation();
     this.canvasEl?.focus();
@@ -158,6 +210,10 @@ class FlowCanvas {
     }
   };
 
+  /**
+   * Handles pointer move events.
+   * @param {PointerEvent} e - The pointer event.
+   */
   pointermove = (e) => {
     e.stopPropagation();
     this.checkLongPressMove(e);
@@ -183,6 +239,10 @@ class FlowCanvas {
     }
   };
 
+  /**
+   * Handles pointer up events.
+   * @param {PointerEvent} e - The pointer event.
+   */
   pointerup = (e) => {
     e.stopPropagation();
     this.cancelLongPress();
@@ -201,6 +261,10 @@ class FlowCanvas {
     }
   };
 
+  /**
+   * Handles pointer leave events.
+   * @param {PointerEvent} e - The pointer event.
+   */
   pointerleave = (e) => {
     e.stopPropagation();
     this.cancelLongPress();
@@ -219,6 +283,10 @@ class FlowCanvas {
     }
   };
 
+  /**
+   * Handles key down events.
+   * @param {KeyboardEvent} e - The keyboard event.
+   */
   onKeyDown = (e) => {
     if (this.isInteractiveElement(e.target) || this.isReadOnly) return;
 
@@ -236,6 +304,10 @@ class FlowCanvas {
     }
   };
 
+  /**
+   * Handles context menu events.
+   * @param {MouseEvent} e - The mouse event.
+   */
   onContextMenu = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -260,6 +332,11 @@ class FlowCanvas {
 
   // =================== Helpers & Utils ===================
 
+  /**
+   * Checks if the pan key is pressed.
+   * @param {KeyboardEvent|MouseEvent} e - The event.
+   * @returns {boolean} True if pan key is pressed.
+   */
   isPanKeyPressed = (e) => {
     switch (this.panKey) {
       case "shift":
@@ -275,8 +352,18 @@ class FlowCanvas {
     }
   };
 
+  /**
+   * Checks if the multi-selection key is pressed.
+   * @param {KeyboardEvent|MouseEvent} e - The event.
+   * @returns {boolean} True if multi-selection key is pressed.
+   */
   isMultiSelectionKeyPressed = (e) => e.ctrlKey || e.metaKey;
 
+  /**
+   * Gets the position of a socket relative to the flow content.
+   * @param {HTMLElement} socketEl - The socket element.
+   * @returns {{x: number, y: number}} The position.
+   */
   getSocketPosition = (socketEl) => {
     if (!socketEl) return { x: 0, y: 0 };
     const rect = socketEl.getBoundingClientRect();
@@ -286,13 +373,35 @@ class FlowCanvas {
     return { x, y };
   };
 
+  /**
+   * Gets the clicked node from the event target.
+   * @param {Event} e - The event.
+   * @returns {HTMLElement|null} The clicked node element.
+   */
   getClickedNode = (e) => e.target.closest(".flow-node");
+
+  /**
+   * Gets the clicked socket from the event target.
+   * @param {Event} e - The event.
+   * @returns {HTMLElement|null} The clicked socket element.
+   */
   getClickedSocket = (e) => e.target.closest(".socket-anchor");
+
+  /**
+   * Gets the clicked resize handler from the event target.
+   * @param {Event} e - The event.
+   * @returns {HTMLElement|null} The node associated with the resize handler.
+   */
   getClickedResizeHandler = (e) => {
     if (e.target.closest(".resize-handle")) return this.getClickedNode(e);
     return null;
   };
 
+  /**
+   * Checks if the target element is interactive.
+   * @param {HTMLElement} target - The target element.
+   * @returns {boolean} True if the element is interactive.
+   */
   isInteractiveElement = (target) => {
     const tagName = target.tagName.toLowerCase();
     const interactiveTags = [
@@ -313,14 +422,32 @@ class FlowCanvas {
     return false;
   };
 
+  /**
+   * Clamps a value between a minimum and maximum.
+   * @param {number} v - The value to clamp.
+   * @param {number} min - The minimum value.
+   * @param {number} max - The maximum value.
+   * @returns {number} The clamped value.
+   */
   clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
+  /**
+   * Splits a string into number and unit.
+   * @param {string} input - The input string (e.g., "10px").
+   * @returns {{number: number, unit: string}} The number and unit.
+   */
   splitNumberAndUnit = (input) => {
     const match = input.match(/^(-?\d*\.?\d+)([a-z%]*)$/i);
     if (!match) return { number: 0, unit: "px" };
     return { number: parseFloat(match[1]), unit: match[2] || "" };
   };
 
+  /**
+   * Sets the size of a group node.
+   * @param {HTMLElement} el - The group node element.
+   * @param {number} w - The width.
+   * @param {number} h - The height.
+   */
   setGroupNodeSize = (el, w, h) => {
     el.style.width = w + "px";
     el.style.height = h + "px";
@@ -328,6 +455,11 @@ class FlowCanvas {
 
   // =================== Long Press ===================
 
+  /**
+   * Starts the long press timer.
+   * @param {PointerEvent} e - The pointer event.
+   * @param {HTMLElement} socket - The socket element.
+   */
   startLongPress = (e, socket) => {
     this.cancelLongPress();
     this.longPressStartX = e.clientX;
@@ -351,6 +483,9 @@ class FlowCanvas {
     }, this.LONG_PRESS_DURATION);
   };
 
+  /**
+   * Cancels the long press timer.
+   */
   cancelLongPress = () => {
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer);
@@ -358,6 +493,10 @@ class FlowCanvas {
     }
   };
 
+  /**
+   * Checks if the pointer has moved enough to cancel the long press.
+   * @param {PointerEvent} e - The pointer event.
+   */
   checkLongPressMove = (e) => {
     if (this.longPressTimer) {
       const dx = e.clientX - this.longPressStartX;
@@ -372,17 +511,31 @@ class FlowCanvas {
   // =================== API Proxies ===================
 
   // Proxies to controllers to maintain external API compatibility if needed
+  // Proxies to controllers to maintain external API compatibility if needed
+  /**
+   * Sets the canvas offset.
+   * @param {number} x - The x offset.
+   * @param {number} y - The y offset.
+   */
   setOffset = (x, y) => {
     this.offsetX = x;
     this.offsetY = y;
     this.viewportController.updateTransforms();
   };
 
+  /**
+   * Sets the zoom level.
+   * @param {number} z - The zoom level.
+   */
   setZoom = (z) => {
     this.zoom = this.clamp(z, this.minZoom, this.maxZoom);
     this.viewportController.updateTransforms(true);
   };
 
+  /**
+   * Sets canvas properties.
+   * @param {object} props - The properties.
+   */
   setCanvasProperties = (props) => {
     this.offsetX = props.offsetX;
     this.offsetY = props.offsetY;
@@ -393,6 +546,10 @@ class FlowCanvas {
     this.viewportController.updateTransforms(true);
   };
 
+  /**
+   * Gets canvas properties.
+   * @returns {object} The properties.
+   */
   getCanvasProperties = () => {
     return {
       offsetX: this.offsetX,
@@ -404,14 +561,29 @@ class FlowCanvas {
     };
   };
 
+  /** @param {NodeList} nodesEl */
   selectNodes = (nodesEl) => this.selectionController.selectNodes(nodesEl);
+  /** Clears selection */
   clearSelection = () => this.selectionController.clearSelection();
+  /** @returns {string[]} Selected node IDs */
   getSelectedNodes = () =>
     [...this.selectionController.selectedNodes].map((n) => n.id);
+  /** @param {HTMLElement} nodeEl */
   updateEdge = (nodeEl) => this.edgeController.updateEdges([nodeEl]);
+  /** 
+   * @param {HTMLElement} outputSocketEl 
+   * @param {HTMLElement} inputSocketEl 
+   * @param {HTMLElement} edgeEl 
+   */
   updatePath = (outputSocketEl, inputSocketEl, edgeEl) => {
     this.edgeController.updatePath(outputSocketEl, inputSocketEl, edgeEl);
   };
+  /**
+   * @param {HTMLElement} edgeEl
+   * @param {HTMLElement} nodeEl
+   * @param {HTMLElement} fromSocketEl
+   * @param {HTMLElement} toSocketEl
+   */
   addUpdateEdgeMap = (edgeEl, nodeEl, fromSocketEl, toSocketEl) =>
     this.edgeController.addUpdateEdgeMap(
       edgeEl,
@@ -419,17 +591,31 @@ class FlowCanvas {
       fromSocketEl,
       toSocketEl
     );
+  /**
+   * @param {HTMLElement} edgeEl
+   * @param {HTMLElement} nodeEl
+   */
   deleteEdgeFromMap = (edgeEl, nodeEl) =>
     this.edgeController.deleteEdgeFromMap(edgeEl, nodeEl);
+  /** @param {HTMLElement} el */
   setTempEdgeElement = (el) => (this.edgeController.tempEdgeElement = el);
+  /**
+   * @param {HTMLElement} nodeEl
+   * @param {number} x
+   * @param {number} y
+   */
   moveNode = (nodeEl, x, y) => this.nodeController.moveNode(nodeEl, x, y);
 
+  /**
+   * @param {HTMLElement} nodeEl
+   * @returns {{x: number, y: number}}
+   */
   getTransformPosition = (nodeEl) => {
     return { x: nodeEl.dataX || 0, y: nodeEl.dataY || 0 };
   };
-  
+
   // =================== Spatial Grid Management ===================
-  
+
   /**
    * Rebuild spatial grid from scratch
    */
@@ -437,6 +623,9 @@ class FlowCanvas {
     this.spatialGrid.rebuild();
   };
 
+  /**
+   * Sets up global window functions for context menu.
+   */
   setupGlobalWindowFunctions = () => {
     window.flowContextMenuSetup = (menuRef, dotNetRef) => {
       this.contextMenuElement = menuRef;
@@ -465,6 +654,10 @@ class FlowCanvas {
   };
 }
 
+/**
+ * Creates a new FlowCanvas instance.
+ * @returns {FlowCanvas} The new instance.
+ */
 export function createFlowCanvas() {
   return new FlowCanvas();
 }

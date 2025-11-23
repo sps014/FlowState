@@ -2,36 +2,62 @@
  * Handles Connections, Drawing, and Hovering
  **/
 export class EdgeController {
+    /**
+     * @param {FlowCanvas} canvas - The main canvas instance.
+     */
     constructor(canvas) {
+        /** @type {FlowCanvas} */
         this.canvas = canvas;
 
+        /** @type {boolean} Whether a connection is being dragged */
         this.isConnectingNodes = false;
+        /** @type {SVGElement} SVG element containing edges */
         this.edgesSvgEl = null;
+        /** @type {SVGPathElement} Element for detecting edge hover */
         this.edgeHoverDetectorEl = null;
+        /** @type {SVGPathElement} Currently hovered edge element */
         this.hoveredEdgeEl = null;
 
         // Connection State
+        /** @type {{x: number, y: number}|null} Start position of temp edge */
         this.tempEdgeStartPosition = null;
+        /** @type {{x: number, y: number}|null} End position of temp edge */
         this.tempEdgeStopPosition = null;
+        /** @type {HTMLElement} Socket where connection started */
         this.tempSocket = null;
+        /** @type {SVGPathElement} Temporary edge element being dragged */
         this.tempEdgeElement = null;
 
         // Maps
+        /** @type {Map<HTMLElement, SVGPathElement[]>} Map of nodes to connected edges */
         this.nodeEdgeMap = new Map(); // Map<NodeEl, Edges[]>
+        /** @type {Map<SVGPathElement, {to: HTMLElement, from: HTMLElement}>} Map of edges to connected sockets */
         this.edgeSocketsMap = new Map(); // Map<EdgeEl, {to: SocketEl, from: SocketEl}>
     }
 
+    /**
+     * Sets the SVG elements for edges.
+     * @param {SVGElement} svgEl - The SVG container.
+     * @param {SVGPathElement} hoverDetectorEl - The hover detector path.
+     */
     setElements(svgEl, hoverDetectorEl) {
         this.edgesSvgEl = svgEl;
         this.edgeHoverDetectorEl = hoverDetectorEl;
     }
 
+    /**
+     * Sets up event listeners for edge hover detection.
+     */
     setupEdgeHoverDetection = () => {
         if (!this.edgesSvgEl) return;
         this.edgesSvgEl.addEventListener('mouseover', this.handleEdgeMouseEnter);
         this.edgesSvgEl.addEventListener('mouseout', this.handleEdgeMouseLeave);
     }
 
+    /**
+     * Handles mouse enter on an edge.
+     * @param {MouseEvent} e - The mouse event.
+     */
     handleEdgeMouseEnter = (e) => {
         if (!this.edgeHoverDetectorEl || this.canvas.viewportController.isPanning || this.canvas.nodeController.isNodeDragging || this.isConnectingNodes || this.canvas.selectionController.isRectangleSelecting) return;
 
@@ -47,6 +73,10 @@ export class EdgeController {
         }
     }
 
+    /**
+     * Handles mouse leave from an edge.
+     * @param {MouseEvent} e - The mouse event.
+     */
     handleEdgeMouseLeave = (e) => {
         if (!this.edgeHoverDetectorEl) return;
         const target = e.target;
@@ -56,6 +86,9 @@ export class EdgeController {
         }
     }
 
+    /**
+     * Deletes the currently hovered edge.
+     */
     deleteHoveredEdge = () => {
         if (!this.hoveredEdgeEl || this.canvas.isReadOnly) return;
         const edgeId = this.hoveredEdgeEl.id || this.hoveredEdgeEl.getAttribute('id');
@@ -70,6 +103,11 @@ export class EdgeController {
 
     // --- Temp Connection (Dragging Wire) ---
 
+    /**
+     * Starts a temporary connection (dragging a wire).
+     * @param {MouseEvent} e - The mouse event.
+     * @param {HTMLElement} socket - The socket where connection started.
+     */
     startTempConnection = (e, socket) => {
         this.isConnectingNodes = true;
         this.tempEdgeStartPosition = null;
@@ -87,6 +125,10 @@ export class EdgeController {
         }
     }
 
+    /**
+     * Updates the temporary connection path during drag.
+     * @param {MouseEvent} e - The mouse event.
+     */
     updateTempConnection = (e) => {
         if (this.tempEdgeStartPosition == null && this.tempEdgeStopPosition == null) return;
 
@@ -105,6 +147,10 @@ export class EdgeController {
         this.tempEdgeElement.setAttribute("d", path);
     }
 
+    /**
+     * Stops the temporary connection and triggers connection logic if valid.
+     * @param {MouseEvent} e - The mouse event.
+     */
     stopTempConnection = (e) => {
         if (this.tempSocket) {
             let targetSocket = e.target.closest(".socket-anchor");
@@ -130,6 +176,9 @@ export class EdgeController {
         this.resetTempConnection();
     }
 
+    /**
+     * Resets temporary connection state.
+     */
     resetTempConnection = () => {
         if (this.tempEdgeElement) {
             this.tempEdgeElement.setAttribute("d", "");
@@ -142,6 +191,10 @@ export class EdgeController {
 
     // --- Drawing Logic ---
 
+    /**
+     * Updates edges connected to the given nodes.
+     * @param {NodeList|Array} nodesEl - The nodes to update edges for.
+     */
     updateEdges = (nodesEl) => {
         if (nodesEl == null || nodesEl == undefined) return;
         let edgesEl = this.getEdgesElementsToBeUpdated(nodesEl);
@@ -152,6 +205,11 @@ export class EdgeController {
         }
     }
 
+    /**
+     * Gets a set of edge elements that need updating.
+     * @param {NodeList|Array} nodesEl - The nodes.
+     * @returns {Set<SVGPathElement>} Set of edge elements.
+     */
     getEdgesElementsToBeUpdated = (nodesEl) => {
         let edgesElements = new Set();
         for (let node of nodesEl) {
@@ -164,6 +222,12 @@ export class EdgeController {
         return edgesElements;
     }
 
+    /**
+     * Updates the path of a specific edge.
+     * @param {HTMLElement} outputSocketEl - The output socket.
+     * @param {HTMLElement} inputSocketEl - The input socket.
+     * @param {SVGPathElement} edgeEl - The edge element.
+     */
     updatePath = (outputSocketEl, inputSocketEl, edgeEl) => {
         if (!outputSocketEl || !inputSocketEl || !edgeEl) return;
         const fromPos = this.canvas.getSocketPosition(outputSocketEl);
@@ -172,6 +236,12 @@ export class EdgeController {
         edgeEl.setAttribute("d", path);
     }
 
+    /**
+     * Generates an SVG path string.
+     * @param {{x: number, y: number}} to - End point.
+     * @param {{x: number, y: number}} from - Start point.
+     * @returns {string} The SVG path data.
+     */
     generateSvgPath = (to, from) => {
         if (this.canvas.jsEdgePathFunctionName) {
             return window[this.canvas.jsEdgePathFunctionName](to, from);
@@ -179,6 +249,12 @@ export class EdgeController {
         return this.createCubicPath(to, from);
     }
 
+    /**
+     * Creates a cubic bezier path.
+     * @param {{x: number, y: number}} to - End point.
+     * @param {{x: number, y: number}} from - Start point.
+     * @returns {string} The SVG path data.
+     */
     createCubicPath = (to, from) => {
         const dx = to.x - from.x;
         const dy = to.y - from.y;
@@ -189,6 +265,13 @@ export class EdgeController {
         return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
     }
 
+    /**
+     * Adds or updates an edge in the tracking maps.
+     * @param {SVGPathElement} edgeEl - The edge element.
+     * @param {HTMLElement} nodeEl - The node element.
+     * @param {HTMLElement} fromSocketEl - The source socket.
+     * @param {HTMLElement} toSocketEl - The target socket.
+     */
     addUpdateEdgeMap = (edgeEl, nodeEl, fromSocketEl, toSocketEl) => {
         if (this.nodeEdgeMap.has(nodeEl)) {
             this.nodeEdgeMap.get(nodeEl).push(edgeEl);
@@ -198,6 +281,11 @@ export class EdgeController {
         this.edgeSocketsMap.set(edgeEl, { to: toSocketEl, from: fromSocketEl });
     }
 
+    /**
+     * Removes an edge from the tracking maps.
+     * @param {SVGPathElement} edgeEl - The edge element.
+     * @param {HTMLElement} nodeEl - The node element.
+     */
     deleteEdgeFromMap = (edgeEl, nodeEl) => {
         if (this.nodeEdgeMap.has(nodeEl)) {
             this.nodeEdgeMap.get(nodeEl).delete(edgeEl);

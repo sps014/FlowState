@@ -92,7 +92,9 @@
             nodeInfos.Add(nodeInfo);
         }
 
-        await Task.Delay(millisecondsDelay: 1000);
+        await Task.Delay(60); 
+
+        await nodeInfos.Last().Instance!.WaitUntilRenderedAsync();
 
         // Connect nodes to create an interconnected graph
         // Each node connects to its right and bottom neighbors

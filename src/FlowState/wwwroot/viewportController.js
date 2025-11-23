@@ -2,37 +2,60 @@
 Handles Zooming, Panning, and Grid Background
 **/
 export class ViewportController {
+    /**
+     * @param {FlowCanvas} canvas - The main canvas instance.
+     */
     constructor(canvas) {
+        /** @type {FlowCanvas} */
         this.canvas = canvas;
 
         // Panning State
+        /** @type {boolean} Whether the viewport is being panned */
         this.isPanning = false;
+        /** @type {number} Start X coordinate of pan */
         this.startX = 0;
+        /** @type {number} Start Y coordinate of pan */
         this.startY = 0;
+        /** @type {number} Last X offset before pan */
         this.lastOffsetX = 0;
+        /** @type {number} Last Y offset before pan */
         this.lastOffsetY = 0;
 
         // Cache
+        /** @type {string} Cached background size string */
         this.cacheGridBackgroundSize = null;
+        /** @type {Array<Array<{number: number, unit: string}>>} Cached grid size matrix */
         this.cacheGridSizeMatrix = null;
 
         // Reflow debounce timer
+        /** @type {number|null} Timer for reflow debounce */
         this.reflowTimer = null;
 
         // Animation Frame State
+        /** @type {boolean} Whether an animation frame is pending */
         this.ticking = false;
+        /** @type {boolean} Whether a rerender is pending */
         this.pendingRerender = false;
 
         // Zoom state
+        /** @type {number|null} Timer for zoom end detection */
         this.zoomTimer = null;
+        /** @type {number|null} Timer for zoom notification throttling */
         this.zoomNotifyTimer = null;
     }
 
+    /**
+     * Initializes the grid background.
+     */
     initGrid() {
         const style = window.getComputedStyle(this.canvas.gridEl);
         this.cacheGridBackgroundSize = style.backgroundSize;
     }
 
+    /**
+     * Starts panning the viewport.
+     * @param {MouseEvent} e - The mouse event.
+     */
     panStart = (e) => {
         this.isPanning = true;
         this.startX = e.clientX;
@@ -47,6 +70,10 @@ export class ViewportController {
         e.preventDefault();
     };
 
+    /**
+     * Updates the viewport position during pan.
+     * @param {MouseEvent} e - The mouse event.
+     */
     panMove = (e) => {
         if (!this.isPanning) return;
 
@@ -59,6 +86,10 @@ export class ViewportController {
         e.preventDefault();
     };
 
+    /**
+     * Stops panning the viewport.
+     * @param {MouseEvent} e - The mouse event.
+     */
     panEnd = (e) => {
         if (!this.isPanning) return;
 
@@ -76,6 +107,10 @@ export class ViewportController {
         e.preventDefault();
     };
 
+    /**
+     * Handles mouse wheel events for zooming.
+     * @param {WheelEvent} e - The wheel event.
+     */
     onWheel = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -123,6 +158,10 @@ export class ViewportController {
         }
     };
 
+    /**
+     * Updates CSS transforms for the viewport.
+     * @param {boolean} rerender - Whether to force a rerender of background.
+     */
     updateTransforms = (rerender = false) => {
         if (rerender) this.pendingRerender = true;
 
@@ -136,12 +175,19 @@ export class ViewportController {
         }
     };
 
+    /**
+     * Performs the actual transform update.
+     * @param {boolean} rerender - Whether to force a rerender of background.
+     */
     _performUpdateTransforms = (rerender) => {
         this.canvas.flowContentEl.style.transform = `translate3d(${this.canvas.offsetX}px, ${this.canvas.offsetY}px, 0px) scale(${this.canvas.zoom})`;
         this.panBackgroundPosition();
         this.scaleBackgroundSize();
     };
 
+    /**
+     * Scales the background size based on zoom level.
+     */
     scaleBackgroundSize = () => {
         const bgSizes = this.cacheGridBackgroundSize.split(",");
         const scaledSizes = bgSizes.map((size) => {
@@ -160,6 +206,9 @@ export class ViewportController {
         this.canvas.gridEl.style.backgroundSize = scaledSizes.join(", ");
     };
 
+    /**
+     * Updates the background position based on offset.
+     */
     panBackgroundPosition = () => {
         let gridSizeMatrix = this.getBackgroundSizesMatrix();
         let positions = [];
@@ -174,6 +223,10 @@ export class ViewportController {
         this.canvas.gridEl.style.backgroundPosition = positions.join(",");
     };
 
+    /**
+     * Gets the parsed background sizes matrix.
+     * @returns {Array<Array<{number: number, unit: string}>>} The size matrix.
+     */
     getBackgroundSizesMatrix = () => {
         if (this.cacheGridSizeMatrix != null) return this.cacheGridSizeMatrix;
         const bgSizes = this.cacheGridBackgroundSize.split(",");
