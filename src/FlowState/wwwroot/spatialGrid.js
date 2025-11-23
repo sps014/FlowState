@@ -81,10 +81,11 @@ export class SpatialGrid {
                 // Invalidate cache and update grid position
                 this.invalidateRect(node);
 
-                // Debounce the grid update to avoid excessive updates during animation
+                // grid update and edge update 
                 if (!node._resizeUpdateTimer) {
                     node._resizeUpdateTimer = setTimeout(() => {
                         this.updateNode(node);
+                        this.canvas.edgeController.updateEdges([node]);
                         delete node._resizeUpdateTimer;
                     }, 60);
                 }

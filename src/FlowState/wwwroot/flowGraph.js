@@ -63,6 +63,19 @@ class FlowCanvas {
   /** @type {function} Handler for clicking outside context menu */
   clickOutsideHandler = null;
 
+  /** @type {ViewportController} Viewport controller */
+  viewportController = null;
+  /** @type {SelectionController} Selection controller */
+  selectionController = null;
+  /** @type {NodeController} Node controller */
+  nodeController = null;
+  /** @type {EdgeController} Edge controller */
+  edgeController = null;
+  /** @type {SpatialGrid} Spatial grid */
+  spatialGrid = null;
+  /** @type {ViewportVirtualization} Viewport virtualization */
+  viewportVirtualization = null;
+
   /**
    * Initializes the FlowCanvas and its controllers.
    */
