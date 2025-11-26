@@ -300,21 +300,6 @@ async Task HandleContextMenu(CanvasContextMenuEventArgs e)
 }
 ```
 
-### OnKeyDown
-Fired when a key is pressed while the canvas has focus.
-
-**Type**: `EventCallback<KeyboardEventArgs>`
-
-```csharp
-void HandleKeyDown(KeyboardEventArgs e)
-{
-    if (e.Key == "Escape")
-    {
-        // Handle escape key
-    }
-}
-```
-
 ## Complete Example
 
 ```razor

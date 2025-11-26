@@ -228,13 +228,6 @@ namespace FlowState.Components
         [Parameter]
         public EventCallback<CanvasContextMenuEventArgs> OnContextMenu { get; set; }
 
-
-        /// <summary>
-        /// Event fired when a key is pressed (Delete key or Backspace on Mac)
-        /// </summary>
-        [Parameter]
-        public EventCallback<KeyboardEventArgs> OnKeyDown { get; set; }
-
         private FlowEdge? TempEdge = null;
         private ElementReference canvasRef;
         private ElementReference flowContentRef;
@@ -736,14 +729,23 @@ namespace FlowState.Components
         }
 
 
-        private async Task HandleKeyDown(KeyboardEventArgs e)
+        /// <summary>
+        /// Called from JavaScript to handle undo operation
+        /// </summary>
+        [JSInvokable]
+        public async Task HandleUndo()
         {
-            if (OnKeyDown.HasDelegate)
-                await OnKeyDown.InvokeAsync(e);
-
-            if ((e.CtrlKey || e.MetaKey) && e.Key == "z" && !e.ShiftKey)
+            if (Graph?.CommandManager != null)
                 await Graph.CommandManager.UndoAsync();
-            else if ((e.CtrlKey || e.MetaKey) && (e.Key == "y" || (e.Key == "z" && e.ShiftKey)))
+        }
+
+        /// <summary>
+        /// Called from JavaScript to handle redo operation
+        /// </summary>
+        [JSInvokable]
+        public async Task HandleRedo()
+        {
+            if (Graph?.CommandManager != null)
                 await Graph.CommandManager.RedoAsync();
         }
 

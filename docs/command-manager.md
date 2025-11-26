@@ -117,30 +117,11 @@ FlowCanvas automatically handles Ctrl+Z / Ctrl+Y:
 // Ctrl+Y or Cmd+Shift+Z → Redo
 ```
 
-Custom keyboard handling:
+**Note:** Keyboard shortcuts for undo/redo are automatically handled by FlowCanvas:
+- **Ctrl+Z** (Windows/Linux) or **Cmd+Z** (Mac): Undo
+- **Ctrl+Y** or **Ctrl+Shift+Z** (Windows/Linux) or **Cmd+Y** or **Cmd+Shift+Z** (Mac): Redo
 
-```razor
-<FlowCanvas Graph="graph" OnKeyDown="HandleKeyDown">
-    ...
-</FlowCanvas>
-
-@code {
-    async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.CtrlKey || e.MetaKey)
-        {
-            if (e.Key == "z" && !e.ShiftKey)
-            {
-                await graph.CommandManager.UndoAsync();
-            }
-            else if (e.Key == "y" || (e.Key == "z" && e.ShiftKey))
-            {
-                await graph.CommandManager.RedoAsync();
-            }
-        }
-    }
-}
-```
+No additional setup is required for keyboard shortcuts.
 
 ## Complete Example
 

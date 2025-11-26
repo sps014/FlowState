@@ -55,6 +55,10 @@ class FlowCanvas {
   /** @type {number} Movement threshold in pixels to cancel long press */
   LONG_PRESS_MOVE_THRESHOLD = 10;
 
+  // Document-level tracking state
+  /** @type {boolean} Whether document-level tracking is active */
+  isTrackingAtDocumentLevel = false;
+
   // Context Menu Helpers
   /** @type {HTMLElement} Context menu element */
   contextMenuElement = null;
@@ -152,6 +156,9 @@ class FlowCanvas {
     el.removeEventListener("wheel", this.viewportController.onWheel);
     el.removeEventListener("contextmenu", this.onContextMenu);
     el.removeEventListener("keydown", this.onKeyDown);
+    
+    // Ensure document-level tracking is cleaned up
+    this.detachDocumentTracking();
   };
 
   /**
@@ -275,6 +282,9 @@ class FlowCanvas {
     } else if (this.viewportController.isPanning) {
       this.viewportController.panEnd(e);
     }
+
+    // Cleanup document tracking if active
+    this.detachDocumentTracking();
   };
 
   /**
@@ -282,6 +292,91 @@ class FlowCanvas {
    * @param {PointerEvent} e - The pointer event.
    */
   pointerleave = (e) => {
+    e.stopPropagation();
+    this.cancelLongPress();
+
+    // Check if we're in the middle of an operation that should continue outside
+    const hasActiveOperation = 
+      this.nodeController.isResizing ||
+      this.edgeController.isConnectingNodes ||
+      this.nodeController.isNodeDragging ||
+      this.selectionController.isRectangleSelecting ||
+      this.viewportController.isPanning;
+
+    if (hasActiveOperation) {
+      // Start tracking at document level to continue operation outside canvas
+      this.attachDocumentTracking();
+    }
+  };
+
+  /**
+   * Handles key down events.
+   * @param {KeyboardEvent} e - The keyboard event.
+   */
+  onKeyDown = (e) => {
+    if (this.isInteractiveElement(e.target) || this.isReadOnly) return;
+
+    // Handle undo/redo
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+      e.preventDefault();
+      this.dotnetRef.invokeMethodAsync("HandleUndo");
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) {
+      e.preventDefault();
+      this.dotnetRef.invokeMethodAsync("HandleRedo");
+      return;
+    }
+
+    if (e.key === "Delete" || e.key === "Backspace") {
+      if (this.edgeController.hoveredEdgeEl) {
+        e.preventDefault();
+        if (this.selectionController.selectedNodes.size > 0) {
+          this.selectionController.clearSelection();
+        }
+        this.edgeController.deleteHoveredEdge();
+      } else if (this.selectionController.selectedNodes.size > 0) {
+        e.preventDefault();
+        this.selectionController.deleteSelectedNodes();
+      }
+    }
+  };
+
+  // =================== Document-Level Tracking ===================
+
+  /**
+   * Document-level pointer move handler.
+   * @param {PointerEvent} e - The pointer event.
+   */
+  documentPointermove = (e) => {
+    e.stopPropagation();
+
+    if (this.nodeController.isResizing) {
+      this.nodeController.resizeNode(e);
+      return;
+    }
+    if (this.edgeController.isConnectingNodes) {
+      this.edgeController.updateTempConnection(e);
+      return;
+    }
+    if (this.nodeController.isNodeDragging) {
+      this.nodeController.dragNodeMove(e);
+      return;
+    }
+    if (this.selectionController.isRectangleSelecting) {
+      this.selectionController.updateRectangleSelection(e);
+      return;
+    }
+    if (this.viewportController.isPanning) {
+      this.viewportController.panMove(e);
+    }
+  };
+
+  /**
+   * Document-level pointer up handler.
+   * @param {PointerEvent} e - The pointer event.
+   */
+  documentPointerup = (e) => {
     e.stopPropagation();
     this.cancelLongPress();
 
@@ -297,27 +392,72 @@ class FlowCanvas {
     } else if (this.viewportController.isPanning) {
       this.viewportController.panEnd(e);
     }
+
+    // Always cleanup after pointer up
+    this.detachDocumentTracking();
   };
 
   /**
-   * Handles key down events.
+   * Document-level keydown handler for canceling operations.
    * @param {KeyboardEvent} e - The keyboard event.
    */
-  onKeyDown = (e) => {
-    if (this.isInteractiveElement(e.target) || this.isReadOnly) return;
+  documentKeydown = (e) => {
+    // Handle Escape key to cancel operations
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (this.nodeController.isResizing) {
+        this.nodeController.stopResize();
+      } else if (this.edgeController.isConnectingNodes) {
+        this.edgeController.resetTempConnection();
+      } else if (this.nodeController.isNodeDragging) {
+        this.nodeController.dragNodeStop(e);
+      } else if (this.selectionController.isRectangleSelecting) {
+        this.selectionController.clearSelection();
+      } else if (this.viewportController.isPanning) {
+        this.viewportController.panEnd(e);
+      }
+      this.detachDocumentTracking();
+    }
+  };
 
-    if (e.key === "Delete" || e.key === "Backspace") {
-      if (this.edgeController.hoveredEdgeEl) {
-        e.preventDefault();
-        if (this.selectionController.selectedNodes.size > 0) {
-          this.selectionController.clearSelection();
-        }
-        this.edgeController.deleteHoveredEdge();
-      } else if (this.selectionController.selectedNodes.size > 0) {
-        e.preventDefault();
-        this.selectionController.deleteSelectedNodes();
+  /**
+   * Document-level keyup handler to cancel operations if modifier key is released.
+   * @param {KeyboardEvent} e - The keyboard event.
+   */
+  documentKeyup = (e) => {
+    // Cancel panning if pan key is released while panning
+    if (this.viewportController.isPanning && this.canvasMode !== 1) {
+      if (!this.isPanKeyPressed(e)) {
+        this.viewportController.panEnd(e);
+        this.detachDocumentTracking();
       }
     }
+  };
+
+  /**
+   * Attaches document-level event listeners for tracking outside the canvas.
+   */
+  attachDocumentTracking = () => {
+    if (this.isTrackingAtDocumentLevel) return;
+    
+    this.isTrackingAtDocumentLevel = true;
+    document.addEventListener("pointermove", this.documentPointermove, true);
+    document.addEventListener("pointerup", this.documentPointerup, true);
+    document.addEventListener("keydown", this.documentKeydown, true);
+    document.addEventListener("keyup", this.documentKeyup, true);
+  };
+
+  /**
+   * Detaches document-level event listeners.
+   */
+  detachDocumentTracking = () => {
+    if (!this.isTrackingAtDocumentLevel) return;
+    
+    this.isTrackingAtDocumentLevel = false;
+    document.removeEventListener("pointermove", this.documentPointermove, true);
+    document.removeEventListener("pointerup", this.documentPointerup, true);
+    document.removeEventListener("keydown", this.documentKeydown, true);
+    document.removeEventListener("keyup", this.documentKeyup, true);
   };
 
   /**
