@@ -32,17 +32,14 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore dependencies
-        run: dotnet restore examples/FlowStateBlazorWasm/FlowStateBlazorWasm.csproj
-
-      - name: Build Blazor WASM
-        run: dotnet build examples/FlowStateBlazorWasm/FlowStateBlazorWasm.csproj --configuration Release --no-restore
-
       - name: Publish Blazor WASM
-        run: dotnet publish examples/FlowStateBlazorWasm/FlowStateBlazorWasm.csproj --configuration Release --output ./publish --no-build
+        run: dotnet publish examples/FlowStateBlazorWasm/FlowStateBlazorWasm.csproj --configuration Release --output ./publish
 
       - name: Copy Netlify config
         run: cp examples/FlowStateBlazorWasm/netlify.toml ./publish/wwwroot/
+
+      - name: List published files (debug)
+        run: ls -la ./publish/wwwroot/_framework/ | head -20
 
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v3.0
@@ -51,9 +48,10 @@ jobs:
           production-branch: main
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message: "Deploy from GitHub Actions - ${{ github.event.head_commit.message }}"
-          enable-pull-request-comment: true
-          enable-commit-comment: true
-          overwrites-pull-request-comment: true
+          enable-pull-request-comment: false
+          enable-commit-comment: false
+          enable-commit-status: false
+          enable-github-deployment: false
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
