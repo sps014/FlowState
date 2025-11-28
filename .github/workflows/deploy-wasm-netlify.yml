@@ -1,22 +1,22 @@
 name: Deploy Blazor WASM to Netlify
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'examples/FlowStateBlazorWasm/**'
-      - 'examples/SharedNodesLibrary/**'
-      - 'src/FlowState/**'
-      - '.github/workflows/deploy-wasm-netlify.yml'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'examples/FlowStateBlazorWasm/**'
-      - 'examples/SharedNodesLibrary/**'
-      - 'src/FlowState/**'
-      - '.github/workflows/deploy-wasm-netlify.yml'
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'examples/FlowStateBlazorWasm/**'
+  #     - 'examples/SharedNodesLibrary/**'
+  #     - 'src/FlowState/**'
+  #     - '.github/workflows/deploy-wasm-netlify.yml'
+  # pull_request:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'examples/FlowStateBlazorWasm/**'
+  #     - 'examples/SharedNodesLibrary/**'
+  #     - 'src/FlowState/**'
+  #     - '.github/workflows/deploy-wasm-netlify.yml'
   workflow_dispatch:
 
 jobs:
@@ -34,12 +34,6 @@ jobs:
 
       - name: Publish Blazor WASM
         run: dotnet publish examples/FlowStateBlazorWasm/FlowStateBlazorWasm.csproj --configuration Release --output ./publish
-
-      - name: Copy Netlify config
-        run: cp examples/FlowStateBlazorWasm/netlify.toml ./publish/wwwroot/
-
-      - name: List published files (debug)
-        run: ls -la ./publish/wwwroot/_framework/ | head -20
 
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v3.0
