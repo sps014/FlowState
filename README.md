@@ -416,7 +416,7 @@ public partial class StateNode : FlowNodeBase
 Check out the example projects in the repo:
 - **Blazor Server** - Full-featured editor with toolbar and custom nodes
 - **Blazor WASM** - Lightweight browser-only version
-- **Unity themed nodes** - Custom styled nodes (ocean wave renderer, color gradients)
+- **Unity Shader graph themed nodes** - Custom styled nodes (ocean wave renderer, color gradients)
 
 Run them with:
 ```bash
