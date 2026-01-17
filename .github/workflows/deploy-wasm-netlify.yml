@@ -1,53 +1,36 @@
-name: Deploy Blazor WASM to Netlify
+name: Deploy Blazor WASM to Netlify Pages
 
 on:
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'examples/FlowStateBlazorWasm/**'
-  #     - 'examples/SharedNodesLibrary/**'
-  #     - 'src/FlowState/**'
-  #     - '.github/workflows/deploy-wasm-netlify.yml'
-  # pull_request:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'examples/FlowStateBlazorWasm/**'
-  #     - 'examples/SharedNodesLibrary/**'
-  #     - 'src/FlowState/**'
-  #     - '.github/workflows/deploy-wasm-netlify.yml'
-  workflow_dispatch:
+    push:
+        branches: [main]
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    deploy-to-github-pages:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
+            - name: Setup .NET Core SDK
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: 10.0.x
+                  
+                  
+            - name: Publish Blazor WASM
+              run: dotnet publish examples/FlowStateBlazorWasm/FlowStateBlazorWasm.csproj --configuration Release --output ./publish
 
-      - name: Publish Blazor WASM
-        run: dotnet publish examples/FlowStateBlazorWasm/FlowStateBlazorWasm.csproj --configuration Release --output ./publish
+            - name: copy index.html to 404.html
+              run: cp publish/wwwroot/index.html publish/wwwroot/404.html
 
-      - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3.0
-        with:
-          publish-dir: './publish/wwwroot'
-          production-branch: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy from GitHub Actions - ${{ github.event.head_commit.message }}"
-          enable-pull-request-comment: false
-          enable-commit-comment: false
-          enable-commit-status: false
-          enable-github-deployment: false
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        timeout-minutes: 5
+            - name: Add .nojekyll file
+              run: touch publish/wwwroot/.nojekyll
 
+            - name: Add ._redirect file
+              run: echo "/*  /index.html  200" > publish/wwwroot/_redirects
+
+            - name: Commit wwwroot to GitHub Pages
+              uses: JamesIves/github-pages-deploy-action@3.7.1
+              with:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  BRANCH: gh-pages
+                  FOLDER: publish/wwwroot
