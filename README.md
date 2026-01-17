@@ -27,6 +27,7 @@ A high-performance node editor for Blazor. Build visual programming tools, node-
 
 
 ## Links
+[Demo](https://flowstate-blazor.netlify.app/)
 [Documentation](https://sps014.github.io/FlowState/)
 
 ## Installation
