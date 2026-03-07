@@ -300,6 +300,69 @@ async Task HandleContextMenu(CanvasContextMenuEventArgs e)
 }
 ```
 
+### OnNodeAdded
+Fired when a node is added to the canvas.
+
+**Type**: `EventCallback<NodeAddedEventArgs>`
+
+```csharp
+void HandleNodeAdded(NodeAddedEventArgs e)
+{
+    Console.WriteLine($"Node added: {e.NodeId}");
+}
+```
+
+### OnEdgeAdded
+Fired when an edge is added to the canvas.
+
+**Type**: `EventCallback<EdgeAddedEventArgs>`
+
+```csharp
+void HandleEdgeAdded(EdgeAddedEventArgs e)
+{
+    Console.WriteLine($"Edge added: {e.EdgeId}");
+}
+```
+
+### OnNodeRemoved
+Fired when a node is removed from the canvas.
+
+**Type**: `EventCallback<NodeRemovedEventArgs>`
+
+```csharp
+void HandleNodeRemoved(NodeRemovedEventArgs e)
+{
+    Console.WriteLine($"Node removed: {e.NodeId}");
+}
+```
+
+### OnEdgeRemoved
+Fired when an edge is removed from the canvas.
+
+**Type**: `EventCallback<EdgeRemovedEventArgs>`
+
+```csharp
+void HandleEdgeRemoved(EdgeRemovedEventArgs e)
+{
+    Console.WriteLine($"Edge removed: {e.EdgeId}");
+}
+```
+
+### OnAllNodesCleared
+Fired when all nodes are cleared from the canvas.
+
+**Type**: `EventCallback`
+
+```csharp
+void HandleAllNodesCleared()
+{
+    Console.WriteLine("All nodes cleared");
+}
+```
+
+
+
+
 ## Complete Example
 
 ```razor

@@ -174,6 +174,31 @@ namespace FlowState.Components
         [Parameter]
         public EventCallback<ZoomEventArgs> OnZoomed { get; set; }
 
+
+        /// <summary>
+        /// Event fired when a node is added to the canvas
+        /// </summary>
+        [Parameter]
+        public EventCallback<NodeAddedEventArgs> OnNodeAdded { get; set; }
+
+        /// <summary>
+        /// Event fired when an edge is added to the canvas
+        /// </summary>
+        [Parameter]
+        public EventCallback<EdgeAddedEventArgs> OnEdgeAdded { get; set; }
+
+        /// <summary>
+        /// Event fired when a node is removed from the canvas
+        /// </summary>
+        [Parameter]
+        public EventCallback<NodeRemovedEventArgs> OnNodeRemoved { get; set; }
+
+        /// <summary>
+        /// Event fired when an edge is removed from the canvas
+        /// </summary>
+        [Parameter]
+        public EventCallback<EdgeRemovedEventArgs> OnEdgeRemoved { get; set; }
+
         /// <summary>
         /// Event fired when a node is moved
         /// </summary>
@@ -203,6 +228,12 @@ namespace FlowState.Components
         /// </summary>
         [Parameter]
         public EventCallback<NodesClearedEventArgs> OnNotifyNodesCleared { get; set; }
+
+        /// <summary>
+        /// Event fired when all nodes are cleared from the canvas
+        /// </summary>
+        [Parameter]
+        public EventCallback OnAllNodesCleared { get; set; }
 
         /// <summary>
         /// Event fired when an edge connection is requested
@@ -343,26 +374,31 @@ namespace FlowState.Components
         private void RefreshOnNodeAdded(object? _, NodeAddedEventArgs e)
         {
             NotifyStateHasChanged();
+            OnNodeAdded.InvokeAsync(e);
         }
 
         private void RefreshOnNodeRemoved(object? _, NodeRemovedEventArgs e)
         {
             NotifyStateHasChanged();
+            OnNodeRemoved.InvokeAsync(e);
         }
 
         private void RefreshOnEdgeAdded(object? _, EdgeAddedEventArgs e)
         {
             NotifyStateHasChanged();
+            OnEdgeAdded.InvokeAsync(e);
         }
 
         private void RefreshOnEdgeRemoved(object? _, EdgeRemovedEventArgs e)
         {
             NotifyStateHasChanged();
+            OnEdgeRemoved.InvokeAsync(e);
         }
 
         private void RefreshOnAllNodesCleared(object? _, EventArgs e)
         {
             NotifyStateHasChanged();
+            OnAllNodesCleared.InvokeAsync(EventArgs.Empty);
         }
 
         /// <summary>
