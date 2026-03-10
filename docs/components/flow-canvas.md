@@ -153,6 +153,52 @@ Triggers a component re-render.
 canvas.Refresh();
 ```
 
+### ArrangeAsync
+Arranges all nodes in a left-to-right layered layout based on the dependency graph. Nodes with no dependencies (roots) are placed in the leftmost column; each subsequent column contains nodes that depend on the previous column.
+
+There are two overloads:
+
+#### Fixed-spacing overload
+Uses constant column width and row height regardless of node size.
+
+**Signature**: `ValueTask ArrangeAsync(double startX = 50, double startY = 50, double horizontalSpacing = 250, double verticalSpacing = 120)`
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| startX | double | 50 | Canvas X coordinate for the first column |
+| startY | double | 50 | Canvas Y coordinate for the topmost node |
+| horizontalSpacing | double | 250 | Horizontal gap between columns in pixels |
+| verticalSpacing | double | 120 | Vertical gap between nodes in a column in pixels |
+
+```csharp
+await canvas.ArrangeAsync();
+await canvas.ArrangeAsync(startX: 100, startY: 80, horizontalSpacing: 300, verticalSpacing: 150);
+```
+
+#### DOM-aware overload
+Reads each node's actual rendered width and height from the DOM so columns are sized to their widest node and rows are sized to their tallest node. `gapX` and `gapY` control the whitespace between nodes. Set `useDom: false` to fall back to fixed spacing.
+
+**Signature**: `ValueTask ArrangeAsync(double x = 50, double y = 50, double gapX = 60, double gapY = 40, bool useDom = true)`
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| x | double | 50 | Canvas X coordinate for the first column |
+| y | double | 50 | Canvas Y coordinate for the topmost node |
+| gapX | double | 60 | Horizontal whitespace between columns in pixels |
+| gapY | double | 40 | Vertical whitespace between nodes in a column in pixels |
+| useDom | bool | true | When true, reads rendered node sizes from the DOM |
+
+```csharp
+// DOM-aware layout with default gaps
+await canvas.ArrangeAsync(x: 50, y: 50, gapX: 60, gapY: 40, useDom: true);
+
+// Tighter gaps
+await canvas.ArrangeAsync(x: 20, y: 20, gapX: 30, gapY: 20, useDom: true);
+
+// Fall back to fixed spacing
+await canvas.ArrangeAsync(x: 50, y: 50, gapX: 60, gapY: 40, useDom: false);
+```
+
 ## Events
 
 ### OnCanvasLoaded

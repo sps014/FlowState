@@ -297,6 +297,15 @@ Common socket sizes:
 <FlowSocket Name="Large" Type="SocketType.Input" T="typeof(float)" Size="24"/>
 ```
 
+## Interactions
+
+### Alt+Click to Disconnect
+
+Holding **Alt** (Windows/Linux) or **Option** (Mac) and clicking a socket removes **all edges** connected to that socket. This works for both input and output sockets and respects the canvas read-only state.
+
+{: .note }
+This shortcut is disabled when the canvas is in read-only mode (`IsReadOnly = true`).
+
 ## See Also
 
 - [FlowNodeBase](./flow-node-base.html) - Base class for nodes

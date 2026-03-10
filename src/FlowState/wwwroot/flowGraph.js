@@ -214,6 +214,18 @@ class FlowCanvas {
 
     if (socket) {
       if (this.isInteractiveElement(e.target) || this.isReadOnly) return;
+
+      // Alt+Click (or Option+Click on Mac) disconnects all edges from the socket
+      if (e.altKey) {
+        e.preventDefault();
+        const nodeId = socket.getAttribute("node-id");
+        const socketName = socket.getAttribute("name");
+        if (nodeId && socketName) {
+          this.dotnetRef.invokeMethodAsync("DeleteSocketEdges", nodeId, socketName);
+        }
+        return;
+      }
+
       this.startLongPress(e, socket);
       this.edgeController.tempSocket = socket;
       this.edgeController.startTempConnection(e, socket);
@@ -768,6 +780,19 @@ class FlowCanvas {
    */
   getTransformPosition = (nodeEl) => {
     return { x: nodeEl.dataX || 0, y: nodeEl.dataY || 0 };
+  };
+
+  /**
+   * Returns the rendered width and height of a node element in canvas (unzoomed) pixels.
+   * @param {HTMLElement} nodeEl - The node element.
+   * @returns {{width: number, height: number}}
+   */
+  getNodeSize = (nodeEl) => {
+    if (!nodeEl) return { x: 0, y: 0 };
+    return {
+      x: nodeEl.offsetWidth,
+      y: nodeEl.offsetHeight
+    };
   };
 
   // =================== Spatial Grid Management ===================

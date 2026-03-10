@@ -133,6 +133,18 @@ namespace FlowState.Components
         }
 
         /// <summary>
+        /// Gets the rendered size (width and height) of the node element in canvas pixels.
+        /// </summary>
+        /// <returns>A DomPoint where X is width and Y is height, or zero if not available.</returns>
+        public ValueTask<DomPoint> GetNodeSizeAsync()
+        {
+            if (Node != null && Node.Graph != null && Canvas != null && Canvas.JsModule != null)
+                return Canvas.JsModule.InvokeAsync<DomPoint>("getNodeSize", nodeRef);
+
+            return ValueTask.FromResult(new DomPoint());
+        }
+
+        /// <summary>
         /// Cleanup when the node is removed
         /// </summary>
         public ValueTask DisposeAsync()

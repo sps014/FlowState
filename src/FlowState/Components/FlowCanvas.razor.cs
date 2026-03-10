@@ -702,6 +702,31 @@ namespace FlowState.Components
         }
 
         /// <summary>
+        /// Called from JavaScript when Alt+Click is performed on a socket — removes all edges connected to that socket
+        /// </summary>
+        [JSInvokable]
+        public async Task DeleteSocketEdges(string nodeId, string socketName)
+        {
+            if (IsReadOnly || Graph == null)
+                return;
+
+            var node = Graph.GetNodeById(nodeId);
+            if (node == null)
+                return;
+
+            node.InputSockets.TryGetValue(socketName, out var inputSocket);
+            node.OutputSockets.TryGetValue(socketName, out var outputSocket);
+
+            var socket = inputSocket ?? outputSocket;
+            if (socket == null)
+                return;
+
+            var edgeIds = socket.Connections.Select(e => e.Id).ToArray();
+            foreach (var edgeId in edgeIds)
+                await Graph.RemoveEdgeAsync(edgeId);
+        }
+
+        /// <summary>
         /// Called from JavaScript when an edge connection is requested
         /// </summary>
         [JSInvokable]
@@ -751,6 +776,162 @@ namespace FlowState.Components
                 return;
             group.OnResized(width, height);
             return;
+        }
+
+        /// <summary>
+        /// Arranges nodes in a left-to-right layered layout based on the dependency graph using
+        /// fixed column/row spacing.
+        /// </summary>
+        /// <param name="startX">Canvas X coordinate for the first column (default: 50)</param>
+        /// <param name="startY">Canvas Y coordinate for the topmost node (default: 50)</param>
+        /// <param name="horizontalSpacing">Horizontal distance between column origins (default: 250)</param>
+        /// <param name="verticalSpacing">Vertical distance between node origins (default: 120)</param>
+        public async ValueTask ArrangeAsync(double startX = 50, double startY = 50, double horizontalSpacing = 250, double verticalSpacing = 120)
+        {
+            var layers = BuildArrangeLayers();
+            if (layers == null) return;
+
+            foreach (var (col, nodeIds) in layers)
+            {
+                double x = startX + col * horizontalSpacing;
+                for (int row = 0; row < nodeIds.Count; row++)
+                {
+                    var node = Graph.GetNodeById(nodeIds[row]);
+                    if (node?.DomElement != null)
+                    {
+                        await node.DomElement.MoveNodeAsync(x, startY + row * verticalSpacing);
+                        await node.DomElement.UpdateEdgesAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Arranges nodes in a left-to-right layered layout, reading each node's actual rendered
+        /// size from the DOM so columns are sized to their widest node and rows advance by each
+        /// node's real height. <paramref name="gapX"/> and <paramref name="gapY"/> are the
+        /// whitespace between nodes. When <paramref name="useDom"/> is <c>false</c> this falls
+        /// back to <see cref="ArrangeAsync(double,double,double,double)"/>.
+        /// </summary>
+        /// <param name="x">Canvas X coordinate for the first column (default: 50)</param>
+        /// <param name="y">Canvas Y coordinate for the topmost node (default: 50)</param>
+        /// <param name="gapX">Horizontal whitespace between columns in pixels (default: 60)</param>
+        /// <param name="gapY">Vertical whitespace between nodes in a column in pixels (default: 40)</param>
+        /// <param name="useDom">When true, reads rendered node sizes from the DOM to drive placement</param>
+        public async ValueTask ArrangeAsync(double x = 50, double y = 50, double gapX = 60, double gapY = 40, bool useDom = true)
+        {
+            if (!useDom)
+            {
+                await ArrangeAsync(x, y, gapX + 200, gapY + 80);
+                return;
+            }
+
+            var layers = BuildArrangeLayers();
+            if (layers == null) return;
+
+            // Read every node's rendered size from the DOM
+            var sizes = new Dictionary<string, (double W, double H)>();
+            foreach (var node in Graph.Nodes)
+            {
+                var size = node.DomElement != null
+                    ? await node.DomElement.GetNodeSizeAsync()
+                    : null;
+                sizes[node.Id] = size != null ? (size.X, size.Y) : (160, 80);
+            }
+
+            // Column widths = widest node per column; cumulative X per column
+            var colCount = layers.Keys.Max() + 1;
+            var colWidths = new double[colCount];
+            for (int col = 0; col < colCount; col++)
+            {
+                if (layers.TryGetValue(col, out var ids))
+                    colWidths[col] = ids.Max(id => sizes.TryGetValue(id, out var s) ? s.W : 0);
+            }
+
+            var colX = new double[colCount];
+            colX[0] = x;
+            for (int col = 1; col < colCount; col++)
+                colX[col] = colX[col - 1] + colWidths[col - 1] + gapX;
+
+            // Place nodes, advancing Y by each node's actual height
+            var colCurrentY = new double[colCount];
+            Array.Fill(colCurrentY, y);
+
+            foreach (var col in layers.Keys.OrderBy(c => c))
+            {
+                foreach (var nodeId in layers[col])
+                {
+                    var node = Graph.GetNodeById(nodeId);
+                    if (node?.DomElement == null) continue;
+
+                    await node.DomElement.MoveNodeAsync(colX[col], colCurrentY[col]);
+                    await node.DomElement.UpdateEdgesAsync();
+
+                    colCurrentY[col] += (sizes.TryGetValue(nodeId, out var sz) ? sz.H : 80) + gapY;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Builds a topological layer map (column index per node) from the current graph edges.
+        /// Group nodes (NodeKind.Group) are excluded — they are containers and have no place in
+        /// the data-flow dependency order.
+        /// Returns null if the graph has no arrangeable nodes.
+        /// </summary>
+        private Dictionary<int, List<string>>? BuildArrangeLayers()
+        {
+            if (Graph == null || Graph.Nodes.Count == 0)
+                return null;
+
+            // Only regular (non-group) nodes participate in the layout
+            var arrangeableNodes = Graph.Nodes.Where(n => n.NodeKind != NodeKind.Group).ToList();
+            if (arrangeableNodes.Count == 0)
+                return null;
+
+            var arrangeableIds = arrangeableNodes.Select(n => n.Id).ToHashSet();
+
+            var dependencies = new Dictionary<string, HashSet<string>>();
+            foreach (var node in arrangeableNodes)
+                dependencies[node.Id] = [];
+
+            foreach (var edge in Graph.Edges)
+            {
+                var fromId = edge.FromSocket?.FlowNode?.Id;
+                var toId   = edge.ToSocket?.FlowNode?.Id;
+                if (fromId != null && toId != null
+                    && arrangeableIds.Contains(fromId)
+                    && arrangeableIds.Contains(toId))
+                {
+                    dependencies[toId].Add(fromId);
+                }
+            }
+
+            var layerMap = new Dictionary<string, int>();
+
+            void AssignLayer(string nodeId)
+            {
+                if (layerMap.ContainsKey(nodeId)) return;
+
+                var deps = dependencies[nodeId];
+                if (deps.Count == 0) { layerMap[nodeId] = 0; return; }
+
+                foreach (var depId in deps)
+                    AssignLayer(depId);
+
+                layerMap[nodeId] = deps.Max(d => layerMap.TryGetValue(d, out var l) ? l : 0) + 1;
+            }
+
+            foreach (var node in arrangeableNodes)
+                AssignLayer(node.Id);
+
+            var layers = new Dictionary<int, List<string>>();
+            foreach (var (nodeId, col) in layerMap)
+            {
+                if (!layers.ContainsKey(col)) layers[col] = [];
+                layers[col].Add(nodeId);
+            }
+
+            return layers;
         }
 
         // Serialization
