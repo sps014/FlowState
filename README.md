@@ -19,6 +19,7 @@ A high-performance node editor for Blazor. Build visual programming tools, node-
 - **Undo/Redo** - Command pattern with unlimited history
 - **Serialization** - Save and restore complete graph state
 - **Read-only mode** - Lock graphs for presentation
+- **Auto Arrange Nodes** - API for auto arranging Nodes smartly 
 - **Touch support** - Works on desktop and mobile
 
 ![Customization Demo](https://github.com/user-attachments/assets/bc1aa472-1c67-4b68-9f12-510a64584abd)
