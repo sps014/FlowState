@@ -67,8 +67,8 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     /// </summary>
     public FlowNode? DomElement {get; internal set; }
 
-    private Dictionary<string, FlowSocket> inputSockets = new();
-    private Dictionary<string, FlowSocket> outputSockets = new();
+    private OrderedDictionary<string, FlowSocket> inputSockets = new();
+    private OrderedDictionary<string, FlowSocket> outputSockets = new();
 
 
     internal TaskCompletionSource renderCompletionSource = new TaskCompletionSource();

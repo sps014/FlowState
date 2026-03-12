@@ -16,6 +16,13 @@ namespace FlowState.Components
 
         // Properties
 
+
+        /// <summary>
+        /// Gets or sets whether the edge is in read-only mode
+        /// </summary>
+        [Parameter]
+        public bool Inert { get; set; } = false;
+
         /// <summary>
         /// Current FlowCanvas context 
         /// </summary>

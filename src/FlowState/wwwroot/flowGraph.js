@@ -795,6 +795,20 @@ class FlowCanvas {
     };
   };
 
+  /**
+   * Returns the centre Y of a socket anchor element in canvas (unzoomed) coordinates.
+   * Used by the arrange algorithm to sort nodes within a column so connections run
+   * top-to-top and bottom-to-bottom without crossing.
+   * @param {HTMLElement} socketEl - The socket anchor element.
+   * @returns {number} The Y coordinate in canvas space, or -1 if unavailable.
+   */
+  getSocketCanvasY = (socketEl) => {
+    if (!socketEl || !this.flowContentEl) return -1;
+    const rect = socketEl.getBoundingClientRect();
+    const surfaceRect = this.flowContentEl.getBoundingClientRect();
+    return (rect.top + rect.height / 2 - surfaceRect.top) / this.zoom;
+  };
+
   // =================== Spatial Grid Management ===================
 
   /**

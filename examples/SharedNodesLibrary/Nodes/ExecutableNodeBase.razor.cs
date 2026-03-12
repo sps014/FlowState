@@ -36,7 +36,7 @@ public abstract class ExecutableNodeBase : FlowNodeBase
         StateHasChanged();
 
         // Simulate work delay
-        await Task.Delay(3000);
+        await Task.Delay(1500);
 
         // Execute the actual node logic
         await executeLogic(context);

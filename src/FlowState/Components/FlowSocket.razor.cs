@@ -157,5 +157,18 @@ namespace FlowState.Components
             currentOuterColor = null;
             StateHasChanged();
         }
+
+        /// <summary>
+        /// Returns the centre Y of this socket's anchor element in canvas (unzoomed) coordinates.
+        /// Returns -1 if the canvas or JS module is not available.
+        /// </summary>
+        public ValueTask<double> GetCanvasYAsync()
+        {
+            var canvas = FlowNode?.Canvas;
+            if (canvas?.JsModule == null)
+                return ValueTask.FromResult(-1.0);
+
+            return canvas.JsModule.InvokeAsync<double>("getSocketCanvasY", new object[] { anchorRef });
+        }
     }
 }

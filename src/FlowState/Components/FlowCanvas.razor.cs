@@ -780,7 +780,9 @@ namespace FlowState.Components
 
         /// <summary>
         /// Arranges nodes in a left-to-right layered layout based on the dependency graph using
-        /// fixed column/row spacing.
+        /// fixed column/row spacing. Nodes within each column are sorted by the current DOM Y
+        /// position of their connected sockets so wires run top-to-top and bottom-to-bottom
+        /// without crossing.
         /// </summary>
         /// <param name="startX">Canvas X coordinate for the first column (default: 50)</param>
         /// <param name="startY">Canvas Y coordinate for the topmost node (default: 50)</param>
@@ -791,9 +793,12 @@ namespace FlowState.Components
             var layers = BuildArrangeLayers();
             if (layers == null) return;
 
-            foreach (var (col, nodeIds) in layers)
+            SortLayersBySocketY(layers);
+
+            foreach (var col in layers.Keys.OrderBy(c => c))
             {
                 double x = startX + col * horizontalSpacing;
+                var nodeIds = layers[col];
                 for (int row = 0; row < nodeIds.Count; row++)
                 {
                     var node = Graph.GetNodeById(nodeIds[row]);
@@ -809,9 +814,10 @@ namespace FlowState.Components
         /// <summary>
         /// Arranges nodes in a left-to-right layered layout, reading each node's actual rendered
         /// size from the DOM so columns are sized to their widest node and rows advance by each
-        /// node's real height. <paramref name="gapX"/> and <paramref name="gapY"/> are the
-        /// whitespace between nodes. When <paramref name="useDom"/> is <c>false</c> this falls
-        /// back to <see cref="ArrangeAsync(double,double,double,double)"/>.
+        /// node's real height. Nodes within each column are sorted by the current DOM Y position
+        /// of their connected sockets so wires run top-to-top and bottom-to-bottom without
+        /// crossing. When <paramref name="useDom"/> is <c>false</c> this falls back to
+        /// <see cref="ArrangeAsync(double,double,double,double)"/>.
         /// </summary>
         /// <param name="x">Canvas X coordinate for the first column (default: 50)</param>
         /// <param name="y">Canvas Y coordinate for the topmost node (default: 50)</param>
@@ -829,13 +835,13 @@ namespace FlowState.Components
             var layers = BuildArrangeLayers();
             if (layers == null) return;
 
+            SortLayersBySocketY(layers);
+
             // Read every node's rendered size from the DOM
             var sizes = new Dictionary<string, (double W, double H)>();
-            foreach (var node in Graph.Nodes)
+            foreach (var node in Graph.Nodes.Where(n => n.NodeKind != NodeKind.Group))
             {
-                var size = node.DomElement != null
-                    ? await node.DomElement.GetNodeSizeAsync()
-                    : null;
+                var size = node.DomElement != null ? await node.DomElement.GetNodeSizeAsync() : null;
                 sizes[node.Id] = size != null ? (size.X, size.Y) : (160, 80);
             }
 
@@ -883,7 +889,6 @@ namespace FlowState.Components
             if (Graph == null || Graph.Nodes.Count == 0)
                 return null;
 
-            // Only regular (non-group) nodes participate in the layout
             var arrangeableNodes = Graph.Nodes.Where(n => n.NodeKind != NodeKind.Group).ToList();
             if (arrangeableNodes.Count == 0)
                 return null;
@@ -911,13 +916,9 @@ namespace FlowState.Components
             void AssignLayer(string nodeId)
             {
                 if (layerMap.ContainsKey(nodeId)) return;
-
                 var deps = dependencies[nodeId];
                 if (deps.Count == 0) { layerMap[nodeId] = 0; return; }
-
-                foreach (var depId in deps)
-                    AssignLayer(depId);
-
+                foreach (var depId in deps) AssignLayer(depId);
                 layerMap[nodeId] = deps.Max(d => layerMap.TryGetValue(d, out var l) ? l : 0) + 1;
             }
 
@@ -932,6 +933,103 @@ namespace FlowState.Components
             }
 
             return layers;
+        }
+
+        /// <summary>
+        /// Sorts nodes within each layer using the barycenter heuristic so that edges run
+        /// top-to-top and bottom-to-bottom without crossing.
+        ///
+        /// Each node's sort key is the average row-index of its neighbours in the adjacent
+        /// layer that has already been ordered (left-to-right pass, then right-to-left pass).
+        /// Socket indices within a node are used as a tie-breaker so that the first output
+        /// socket connects to the first input socket of the target, etc.
+        ///
+        /// DOM positions are never used here — the sort is purely topology-driven so it
+        /// produces a correct order regardless of where nodes currently sit on screen.
+        /// </summary>
+        private void SortLayersBySocketY(Dictionary<int, List<string>> layers)
+        {
+            if (layers.Count == 0) return;
+
+            var colCount = layers.Keys.Max() + 1;
+
+            // Build a fast lookup: nodeId -> its ordered socket names (inputs then outputs)
+            // and nodeId -> column index
+            var nodeCol = new Dictionary<string, int>();
+            foreach (var (col, ids) in layers)
+                foreach (var id in ids)
+                    nodeCol[id] = col;
+
+            // Returns the socket index (position within the node's socket list of that type)
+            // for a given socket, used as a fractional tie-breaker.
+            double SocketFraction(FlowSocket socket)
+            {
+                var node = socket.FlowNode;
+                if (node == null) return 0;
+                var list = socket.Type == SocketType.Input
+                    ? node.InputSockets.Values.ToList()
+                    : node.OutputSockets.Values.ToList();
+                var idx = list.IndexOf(socket);
+                return list.Count > 1 ? (double)idx / (list.Count - 1) : 0;
+            }
+
+            // Compute barycenter for one node relative to a reference layer whose ordering
+            // is given by the current position of its nodes in their list.
+            double Barycenter(string nodeId, int refCol)
+            {
+                if (!layers.TryGetValue(refCol, out var refList) || refList.Count == 0)
+                    return double.MaxValue;
+
+                var node = Graph.GetNodeById(nodeId);
+                if (node == null) return double.MaxValue;
+
+                var scores = new List<double>();
+                foreach (var edge in Graph.Edges)
+                {
+                    string? peerId = null;
+                    double socketFrac = 0;
+
+                    if (edge.ToSocket?.FlowNode?.Id == nodeId && edge.FromSocket?.FlowNode != null
+                        && nodeCol.GetValueOrDefault(edge.FromSocket.FlowNode.Id) == refCol)
+                    {
+                        peerId = edge.FromSocket.FlowNode.Id;
+                        // Use the output socket fraction on the peer side
+                        socketFrac = SocketFraction(edge.FromSocket);
+                    }
+                    else if (edge.FromSocket?.FlowNode?.Id == nodeId && edge.ToSocket?.FlowNode != null
+                        && nodeCol.GetValueOrDefault(edge.ToSocket.FlowNode.Id) == refCol)
+                    {
+                        peerId = edge.ToSocket.FlowNode.Id;
+                        // Use the input socket fraction on the peer side
+                        socketFrac = SocketFraction(edge.ToSocket);
+                    }
+
+                    if (peerId == null) continue;
+
+                    var peerRow = refList.IndexOf(peerId);
+                    if (peerRow < 0) continue;
+
+                    // Row position normalised to [0,1] plus socket fraction as sub-position
+                    scores.Add(peerRow + socketFrac);
+                }
+
+                return scores.Count > 0 ? scores.Average() : double.MaxValue;
+            }
+
+            // Left-to-right pass: sort each layer by barycenter relative to the previous layer
+            for (int col = 1; col < colCount; col++)
+            {
+                if (!layers.TryGetValue(col, out var ids)) continue;
+                ids.Sort((a, b) => Barycenter(a, col - 1).CompareTo(Barycenter(b, col - 1)));
+            }
+
+            // Right-to-left pass: sort each layer by barycenter relative to the next layer
+            // (improves ordering for nodes that have no left-side neighbours)
+            for (int col = colCount - 2; col >= 0; col--)
+            {
+                if (!layers.TryGetValue(col, out var ids)) continue;
+                ids.Sort((a, b) => Barycenter(a, col + 1).CompareTo(Barycenter(b, col + 1)));
+            }
         }
 
         // Serialization
