@@ -42,6 +42,16 @@ export class ViewportController {
         this.zoomTimer = null;
         /** @type {number|null} Timer for zoom notification throttling */
         this.zoomNotifyTimer = null;
+
+        // Smooth zoom state
+        /** @type {number} Accumulated zoom target (log-space) */
+        this._zoomVelocity = 0;
+        /** @type {number|null} RAF id for smooth zoom animation */
+        this._zoomRafId = null;
+        /** @type {number} Mouse X for current zoom gesture */
+        this._zoomMouseX = 0;
+        /** @type {number} Mouse Y for current zoom gesture */
+        this._zoomMouseY = 0;
     }
 
     /**
@@ -111,6 +121,67 @@ export class ViewportController {
     };
 
     /**
+     * Normalizes a WheelEvent delta to a consistent pixel-equivalent value,
+     * accounting for deltaMode differences across browsers and OS.
+     * @param {WheelEvent} e
+     * @returns {number} Normalized delta in pixels.
+     */
+    _normalizeWheelDelta = (e) => {
+        let delta = e.deltaY;
+        if (e.deltaMode === 1) {
+            // Line mode (Firefox on Windows) — ~20px per line
+            delta *= 20;
+        } else if (e.deltaMode === 2) {
+            // Page mode — ~400px per page
+            delta *= 400;
+        }
+        return delta;
+    };
+
+    /**
+     * Runs the smooth zoom animation loop, applying accumulated velocity each frame.
+     */
+    _zoomAnimationLoop = () => {
+        if (Math.abs(this._zoomVelocity) < 0.0001) {
+            this._zoomVelocity = 0;
+            this._zoomRafId = null;
+
+            // Zoom gesture ended — clean up state
+            this.canvas.canvasEl.classList.remove("is-zooming");
+            this.canvas.flowContentEl.style.willChange = "auto";
+
+            if (!this.zoomNotifyTimer) {
+                this.zoomNotifyTimer = setTimeout(() => {
+                    this.canvas.dotnetRef.invokeMethodAsync("NotifyZoomed", this.canvas.zoom);
+                    this.zoomNotifyTimer = null;
+                }, 60);
+            }
+            return;
+        }
+
+        // Apply a fraction of the velocity this frame, then decay it
+        const step = this._zoomVelocity * 0.25;
+        this._zoomVelocity -= step;
+
+        const newZoom = this.canvas.clamp(
+            Math.exp(Math.log(this.canvas.zoom) + step),
+            this.canvas.minZoom,
+            this.canvas.maxZoom
+        );
+
+        if (Math.abs(newZoom - this.canvas.zoom) > 0.00001) {
+            const ratio = newZoom / this.canvas.zoom;
+            this.canvas.offsetX = this._zoomMouseX - (this._zoomMouseX - this.canvas.offsetX) * ratio;
+            this.canvas.offsetY = this._zoomMouseY - (this._zoomMouseY - this.canvas.offsetY) * ratio;
+            this.canvas.zoom = newZoom;
+            this._performUpdateTransforms();
+            this.canvas.viewportVirtualization.scheduleUpdate();
+        }
+
+        this._zoomRafId = requestAnimationFrame(this._zoomAnimationLoop);
+    };
+
+    /**
      * Handles mouse wheel events for zooming.
      * @param {WheelEvent} e - The wheel event.
      */
@@ -120,45 +191,35 @@ export class ViewportController {
 
         if (this.canvas.isInteractiveElement(e.target)) return;
 
+        const rect = this.canvas.canvasEl.getBoundingClientRect();
+        this._zoomMouseX = e.clientX - rect.left;
+        this._zoomMouseY = e.clientY - rect.top;
+
         // Set zooming state
         this.canvas.canvasEl.classList.add("is-zooming");
         this.canvas.flowContentEl.style.willChange = "transform";
 
-        if (this.zoomTimer) clearTimeout(this.zoomTimer);
-        this.zoomTimer = setTimeout(() => {
-            this.canvas.canvasEl.classList.remove("is-zooming");
-            this.canvas.flowContentEl.style.willChange = "auto";
-            this.zoomTimer = null;
-        }, 150);
+        // Pinch-to-zoom on Mac trackpads fires as wheel events with ctrlKey=true.
+        // These deltas are already small and proportional — use a lighter multiplier.
+        const isPinch = e.ctrlKey;
 
-        const delta = e.deltaY * -this.canvas.scrollSpeed * 0.001;
-        const newZoom = this.canvas.clamp(
-            this.canvas.zoom + delta,
-            this.canvas.minZoom,
-            this.canvas.maxZoom
-        );
+        const normalizedDelta = this._normalizeWheelDelta(e);
 
-        if (Math.abs(newZoom - this.canvas.zoom) < 0.001) return;
+        // Convert pixel delta to a log-space zoom increment.
+        // Using log-space ensures each scroll step is a consistent *percentage* change
+        // regardless of the current zoom level (multiplicative, not additive).
+        const sensitivity = isPinch
+            ? 0.004 * this.canvas.scrollSpeed   // pinch: gentler, already fine-grained
+            : 0.0008 * this.canvas.scrollSpeed; // scroll wheel: normalized pixels
 
-        const rect = this.canvas.canvasEl.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
+        this._zoomVelocity += -normalizedDelta * sensitivity;
 
-        this.canvas.offsetX =
-            mouseX - (mouseX - this.canvas.offsetX) * (newZoom / this.canvas.zoom);
-        this.canvas.offsetY =
-            mouseY - (mouseY - this.canvas.offsetY) * (newZoom / this.canvas.zoom);
+        // Clamp accumulated velocity to prevent runaway zooming on fast scrolls
+        const maxVelocity = 0.4;
+        this._zoomVelocity = Math.max(-maxVelocity, Math.min(maxVelocity, this._zoomVelocity));
 
-        this.canvas.zoom = newZoom;
-        this.updateTransforms(true);
-        this.canvas.viewportVirtualization.scheduleUpdate();
-
-        // Throttle notification to Blazor
-        if (!this.zoomNotifyTimer) {
-            this.zoomNotifyTimer = setTimeout(() => {
-                this.canvas.dotnetRef.invokeMethodAsync("NotifyZoomed", this.canvas.zoom);
-                this.zoomNotifyTimer = null;
-            }, 60);
+        if (!this._zoomRafId) {
+            this._zoomRafId = requestAnimationFrame(this._zoomAnimationLoop);
         }
     };
 
