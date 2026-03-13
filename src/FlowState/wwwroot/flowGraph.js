@@ -123,7 +123,10 @@ class FlowCanvas {
     this.canvasEl.addEventListener("pointermove", this.pointermove);
     this.canvasEl.addEventListener("pointerup", this.pointerup);
     this.canvasEl.addEventListener("pointerleave", this.pointerleave);
-    this.canvasEl.addEventListener("wheel", this.viewportController.onWheel);
+    this.canvasEl.addEventListener("wheel", this.viewportController.onWheel, { passive: false });
+    this.canvasEl.addEventListener("touchstart", this.viewportController.onTouchStart, { passive: false });
+    this.canvasEl.addEventListener("touchmove", this.viewportController.onTouchMove, { passive: false });
+    this.canvasEl.addEventListener("touchend", this.viewportController.onTouchEnd, { passive: false });
     this.canvasEl.addEventListener("contextmenu", this.onContextMenu);
     this.canvasEl.addEventListener("keydown", this.onKeyDown);
 
@@ -154,6 +157,9 @@ class FlowCanvas {
     el.removeEventListener("pointerup", this.pointerup);
     el.removeEventListener("pointerleave", this.pointerleave);
     el.removeEventListener("wheel", this.viewportController.onWheel);
+    el.removeEventListener("touchstart", this.viewportController.onTouchStart);
+    el.removeEventListener("touchmove", this.viewportController.onTouchMove);
+    el.removeEventListener("touchend", this.viewportController.onTouchEnd);
     el.removeEventListener("contextmenu", this.onContextMenu);
     el.removeEventListener("keydown", this.onKeyDown);
     
@@ -200,6 +206,9 @@ class FlowCanvas {
    * @param {PointerEvent} e - The pointer event.
    */
   pointerdown = (e) => {
+    // Ignore pointer events that are part of a touch pinch gesture
+    if (this.viewportController._isPinching) return;
+
     e.stopPropagation();
     this.canvasEl?.focus();
 
@@ -250,6 +259,7 @@ class FlowCanvas {
    * @param {PointerEvent} e - The pointer event.
    */
   pointermove = (e) => {
+    if (this.viewportController._isPinching) return;
     e.stopPropagation();
     this.checkLongPressMove(e);
 
@@ -279,6 +289,7 @@ class FlowCanvas {
    * @param {PointerEvent} e - The pointer event.
    */
   pointerup = (e) => {
+    if (this.viewportController._isPinching) return;
     e.stopPropagation();
     this.cancelLongPress();
 

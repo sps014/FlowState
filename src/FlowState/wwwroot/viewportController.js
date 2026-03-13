@@ -52,6 +52,18 @@ export class ViewportController {
         this._zoomMouseX = 0;
         /** @type {number} Mouse Y for current zoom gesture */
         this._zoomMouseY = 0;
+
+        // Touch pinch state
+        /** @type {number} Distance between two fingers at pinch start */
+        this._pinchStartDist = 0;
+        /** @type {number} Zoom level at pinch start */
+        this._pinchStartZoom = 1;
+        /** @type {number} Canvas-relative midpoint X at pinch start */
+        this._pinchMidX = 0;
+        /** @type {number} Canvas-relative midpoint Y at pinch start */
+        this._pinchMidY = 0;
+        /** @type {boolean} Whether a two-finger pinch is active */
+        this._isPinching = false;
     }
 
     /**
@@ -118,6 +130,90 @@ export class ViewportController {
 
         e.stopPropagation();
         e.preventDefault();
+    };
+
+    /**
+     * Returns the distance between two Touch points.
+     * @param {Touch} t1
+     * @param {Touch} t2
+     * @returns {number}
+     */
+    _touchDist = (t1, t2) => {
+        const dx = t1.clientX - t2.clientX;
+        const dy = t1.clientY - t2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    /**
+     * Handles touchstart — begins a pinch gesture when exactly two fingers are down.
+     * @param {TouchEvent} e
+     */
+    onTouchStart = (e) => {
+        if (e.touches.length !== 2) return;
+        e.preventDefault();
+
+        this._isPinching = true;
+        this._pinchStartDist = this._touchDist(e.touches[0], e.touches[1]);
+        this._pinchStartZoom = this.canvas.zoom;
+
+        const rect = this.canvas.canvasEl.getBoundingClientRect();
+        this._pinchMidX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
+        this._pinchMidY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
+
+        this._zoomMouseX = this._pinchMidX;
+        this._zoomMouseY = this._pinchMidY;
+
+        this.canvas.canvasEl.classList.add("is-zooming");
+        this.canvas.flowContentEl.style.willChange = "transform";
+    };
+
+    /**
+     * Handles touchmove — updates zoom and pan for a two-finger pinch.
+     * @param {TouchEvent} e
+     */
+    onTouchMove = (e) => {
+        if (!this._isPinching || e.touches.length !== 2) return;
+        e.preventDefault();
+
+        const dist = this._touchDist(e.touches[0], e.touches[1]);
+        if (this._pinchStartDist === 0) return;
+
+        const newZoom = this.canvas.clamp(
+            this._pinchStartZoom * (dist / this._pinchStartDist),
+            this.canvas.minZoom,
+            this.canvas.maxZoom
+        );
+
+        if (Math.abs(newZoom - this.canvas.zoom) < 0.0001) return;
+
+        const ratio = newZoom / this.canvas.zoom;
+        this.canvas.offsetX = this._pinchMidX - (this._pinchMidX - this.canvas.offsetX) * ratio;
+        this.canvas.offsetY = this._pinchMidY - (this._pinchMidY - this.canvas.offsetY) * ratio;
+        this.canvas.zoom = newZoom;
+
+        this._performUpdateTransforms();
+        this.canvas.viewportVirtualization.scheduleUpdate();
+    };
+
+    /**
+     * Handles touchend — ends the pinch gesture.
+     * @param {TouchEvent} e
+     */
+    onTouchEnd = (e) => {
+        if (!this._isPinching) return;
+
+        if (e.touches.length < 2) {
+            this._isPinching = false;
+            this.canvas.canvasEl.classList.remove("is-zooming");
+            this.canvas.flowContentEl.style.willChange = "auto";
+
+            if (!this.zoomNotifyTimer) {
+                this.zoomNotifyTimer = setTimeout(() => {
+                    this.canvas.dotnetRef.invokeMethodAsync("NotifyZoomed", this.canvas.zoom);
+                    this.zoomNotifyTimer = null;
+                }, 60);
+            }
+        }
     };
 
     /**
