@@ -118,7 +118,7 @@ namespace FlowState.Components
             if (!firstRender)
                 return;
 
-            if (Canvas == null)
+            if (Canvas == null || Canvas.JsModule == null)
                 return;
 
             strokeColorCopy = Stroke;
@@ -151,7 +151,7 @@ namespace FlowState.Components
         /// <returns>A task representing the asynchronous operation</returns>
         public ValueTask UpdatePathAsync()
         {
-            if (Canvas == null || FromSocket == null || ToSocket == null)
+            if (Canvas == null || Canvas.JsModule == null || FromSocket == null || ToSocket == null)
                 return ValueTask.CompletedTask;
             return Canvas.JsModule.InvokeVoidAsync("updatePath", ToSocket.anchorRef, FromSocket.anchorRef, edgeRef);
         }
@@ -162,7 +162,7 @@ namespace FlowState.Components
         /// <returns>A task representing the asynchronous operation</returns>
         public ValueTask SetTempEdgeElementAsync()
         {
-            if (Canvas == null)
+            if (Canvas == null || Canvas.JsModule == null)
                 return ValueTask.CompletedTask;
 
             return Canvas.JsModule.InvokeVoidAsync("setTempEdgeElement", edgeRef);
