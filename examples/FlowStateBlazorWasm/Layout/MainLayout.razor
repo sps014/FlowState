@@ -1,2 +1,12 @@
 ﻿@inherits LayoutComponentBase
 @Body
+
+@* Required *@
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" />
+<MudPopoverProvider />
+
+@code
+{
+    bool _isDarkMode = true;
+
+}

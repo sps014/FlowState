@@ -1,0 +1,253 @@
+@page "/multi-tab"
+
+@using FlowState.Components
+@using FlowState.Models
+@using FlowState.Models.Events
+@using SharedNodesLibrary.Nodes
+
+<PageTitle>Multi-Tab</PageTitle>
+
+<div class="multi-tab-page">
+    <div class="tab-toolbar">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="AddTab">
+            New Tab
+        </MudButton>
+        @if (_userTabs.Count > 1)
+        {
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Error"
+                       Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.Close"
+                       OnClick="CloseActiveTab">
+                Close Tab
+            </MudButton>
+        }
+    </div>
+
+    <MudDynamicTabs @bind-ActivePanelIndex="@_userIndex"
+                    AddTab="AddTab"
+                    CloseTab="CloseTab"
+                    AddIconToolTip="New canvas tab"
+                    CloseIconToolTip="Close this tab"
+                    KeepPanelsAlive="true">
+        @foreach (var tab in _userTabs)
+        {
+            <MudTabPanel Text="@tab.Label" ID="@tab.Id">
+                <FlowCanvas @ref="tab.Canvas"
+                            Width="100%"
+                            Height="calc(100vh - 112px)"
+                            Graph="tab.Graph"
+                            OnCanvasLoaded="@(args => OnLoaded(tab, args))">
+                    <BackgroundContent>
+                        <FlowBackground class="flow-grid-lines" />
+                    </BackgroundContent>
+                </FlowCanvas>
+            </MudTabPanel>
+        }
+    </MudDynamicTabs>
+</div>
+
+@code {
+    private List<TabView> _userTabs = new();
+    private int _tabCounter = 1;
+
+    private int _userIndex = 0;
+
+    protected override void OnInitialized()
+    {
+        AddTabWithPreset("Sum Flow", BuildSumGraph);
+        AddTabWithPreset("If-Else Flow", BuildIfElseGraph);
+        AddTabWithPreset("Empty Canvas", null);
+    }
+
+
+    private void AddTab()
+    {
+        _tabCounter++;
+        AddTabWithPreset($"Tab {_tabCounter}", null);
+        _userIndex = _userTabs.Count - 1;
+    }
+
+    private void CloseTab(MudTabPanel panel)
+    {
+        var tab = _userTabs.FirstOrDefault(t => t.Id.Equals(panel.ID));
+        if (tab != null)
+            _userTabs.Remove(tab);
+    }
+
+    private void CloseActiveTab()
+    {
+        if (_userTabs.Count <= 1) return;
+        _userTabs.RemoveAt(_userIndex);
+        _userIndex = Math.Min(_userIndex, _userTabs.Count - 1);
+    }
+
+    private void AddTabWithPreset(string label, Func<FlowGraph, Task>? builder)
+    {
+        var graph = new FlowGraph();
+        graph.RegisterNode<InputNode>();
+        graph.RegisterNode<SumNode>();
+        graph.RegisterNode<IfElseNode>();
+        graph.RegisterNode<WatchNode>();
+
+        _userTabs.Add(new TabView
+        {
+            Id = Guid.NewGuid(),
+            Label = label,
+            Graph = graph,
+            GraphBuilder = builder
+        });
+    }
+
+
+    private async Task OnLoaded(TabView tab, CanvasLoadedEventArgs args)
+    {
+        if (tab.IsBuilt || tab.GraphBuilder == null) return;
+        tab.IsBuilt = true;
+        await tab.GraphBuilder(tab.Graph);
+    }
+
+
+    private static async Task BuildSumGraph(FlowGraph graph)
+    {
+        var inputA = await graph.CreateNodeAsync<InputNode>(60, 80, []);
+        var inputB = await graph.CreateNodeAsync<InputNode>(60, 240, []);
+        var sum    = await graph.CreateNodeAsync<SumNode>(320, 160, []);
+        var watch  = await graph.CreateNodeAsync<WatchNode>(580, 160, []);
+
+        await Task.Delay(80);
+
+        await graph.ConnectAsync(inputA.Id, sum.Id, "Output", "InputA");
+        await graph.ConnectAsync(inputB.Id, sum.Id, "Output", "InputB");
+        await graph.ConnectAsync(sum.Id, watch.Id, "Output", "Input");
+    }
+
+    private static async Task BuildIfElseGraph(FlowGraph graph)
+    {
+        var value     = await graph.CreateNodeAsync<InputNode>(60, 80, []);
+        var threshold = await graph.CreateNodeAsync<InputNode>(60, 240, []);
+        var ifElse    = await graph.CreateNodeAsync<IfElseNode>(320, 160, []);
+        var watchTrue  = await graph.CreateNodeAsync<WatchNode>(600, 80, []);
+        var watchFalse = await graph.CreateNodeAsync<WatchNode>(600, 260, []);
+
+        await Task.Delay(80);
+
+        await graph.ConnectAsync(value.Id,     ifElse.Id,     "Output", "InputA");
+        await graph.ConnectAsync(threshold.Id, ifElse.Id,     "Output", "InputB");
+        await graph.ConnectAsync(ifElse.Id,    watchTrue.Id,  "OutputTrue",  "Input");
+        await graph.ConnectAsync(ifElse.Id,    watchFalse.Id, "OutputFalse", "Input");
+    }
+
+
+    public class TabView
+    {
+        public required Guid Id { get; init; }
+        public required string Label { get; init; }
+        public required FlowGraph Graph { get; set; }
+        public FlowCanvas? Canvas { get; set; }
+        public Func<FlowGraph, Task>? GraphBuilder { get; init; }
+        public bool IsBuilt { get; set; }
+    }
+}
+
+<style>
+    /* (bear with this hack, it's necessary to keep the canvas alive when the tab is not active)
+     * MudBlazor sets display:none as an inline style on inactive panels when
+     * KeepPanelsAlive=true. We override it so the canvas stays in layout
+     * (getBoundingClientRect returns real values) but is invisible and
+     * non-interactive. The active panel gets display:contents from MudBlazor
+     * which is not overridden here.
+     */
+    .multi-tab-page .mud-tab-panel[style*="display: none"] {
+        display: block !important;
+        visibility: hidden;
+        pointer-events: none;
+        position: absolute;
+        width: 100%;
+    }
+
+    .multi-tab-page {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+        background: #111827;
+    }
+
+    .tab-toolbar {
+        display: flex;
+        gap: 8px;
+        padding: 6px 12px;
+        background: #1f2937;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        align-items: center;
+    }
+
+    .flow-node .title {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 8px;
+        color: white;
+        padding: 12px 16px 8px;
+        background: linear-gradient(90deg, rgba(124,58,237,0.1), transparent);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-radius: 12px 12px 0 0;
+    }
+
+    .flow-node .body {
+        font-size: 13px;
+        color: #cbd5e1;
+        padding: 12px 16px;
+    }
+
+
+    .flow-node {
+        position: absolute;
+        min-width: 160px;
+        border-radius: 12px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+        border: 1px solid rgba(255,255,255,0.05);
+        box-shadow: 0 8px 32px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+        backdrop-filter: blur(8px);
+    }
+
+        /* Group nodes should be behind edges and regular nodes */
+        .flow-node[kind="Group"] {
+            z-index: 1 !important;
+        }
+
+        
+    .flow-grid-lines {
+        background: #111827;
+        background-image:
+        /* Main grid lines */
+        linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px),
+        /* Minor grid lines */
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+        background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+        background-position: 0 0, /* Main grid */
+        0 0, /* Main grid */
+        0 0, /* Minor grid */
+        0 0; /* Minor grid */
+    }
+
+    /* Input box styles */
+    .input-box {
+        width: 90%;
+        padding: 6px 8px;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 6px;
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 12px;
+        outline: none;
+        transition: all 0.2s ease;
+        margin: 4px 0;
+        pointer-events: auto;
+        cursor: text;
+    }
+</style>
