@@ -155,20 +155,7 @@
 }
 
 <style>
-    /* (bear with this hack, it's necessary to keep the canvas alive when the tab is not active)
-     * MudBlazor sets display:none as an inline style on inactive panels when
-     * KeepPanelsAlive=true. We override it so the canvas stays in layout
-     * (getBoundingClientRect returns real values) but is invisible and
-     * non-interactive. The active panel gets display:contents from MudBlazor
-     * which is not overridden here.
-     */
-    .multi-tab-page .mud-tab-panel[style*="display: none"] {
-        display: block !important;
-        visibility: hidden;
-        pointer-events: none;
-        position: absolute;
-        width: 100%;
-    }
+
 
     .multi-tab-page {
         display: flex;
