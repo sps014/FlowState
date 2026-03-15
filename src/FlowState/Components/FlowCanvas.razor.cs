@@ -522,6 +522,19 @@ namespace FlowState.Components
         }
 
         /// <summary>
+        /// Selects all nodes currently in the graph
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation</returns>
+        public ValueTask SelectAllNodesAsync()
+        {
+            if (Graph == null)
+                return ValueTask.CompletedTask;
+
+            var nodeIds = Graph.Nodes.Select(n => n.Id).ToArray();
+            return SelectNodesAsync(nodeIds);
+        }
+
+        /// <summary>
         /// Clears the current node selection
         /// </summary>
         /// <returns>A task representing the asynchronous operation</returns>

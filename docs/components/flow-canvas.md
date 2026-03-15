@@ -126,6 +126,15 @@ Selects nodes by their IDs.
 await canvas.SelectNodesAsync("node1", "node2", "node3");
 ```
 
+### SelectAllNodesAsync
+Selects all nodes currently in the graph.
+
+**Signature**: `ValueTask SelectAllNodesAsync()`
+
+```csharp
+await canvas.SelectAllNodesAsync();
+```
+
 ### ClearNodeSelectionAsync
 Clears the current node selection.
 
