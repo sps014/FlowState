@@ -32,6 +32,16 @@ Connection points on nodes for data flow. Sockets represent inputs and outputs t
 
 ## Properties
 
+### ElementRef
+Gets the underlying DOM element reference for the socket's anchor `<div>`. Useful for custom JavaScript interop.
+
+**Type**: `ElementReference`
+
+```csharp
+var anchorEl = socket.ElementRef;
+await JS.InvokeVoidAsync("myFunction", anchorEl);
+```
+
 ### Connections
 List of edges connected to this socket.
 
@@ -39,6 +49,16 @@ List of edges connected to this socket.
 
 ```csharp
 var connectionCount = socket.Connections.Count;
+```
+
+Each `FlowEdge` in the list also exposes an `ElementRef` property that gives you the underlying SVG `<path>` element reference for that edge. Useful for custom JavaScript interop.
+
+```csharp
+foreach (var edge in socket.Connections)
+{
+    var edgeEl = edge.ElementRef;
+    await JS.InvokeVoidAsync("myFunction", edgeEl);
+}
 ```
 
 ### FlowNode

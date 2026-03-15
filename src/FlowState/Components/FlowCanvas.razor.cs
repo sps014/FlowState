@@ -268,6 +268,11 @@ namespace FlowState.Components
         internal ElementReference gridRef;
         private bool isInitialized;
 
+        /// <summary>
+        /// Gets the underlying DOM element reference for the canvas container
+        /// </summary>
+        public ElementReference ElementRef => canvasRef;
+
 #nullable disable
         internal IJSObjectReference JsModule;
 #nullable restore

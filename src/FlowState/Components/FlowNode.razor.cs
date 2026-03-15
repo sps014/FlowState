@@ -46,6 +46,11 @@ namespace FlowState.Components
 
         internal ElementReference nodeRef;
 
+        /// <summary>
+        /// Gets the underlying DOM element reference for this node
+        /// </summary>
+        public ElementReference ElementRef => nodeRef;
+
 
         // Lifecycle Methods
 

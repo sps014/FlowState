@@ -18,6 +18,11 @@ public partial class FlowContextMenu : ComponentBase, IAsyncDisposable
     
     private ElementReference menuRef;
     private DotNetObjectReference<FlowContextMenu>? dotNetRef;
+
+    /// <summary>
+    /// Gets the underlying DOM element reference for the context menu container
+    /// </summary>
+    public ElementReference ElementRef => menuRef;
     
     /// <summary>
     /// Gets or sets the flow graph reference

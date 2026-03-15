@@ -32,6 +32,18 @@ Right-click context menu for creating nodes. Automatically shows all registered 
 | HeaderClass | string | null | CSS class for header |
 | HeaderStyle | string | null | Inline CSS for header |
 
+## Properties
+
+### ElementRef
+Gets the underlying DOM element reference for the context menu container `<div>`. Only valid while the menu is visible. Useful for custom JavaScript interop.
+
+**Type**: `ElementReference`
+
+```csharp
+var menuEl = contextMenu!.ElementRef;
+await JS.InvokeVoidAsync("myFunction", menuEl);
+```
+
 ## Methods
 
 ### ShowAsync

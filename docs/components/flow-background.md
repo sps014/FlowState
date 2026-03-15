@@ -23,6 +23,20 @@ A customizable background component for the canvas. Provides the visual backdrop
 </FlowCanvas>
 ```
 
+## Properties
+
+### ElementRef
+Gets the underlying DOM element reference for the background grid `<div>`. Useful for custom JavaScript interop.
+
+**Type**: `ElementReference`
+
+```csharp
+FlowBackground? bg;
+
+var gridEl = bg!.ElementRef;
+await JS.InvokeVoidAsync("myFunction", gridEl);
+```
+
 ## CSS Customization
 
 The background is styled entirely through CSS. You have full control over colors, patterns, and effects.

@@ -6,6 +6,11 @@
 {
     private ElementReference gridRef;
 
+    /// <summary>
+    /// Gets the underlying DOM element reference for the background grid
+    /// </summary>
+    public ElementReference ElementRef => gridRef;
+
     [Parameter]
     public string Class { get; set; } = "grid-dot";
 

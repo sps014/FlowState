@@ -24,9 +24,23 @@ Base class for all custom nodes. Inherit from this class to create your own node
 | Sockets | IReadOnlyList<FlowSocket> | All sockets (input + output) |
 | InputSockets | IReadOnlyDictionary<string, FlowSocket> | Input sockets dictionary |
 | OutputSockets | IReadOnlyDictionary<string, FlowSocket> | Output sockets dictionary |
-| DomElement | FlowNode | DOM element reference |
+| DomElement | FlowNode | DOM wrapper component reference |
 | NodeKind | NodeKind | Node type (Regular or Group) |
 | IsRendered | bool | Whether node UI has rendered |
+
+### DomElement.ElementRef
+The `DomElement` property exposes an `ElementRef` property that gives you the underlying DOM element reference for the node's `<div>`. Useful for custom JavaScript interop. Only valid after the node has rendered (`IsRendered == true`).
+
+**Type**: `ElementReference`
+
+```csharp
+public override async ValueTask OnRenderedAsync()
+{
+    await base.OnRenderedAsync();
+    var nodeEl = DomElement!.ElementRef;
+    await someJsModule.InvokeVoidAsync("myFunction", nodeEl);
+}
+```
 
 ## Abstract Methods
 

@@ -10,6 +10,11 @@ namespace FlowState.Components
     {
         internal ElementReference anchorRef;
 
+        /// <summary>
+        /// Gets the underlying DOM element reference for this socket's anchor
+        /// </summary>
+        public ElementReference ElementRef => anchorRef;
+
         // Properties
 
         /// <summary>

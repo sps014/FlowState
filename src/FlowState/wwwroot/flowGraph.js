@@ -244,6 +244,10 @@ class FlowCanvas {
         this.nodeController.dragNodeStart(e, node);
       }
     } else {
+      if (!this.isMultiSelectionKeyPressed(e)) {
+        this.selectionController.clearSelection();
+        this.selectionController.notifySelectionChanged();
+      }
       if (this.canvasMode === 1 || this.isPanKeyPressed(e)) {
         this.viewportController.panStart(e);
       } else {

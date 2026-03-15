@@ -14,6 +14,11 @@ namespace FlowState.Components
     {
         internal ElementReference edgeRef;
 
+        /// <summary>
+        /// Gets the underlying SVG path element reference for this edge
+        /// </summary>
+        public ElementReference ElementRef => edgeRef;
+
         // Properties
 
 

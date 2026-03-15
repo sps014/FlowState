@@ -39,6 +39,18 @@ The main canvas component for rendering and managing flow graphs. This is the pr
 | ScrollSpeed | float | 1 | How fast zoom happens in the canvas viewport |
 
 
+## Properties
+
+### ElementRef
+Gets the underlying DOM element reference for the canvas container `<div>`. Useful for custom JavaScript interop.
+
+**Type**: `ElementReference`
+
+```csharp
+var canvasEl = canvas.ElementRef;
+await JS.InvokeVoidAsync("myFunction", canvasEl);
+```
+
 ## Methods
 
 ### SetZoomAsync
