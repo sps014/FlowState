@@ -1,0 +1,15 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/examples/">
+    <Project Path="examples/FlowStateBlazorServer/FlowStateBlazorServer.csproj" />
+    <Project Path="examples/FlowStateBlazorWasm/FlowStateBlazorWasm.csproj" />
+    <Project Path="examples/SharedNodesLibrary/SharedNodesLibrary.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/FlowState/FlowState.csproj" />
+  </Folder>
+</Solution>
