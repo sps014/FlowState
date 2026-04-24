@@ -45,5 +45,22 @@ public abstract class ExecutableNodeBase : FlowNodeBase
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Starts the visual animation for the node
+    /// </summary>
+    public override void StartAnimation()
+    {
+        IsExecuting = true;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ends the visual animation for the node
+    /// </summary>
+    public override void EndAnimation()
+    {
+        IsExecuting = false;
+        StateHasChanged();
+    }
 }
 

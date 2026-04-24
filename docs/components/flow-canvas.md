@@ -174,6 +174,42 @@ Triggers a component re-render.
 canvas.Refresh();
 ```
 
+### StartNodeAnimation
+Starts the visual animation for a specific node and its connected input edges.
+
+**Signature**: `void StartNodeAnimation(string nodeId, bool cancelOthers = true, bool disableEdgeAnimation = false)`
+
+```csharp
+canvas.StartNodeAnimation("node-id");
+```
+
+### EndNodeAnimation
+Ends the visual animation for a specific node and its connected input edges.
+
+**Signature**: `void EndNodeAnimation(string nodeId, bool disableEdgeAnimation = false)`
+
+```csharp
+canvas.EndNodeAnimation("node-id");
+```
+
+### EndAllNodeAnimations
+Ends all currently active manual node animations.
+
+**Signature**: `void EndAllNodeAnimations()`
+
+```csharp
+canvas.EndAllNodeAnimations();
+```
+
+### AnimateNodeAsync
+Animates a specific node and its connected input edges for a set duration.
+
+**Signature**: `Task AnimateNodeAsync(string nodeId, int durationMs = 1500, bool cancelOthers = true, bool disableEdgeAnimation = false)`
+
+```csharp
+await canvas.AnimateNodeAsync("node-id", durationMs: 2000, disableEdgeAnimation: true);
+```
+
 ### ArrangeAsync
 Arranges all nodes in a left-to-right layered layout based on the dependency graph. Nodes with no dependencies (roots) are placed in the leftmost column; each subsequent column contains nodes that depend on the previous column.
 

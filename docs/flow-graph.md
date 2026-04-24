@@ -176,6 +176,23 @@ await graph.ExecuteAsync(true, cts.Token);
 await graph.ExecuteAsync(branchTracking: false);
 ```
 
+### Animating Nodes
+You can manually trigger execution animations for a specific node without running the execution logic via `ExecutionFlow`.
+
+```csharp
+// Start animation for a node and its incoming edges
+graph.ExecutionFlow.StartNodeAnimation("node-id-123");
+
+// Start animation for a node without animating incoming edges
+graph.ExecutionFlow.StartNodeAnimation("node-id-123", disableEdgeAnimation: true);
+
+// End the animation for a node
+graph.ExecutionFlow.EndNodeAnimation("node-id-123");
+
+// End all manual animations
+graph.ExecutionFlow.EndAllNodeAnimations();
+```
+
 ## Serialization
 
 ### SerializeAsync

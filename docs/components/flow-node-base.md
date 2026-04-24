@@ -89,6 +89,32 @@ public override async ValueTask OnRenderedAsync()
 }
 ```
 
+### StartAnimation
+Called when the visual animation for the node starts. Override this to handle custom animation state (e.g. `IsExecuting = true`).
+
+**Signature**: `virtual void StartAnimation()`
+
+```csharp
+public override void StartAnimation()
+{
+    IsExecuting = true;
+    StateHasChanged();
+}
+```
+
+### EndAnimation
+Called when the visual animation for the node ends. Override this to clear custom animation state.
+
+**Signature**: `virtual void EndAnimation()`
+
+```csharp
+public override void EndAnimation()
+{
+    IsExecuting = false;
+    StateHasChanged();
+}
+```
+
 ## Public Methods
 
 ### GetSocketByName

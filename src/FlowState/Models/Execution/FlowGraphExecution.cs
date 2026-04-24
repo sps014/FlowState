@@ -31,6 +31,11 @@ public class FlowGraphExecution
     private HashSet<string> executingEdgeIds = new();
 
     /// <summary>
+    /// Set of node IDs that are currently manually animating
+    /// </summary>
+    private HashSet<string> animatingNodeIds = new();
+
+    /// <summary>
     /// Shared state dictionary that persists across all nodes during a single execution run
     /// Cleared at the start of each execution
     /// </summary>
@@ -555,6 +560,64 @@ public class FlowGraphExecution
 
                 edge.SetExecuting(isExecuting);
             }
+        }
+    }
+
+    /// <summary>
+    /// Starts the visual animation for a specific node and its connected input edges
+    /// </summary>
+    /// <param name="nodeId">The ID of the node to animate</param>
+    /// <param name="cancelOthers">If true, stops any existing node animations before starting this one</param>
+    /// <param name="disableEdgeAnimation">If true, the connected edges will not be animated</param>
+    public void StartNodeAnimation(string nodeId, bool cancelOthers = true, bool disableEdgeAnimation = false)
+    {
+        if (cancelOthers)
+        {
+            EndAllNodeAnimations();
+        }
+
+        var node = Graph.GetNodeById(nodeId);
+        if (node == null)
+            return;
+
+        if (!disableEdgeAnimation)
+        {
+            MarkNodeEdgesAsExecuting(nodeId, true);
+        }
+        
+        node.StartAnimation();
+        animatingNodeIds.Add(nodeId);
+    }
+
+    /// <summary>
+    /// Ends the visual animation for a specific node and its connected input edges
+    /// </summary>
+    /// <param name="nodeId">The ID of the node to stop animating</param>
+    /// <param name="disableEdgeAnimation">If true, the connected edges will not be stopped from animating</param>
+    public void EndNodeAnimation(string nodeId, bool disableEdgeAnimation = false)
+    {
+        var node = Graph.GetNodeById(nodeId);
+        if (node == null)
+            return;
+
+        if (!disableEdgeAnimation)
+        {
+            MarkNodeEdgesAsExecuting(nodeId, false);
+        }
+        
+        node.EndAnimation();
+        animatingNodeIds.Remove(nodeId);
+    }
+
+    /// <summary>
+    /// Ends all currently active manual node animations
+    /// </summary>
+    public void EndAllNodeAnimations()
+    {
+        // ToList() is used to avoid collection modified exception during iteration
+        foreach (var id in animatingNodeIds.ToList())
+        {
+            EndNodeAnimation(id);
         }
     }
 

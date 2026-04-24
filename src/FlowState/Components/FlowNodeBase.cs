@@ -114,6 +114,16 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
         return ValueTask.CompletedTask;
     }
 
+    /// <summary>
+    /// Starts the visual animation for the node
+    /// </summary>
+    public virtual void StartAnimation() { }
+
+    /// <summary>
+    /// Ends the visual animation for the node
+    /// </summary>
+    public virtual void EndAnimation() { }
+
     // Public Methods
 
     /// <summary>

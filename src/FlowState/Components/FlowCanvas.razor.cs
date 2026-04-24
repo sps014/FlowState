@@ -486,6 +486,64 @@ namespace FlowState.Components
         // Public Methods - Canvas Management
 
         /// <summary>
+        /// Starts the visual animation for a specific node and its connected input edges
+        /// </summary>
+        /// <param name="nodeId">The ID of the node to animate</param>
+        /// <param name="cancelOthers">If true, stops any existing node animations before starting this one</param>
+        /// <param name="disableEdgeAnimation">If true, the connected edges will not be animated</param>
+        public void StartNodeAnimation(string nodeId, bool cancelOthers = true, bool disableEdgeAnimation = false)
+        {
+            if (Graph?.ExecutionFlow != null)
+            {
+                Graph.ExecutionFlow.StartNodeAnimation(nodeId, cancelOthers, disableEdgeAnimation);
+            }
+        }
+
+        /// <summary>
+        /// Ends the visual animation for a specific node and its connected input edges
+        /// </summary>
+        /// <param name="nodeId">The ID of the node to stop animating</param>
+        /// <param name="disableEdgeAnimation">If true, the connected edges will not be stopped from animating</param>
+        public void EndNodeAnimation(string nodeId, bool disableEdgeAnimation = false)
+        {
+            if (Graph?.ExecutionFlow != null)
+            {
+                Graph.ExecutionFlow.EndNodeAnimation(nodeId, disableEdgeAnimation);
+            }
+        }
+
+        /// <summary>
+        /// Ends all currently active manual node animations
+        /// </summary>
+        public void EndAllNodeAnimations()
+        {
+            if (Graph?.ExecutionFlow != null)
+            {
+                Graph.ExecutionFlow.EndAllNodeAnimations();
+            }
+        }
+
+        /// <summary>
+        /// Animates a specific node and its connected input edges for a set duration
+        /// </summary>
+        /// <param name="nodeId">The ID of the node to animate</param>
+        /// <param name="durationMs">Duration in milliseconds</param>
+        /// <param name="cancelOthers">If true, stops any existing node animations before starting this one</param>
+        /// <param name="disableEdgeAnimation">If true, the connected edges will not be animated</param>
+        public async Task AnimateNodeAsync(string nodeId, int durationMs = 1500, bool cancelOthers = true, bool disableEdgeAnimation = false)
+        {
+            try
+            {
+                StartNodeAnimation(nodeId, cancelOthers, disableEdgeAnimation);
+                await Task.Delay(durationMs);
+            }
+            finally
+            {
+                EndNodeAnimation(nodeId, disableEdgeAnimation);
+            }
+        }
+
+        /// <summary>
         /// Clears all nodes and edges from the canvas and resets the viewport
         /// </summary>
         /// <returns>A task representing the asynchronous operation</returns>

@@ -311,6 +311,63 @@ public partial class IfElseNode : FlowNodeBase
 </FlowNode>
 ```
 
+## Node with Custom Animation
+
+You can override the `StartAnimation` and `EndAnimation` methods to add custom visual feedback to your nodes when they are animated.
+
+### AnimatedNode.razor.cs
+
+```csharp
+[FlowNodeMetadata(Title = "Animated Node", Category = "Utility")]
+public partial class AnimatedNode : FlowNodeBase
+{
+    private bool _isAnimating = false;
+
+    public override void StartAnimation()
+    {
+        _isAnimating = true;
+        StateHasChanged();
+    }
+
+    public override void EndAnimation()
+    {
+        _isAnimating = false;
+        StateHasChanged();
+    }
+    
+    public override async ValueTask ExecuteAsync(FlowExecutionContext context)
+    {
+        await ValueTask.CompletedTask;
+    }
+}
+```
+
+### AnimatedNode.razor
+
+```razor
+@inherits FlowNodeBase
+
+<FlowNode>
+    <div class="title @(_isAnimating ? "pulsing" : "")">🌟 Animated Node</div>
+    <div class="body">
+        <FlowSocket Name="Input" Type="SocketType.Input" T="typeof(float)"/>
+        <FlowSocket Name="Output" Type="SocketType.Output" T="typeof(float)"/>
+    </div>
+</FlowNode>
+
+<style>
+    .pulsing {
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); color: #7c3aed; }
+        100% { transform: scale(1); }
+    }
+</style>
+```
+
 ## Node with Async Operations
 
 ```csharp
