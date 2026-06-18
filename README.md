@@ -12,7 +12,7 @@ A high-performance node editor for Blazor. Build visual programming tools, node-
 
 - **Full customization** - Style everything with regular HTML/CSS, no framework-specific styling
 - **High performance** - Handles thousands of nodes smoothly with spatial indexing and viewport virtualization
-- **Custom nodes** - Create any node type using Blazor components
+- **Custom nodes** - Create any node type using Blazor components with vertical or horizontal socket arrangements
 - **Type safety** - Automatic type checking between connections with custom type conversion
 - **Execution engine** - Built-in graph execution with visual progress feedback  
 - **Group nodes** - Resizable container nodes to organize your graph
