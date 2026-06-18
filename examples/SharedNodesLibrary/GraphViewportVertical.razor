@@ -1,0 +1,334 @@
+@using FlowState.Components
+@using FlowState.Models
+@using FlowState.Models.Events
+@using SharedNodesLibrary.VerticalNodes
+@using Microsoft.JSInterop
+@inject IJSRuntime Runtime
+
+<GraphToolbar OnSave="SaveGraph"
+              OnClear="ClearGraph"
+              OnLoad="LoadGraph"
+              OnExecute="ExecuteGraph"
+              OnToggleReadOnly="ToggleReadOnly"
+              OnUndo="Undo"
+              OnRedo="Redo"
+              OnSetSelectMode="SetSelectMode"
+              OnSetPanMode="SetPanMode"
+              IsReadOnly="isReadOnly"
+              CurrentMode="@currentCanvasMode" />
+
+<FlowCanvas @ref="canvas"
+            Height="calc(100vh - 60px)"
+            Width="100vw"
+            Graph="graph"
+            IsReadOnly="isReadOnly"
+            JsEdgePathFunctionName="VerticalEdgeFunc"
+            OnCanvasLoaded="OnLoaded"
+            OnContextMenu="HandleContextMenu">
+    <BackgroundContent>
+        <FlowBackground class="flow-grid-lines" />
+    </BackgroundContent>
+</FlowCanvas>
+
+<FlowContextMenu @ref="contextMenu" Graph="graph" />
+
+<style>
+    /* ═══════════════════════════════════════════════════════════
+       CANVAS — deep void with cyan hex grid
+    ═══════════════════════════════════════════════════════════ */
+    .flow-grid-lines {
+        background-color: #020408;
+        background-image:
+            /* faint dot at every intersection */
+            radial-gradient(circle, rgba(0,255,200,0.18) 1px, transparent 1px),
+            /* major grid */
+            linear-gradient(rgba(0,255,200,0.055) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,255,200,0.055) 1px, transparent 1px),
+            /* minor grid */
+            linear-gradient(rgba(0,255,200,0.018) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,255,200,0.018) 1px, transparent 1px);
+        background-size:
+            80px 80px,
+            80px 80px,
+            80px 80px,
+            16px 16px,
+            16px 16px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       NODE CARD — angular, dark glass, cyan border glow
+    ═══════════════════════════════════════════════════════════ */
+    .flow-node {
+        position: absolute;
+        min-width: 170px;
+        /* chamfered top-right corner */
+        clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+        background:
+            linear-gradient(160deg,
+                rgba(0,30,40,0.97) 0%,
+                rgba(0,15,25,0.97) 60%,
+                rgba(0,5,15,0.97) 100%);
+        border: 1px solid rgba(0,255,200,0.28);
+        box-shadow:
+            0 0 24px rgba(0,255,200,0.06),
+            0 0 1px  rgba(0,255,200,0.4),
+            inset 0 0 40px rgba(0,255,200,0.02);
+    }
+
+    /* corner accent: the chamfered notch glows */
+    .flow-node::before {
+        content: '';
+        position: absolute;
+        top: 0; right: 0;
+        width: 24px; height: 24px;
+        background: linear-gradient(225deg, rgba(0,255,200,0.25) 0%, transparent 55%);
+        pointer-events: none;
+    }
+
+    /* top scan-line — 1 px cyan streak */
+    .flow-node::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0,255,200,0.7) 40%, transparent);
+        pointer-events: none;
+    }
+
+    .flow-node.selected {
+        border-color: rgba(0,255,200,0.7);
+        box-shadow:
+            0 0 32px rgba(0,255,200,0.15),
+            0 0  2px rgba(0,255,200,0.6),
+            inset 0 0 40px rgba(0,255,200,0.04);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       NODE INTERIOR
+    ═══════════════════════════════════════════════════════════ */
+    .vnode-body {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* title bar — HUD strip */
+    .vnode-title {
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #00ffc8;
+        text-align: center;
+        padding: 7px 14px 6px;
+        border-bottom: 1px solid rgba(0,255,200,0.18);
+        background:
+            linear-gradient(90deg,
+                transparent 0%,
+                rgba(0,255,200,0.06) 30%,
+                rgba(0,255,200,0.06) 70%,
+                transparent 100%);
+        text-shadow: 0 0 10px rgba(0,255,200,0.6);
+        position: relative;
+    }
+
+    /* left side accent bar */
+    .vnode-title::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 50%;
+        transform: translateY(-50%);
+        width: 2px; height: 60%;
+        background: #00ffc8;
+        box-shadow: 0 0 6px #00ffc8;
+    }
+
+    /* content area */
+    .vnode-content {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5px;
+        padding: 10px 12px;
+    }
+
+    .vnode-label {
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(0,255,200,0.4);
+    }
+
+    .vnode-input {
+        width: 100%;
+        padding: 5px 10px;
+        background: rgba(0,255,200,0.03);
+        border: 1px solid rgba(0,255,200,0.18);
+        border-left: 2px solid rgba(0,255,200,0.4);
+        border-radius: 0;
+        color: #00ffc8;
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 13px;
+        text-align: right;
+        outline: none;
+        pointer-events: auto;
+        cursor: text;
+        transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        caret-color: #00ffc8;
+    }
+
+    .vnode-input:focus {
+        background: rgba(0,255,200,0.06);
+        border-color: rgba(0,255,200,0.5);
+        border-left-color: #00ffc8;
+        box-shadow: 0 0 12px rgba(0,255,200,0.12), inset 0 0 6px rgba(0,255,200,0.04);
+    }
+
+    /* ── Socket sections ──────────────────────────────────────── */
+    .vnode-sockets {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        padding: 6px 12px;
+    }
+
+    .vnode-sockets .socket-container {
+        margin: 0;
+    }
+
+    .vnode-inputs  { padding-top: 8px; }
+    .vnode-outputs { padding-bottom: 8px; }
+
+    /* ── Display node readout ─────────────────────────────────── */
+    .vnode-display {
+        padding: 8px 14px 12px;
+        text-align: center;
+    }
+
+    .vnode-display-label {
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(0,255,200,0.35);
+        margin-bottom: 6px;
+    }
+
+    .vnode-display-value {
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 22px;
+        font-weight: 700;
+        color: #00ffc8;
+        text-shadow:
+            0 0  8px rgba(0,255,200,0.7),
+            0 0 20px rgba(0,255,200,0.3);
+        word-break: break-all;
+        letter-spacing: 0.04em;
+    }
+
+    /* ── Edge labels ──────────────────────────────────────────── */
+    .edges .edge {
+        stroke: #00ffc8;
+        stroke-width: 1.5px;
+    }
+
+    .edges text {
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        fill: rgba(0,255,200,0.55);
+    }
+</style>
+
+@code {
+    FlowGraph graph = new FlowGraph();
+    FlowCanvas? canvas;
+    FlowContextMenu? contextMenu;
+    private bool isReadOnly = false;
+    private string currentCanvasMode = "Pan";
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        graph.RegisterNode<VSourceNode>();
+        graph.RegisterNode<VProcessNode>();
+        graph.RegisterNode<VDisplayNode>();
+    }
+
+    private async Task OnLoaded()
+    {
+        if (canvas == null) return;
+        await canvas.SetCanvasModeAsync(CanvasMode.Pan);
+
+        // Load the vertical edge path JS
+        await Runtime.InvokeAsync<IJSObjectReference>(
+            "import", "/_content/SharedNodesLibrary/graphLine.js");
+
+        // --- Pipeline 1: Source → Process → Display (column A) ---
+        var src1 = await graph.CreateNodeAsync<VSourceNode>(160, 60,   []);
+        var prc1 = await graph.CreateNodeAsync<VProcessNode>(160, 280, []);
+        var dsp1 = await graph.CreateNodeAsync<VDisplayNode>(160, 530, []);
+
+        // --- Pipeline 2: Source → Process → Display (column B) ---
+        var src2 = await graph.CreateNodeAsync<VSourceNode>(420, 60,   []);
+        var prc2 = await graph.CreateNodeAsync<VProcessNode>(420, 280, []);
+        var dsp2 = await graph.CreateNodeAsync<VDisplayNode>(420, 530, []);
+
+        await Task.Delay(100); // let nodes render so sockets are available
+
+        await graph.ConnectAsync(src1.Id, prc1.Id, "Output", "Input");
+        await graph.ConnectAsync(prc1.Id, dsp1.Id, "Output", "Input");
+        await graph.ConnectAsync(src2.Id, prc2.Id, "Output", "Input");
+        await graph.ConnectAsync(prc2.Id, dsp2.Id, "Output", "Input");
+    }
+
+    // ── Toolbar handlers ───────────────────────────────────────────────────
+
+    private async Task SaveGraph() => _ = await graph.SerializeAsync();
+
+    private async Task LoadGraph() { }
+
+    private async Task ClearGraph()
+    {
+        if (graph.Canvas != null)
+            await graph.Canvas.ClearAsync();
+    }
+
+    private async Task ExecuteGraph() => await graph.ExecuteAsync();
+
+    private async Task ToggleReadOnly()
+    {
+        isReadOnly = !isReadOnly;
+        if (canvas != null)
+            await canvas.SetReadOnlyAsync(isReadOnly);
+    }
+
+    private async Task Undo() => await graph.CommandManager.UndoAsync();
+
+    private async Task Redo() => await graph.CommandManager.RedoAsync();
+
+    private async Task SetSelectMode()
+    {
+        currentCanvasMode = "Select";
+        if (canvas != null)
+            await canvas.SetCanvasModeAsync(CanvasMode.Select);
+    }
+
+    private async Task SetPanMode()
+    {
+        currentCanvasMode = "Pan";
+        if (canvas != null)
+            await canvas.SetCanvasModeAsync(CanvasMode.Pan);
+    }
+
+    private async Task HandleContextMenu(CanvasContextMenuEventArgs e)
+    {
+        if (contextMenu != null)
+            await contextMenu.ShowAsync(e.ClientX, e.ClientY, e.X, e.Y);
+    }
+}

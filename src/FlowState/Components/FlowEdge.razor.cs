@@ -108,6 +108,40 @@ namespace FlowState.Components
         [Parameter]
         public bool IsExecuting { get; set; } = false;
 
+        /// <summary>
+        /// Gets or sets a simple text label rendered at the midpoint of the edge.
+        /// Use <see cref="LabelContent"/> for richer content such as buttons.
+        /// </summary>
+        [Parameter]
+        public string? Label { get; set; }
+
+        /// <summary>
+        /// Gets or sets arbitrary Blazor content rendered at the midpoint of the edge
+        /// inside an SVG <c>foreignObject</c> element. Takes precedence over <see cref="Label"/>
+        /// when both are set.
+        /// </summary>
+        [Parameter]
+        public RenderFragment? LabelContent { get; set; }
+
+        /// <summary>
+        /// Gets or sets the width in pixels of the foreignObject container used for
+        /// <see cref="LabelContent"/>. Defaults to 120.
+        /// </summary>
+        [Parameter]
+        public int LabelWidth { get; set; } = 120;
+
+        /// <summary>
+        /// Gets or sets the height in pixels of the foreignObject container used for
+        /// <see cref="LabelContent"/>. Defaults to 40.
+        /// </summary>
+        [Parameter]
+        public int LabelHeight { get; set; } = 40;
+
+        // Midpoint for label positioning (canvas-space, updated after each path update)
+        internal double _midX;
+        internal double _midY;
+        internal bool _hasMidpoint;
+
         private string? strokeColorCopy;
 
         // Lifecycle Methods
@@ -134,6 +168,11 @@ namespace FlowState.Components
                 await Canvas.AddEdgeToNodeEdgeMapAsync(this, ToSocket.FlowNode!);
                 ToSocket.Connections.Add(this);
                 FromSocket.Connections.Add(this);
+
+                // Inherit label from the output socket if no explicit label was provided
+                if (Label == null && LabelContent == null && FromSocket.EdgeLabel != null)
+                    Label = FromSocket.EdgeLabel;
+
                 await UpdatePathAsync();
             }
 
@@ -154,12 +193,40 @@ namespace FlowState.Components
         /// Updates the visual path of the edge between sockets
         /// </summary>
         /// <returns>A task representing the asynchronous operation</returns>
-        public ValueTask UpdatePathAsync()
+        public async ValueTask UpdatePathAsync()
         {
             if (Canvas == null || Canvas.JsModule == null || FromSocket == null || ToSocket == null)
-                return ValueTask.CompletedTask;
-            return Canvas.JsModule.InvokeVoidAsync("updatePath", ToSocket.anchorRef, FromSocket.anchorRef, edgeRef);
+                return;
+            await Canvas.JsModule.InvokeVoidAsync("updatePath", ToSocket.anchorRef, FromSocket.anchorRef, edgeRef);
+
+            // Refresh midpoint so label/content stays centered on the path
+            if (Label != null || LabelContent != null)
+            {
+                await RefreshMidpointAsync();
+            }
         }
+
+        /// <summary>
+        /// Fetches the current SVG midpoint of the edge path from JS and triggers a re-render.
+        /// </summary>
+        internal async ValueTask RefreshMidpointAsync()
+        {
+            if (Canvas?.JsModule == null) return;
+            try
+            {
+                var mid = await Canvas.JsModule.InvokeAsync<MidpointResult?>("getEdgeMidpoint", edgeRef);
+                if (mid.HasValue)
+                {
+                    _midX = mid.Value.X;
+                    _midY = mid.Value.Y;
+                    _hasMidpoint = true;
+                    StateHasChanged();
+                }
+            }
+            catch { /* JS interop may fail during disposal – silently ignore */ }
+        }
+
+        private record struct MidpointResult(double X, double Y);
 
         /// <summary>
         /// Sets this edge as a temporary edge element

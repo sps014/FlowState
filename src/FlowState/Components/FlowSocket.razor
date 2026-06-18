@@ -1,4 +1,4 @@
-<div class="flow-socket socket-container @Class" type="@Type.ToString().ToLower()">
+<div class="flow-socket socket-container @Class" type="@Type.ToString().ToLower()" style="flex-direction: @FlexDirection">
     <div class="socket-anchor @ComputedAnchorClass" style="@SocketStyle" @ref="anchorRef" node-id="@FlowNode?.Id" name="@Name"
          type="@Type.ToString().ToLower()" innerColor="@InnerColor" outerColor="@OuterColor">
     </div>
@@ -25,22 +25,14 @@
     .socket-default {
         cursor: pointer;
         width: 16px;
-        /* socket size */
         height: 16px;
+        flex-shrink: 0;
         border-radius: 50%;
-        /* circular */
         background-color: #10b981;
-        /* inner color, customizable */
         border: 2px solid #065f46;
-        /* outer ring color, customizable */
-        display: inline-block;
-        vertical-align: middle;
-        margin-right: 8px;
         box-shadow:
             0 2px 4px rgba(0, 0, 0, 0.4),
-            /* subtle outer shadow */
             inset 0 1px 2px rgba(255, 255, 255, 0.3);
-        /* inner highlight for depth */
         transition: all 0.2s ease;
     }
 
@@ -54,11 +46,11 @@
 
 
     .flow-socket[type="input"] {
-        flex-direction: row;
+        /* flex-direction is set via inline style from the Direction parameter */
     }
 
     .flow-socket[type="output"] {
-        flex-direction: row-reverse;
+        /* flex-direction is set via inline style from the Direction parameter */
     }
 
     .socket-anchor
@@ -66,13 +58,13 @@
         cursor: crosshair;
     }
 
-
-    flow-socket .socket-label {
+    .socket-label {
         flex: 1;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 12px;
         color: var(--fg-text, #e2e8f0);
+        text-align: center;
     }
 </style>

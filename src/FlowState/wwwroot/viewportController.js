@@ -70,6 +70,7 @@ export class ViewportController {
      * Initializes the grid background.
      */
     initGrid() {
+        if (!this.canvas.gridEl) return;
         const style = window.getComputedStyle(this.canvas.gridEl);
         this.cacheGridBackgroundSize = style.backgroundSize;
     }
@@ -349,6 +350,7 @@ export class ViewportController {
      * Scales the background size based on zoom level.
      */
     scaleBackgroundSize = () => {
+        if (!this.canvas.gridEl || !this.cacheGridBackgroundSize) return;
         const bgSizes = this.cacheGridBackgroundSize.split(",");
         const scaledSizes = bgSizes.map((size) => {
             const parts = size.trim().split(/\s+/);
@@ -370,13 +372,20 @@ export class ViewportController {
      * Updates the background position based on offset.
      */
     panBackgroundPosition = () => {
+        if (!this.canvas.gridEl || !this.cacheGridBackgroundSize) return;
         let gridSizeMatrix = this.getBackgroundSizesMatrix();
         let positions = [];
 
         for (let row of gridSizeMatrix) {
-            const computed = `${this.canvas.offsetX % (row[0].number * this.canvas.zoom)
-                }${row[0].unit} ${this.canvas.offsetY % (row[1].number * this.canvas.zoom)
-                }${row[1].unit}`;
+            // A CSS background-size layer may be written as a single value;
+            // in that case the spec treats it as the width and uses "auto" for
+            // the height.  Fall back to the first token so we never read
+            // `undefined.number`.
+            const colSize = row[0] ?? { number: 0, unit: 'px' };
+            const rowSize = row[1] ?? colSize;
+            const computed = `${this.canvas.offsetX % (colSize.number * this.canvas.zoom)
+                }${colSize.unit} ${this.canvas.offsetY % (rowSize.number * this.canvas.zoom)
+                }${rowSize.unit}`;
             positions.push(computed);
         }
 

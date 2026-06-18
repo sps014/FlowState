@@ -1,0 +1,34 @@
+@using FlowState.Components
+@using FlowState.Models
+@inherits FlowState.Components.FlowNodeBase
+
+<FlowNode>
+    <div class="vnode-body">
+        <div class="vnode-sockets vnode-inputs">
+            <FlowSocket Name="Input"
+                        Label="In"
+                        Type="SocketType.Input"
+                        Direction="SocketDirection.Vertical"
+                        T="typeof(float)"
+                        InnerColor="#22d3ee"
+                        OuterColor="#0e7490" />
+        </div>
+        <div class="vnode-title">⚙️ Process</div>
+        <div class="vnode-content">
+            <label class="vnode-label">× Multiplier</label>
+            <input type="number" class="vnode-input" draggable="false" @bind="Multiplier" step="0.1" placeholder="1" />
+            <label class="vnode-label">＋ Offset</label>
+            <input type="number" class="vnode-input" draggable="false" @bind="Offset" step="0.1" placeholder="0" />
+        </div>
+        <div class="vnode-sockets vnode-outputs">
+            <FlowSocket Name="Output"
+                        Label="Out"
+                        Type="SocketType.Output"
+                        Direction="SocketDirection.Vertical"
+                        T="typeof(float)"
+                        InnerColor="#00ffc8"
+                        OuterColor="#007a61"
+                        EdgeLabel="result" />
+        </div>
+    </div>
+</FlowNode>

@@ -20,6 +20,7 @@ Connection points on nodes for data flow. Sockets represent inputs and outputs t
 | Name | string | required | Unique socket name within the node |
 | T | Type | typeof(object) | Data type this socket handles |
 | Type | SocketType | Input | Socket type: Input, Output, or Exec |
+| Direction | SocketDirection | Horizontal | Anchor placement: `Horizontal` (left/right) or `Vertical` (top/bottom) |
 | Label | string | null | Display label (defaults to Name if not set) |
 | InnerColor | string | "#10b981" | Inner socket circle color |
 | OuterColor | string | "#065f46" | Outer socket border color |
@@ -29,6 +30,7 @@ Connection points on nodes for data flow. Sockets represent inputs and outputs t
 | LabelClass | string | "socket-label" | Label CSS class |
 | MaxConnections | int | 99 | Max connections (output sockets only) |
 | OverridePreviousName | bool | false | Replace existing socket with same name |
+| EdgeLabel | string | null | Label automatically applied to every edge drawn from this output socket. Persists if the edge is deleted and reconnected. |
 
 ## Properties
 

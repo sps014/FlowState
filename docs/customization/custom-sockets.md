@@ -252,4 +252,119 @@ Control how many connections a socket can have:
 - [FlowSocket](../components/flow-socket.html) - Socket component reference
 - [Type Compatibility](../type-compatibility.html) - Socket type system
 - [Styling Guide](./styling-guide.html) - Complete styling reference
+- [Custom Edges](./custom-edges.html) - Vertical edge paths for top-to-bottom flows
+
+## Socket Direction (Vertical Layout)
+
+By default, socket anchors appear on the left side (inputs) or right side (outputs) of a node — the classic horizontal flow. Setting `Direction="SocketDirection.Vertical"` moves anchors to the **top** (inputs) or **bottom** (outputs) of their container, enabling top-to-bottom pipelines.
+
+### How It Works
+
+The `Direction` parameter controls the `flex-direction` of the socket container:
+
+| Direction | Type | Anchor position |
+|-----------|------|-----------------|
+| `Horizontal` (default) | Input | Left |
+| `Horizontal` (default) | Output | Right |
+| `Vertical` | Input | **Top** |
+| `Vertical` | Output | **Bottom** |
+
+### Basic Vertical Node
+
+Structure vertical nodes so input sockets come first (top section) and output sockets come last (bottom section), with your node content in between:
+
+```razor
+@inherits FlowNodeBase
+
+<FlowNode>
+    <!-- Input sockets row — anchors appear at the TOP -->
+    <div class="v-inputs">
+        <FlowSocket Name="In"
+                    Label="Input"
+                    Type="SocketType.Input"
+                    Direction="SocketDirection.Vertical"
+                    T="typeof(float)"
+                    InnerColor="#3b82f6"
+                    OuterColor="#1e40af" />
+    </div>
+
+    <!-- Node content -->
+    <div class="v-body">
+        <div class="title">⚙️ My Node</div>
+        <!-- controls, displays, etc. -->
+    </div>
+
+    <!-- Output sockets row — anchors appear at the BOTTOM -->
+    <div class="v-outputs">
+        <FlowSocket Name="Out"
+                    Label="Output"
+                    Type="SocketType.Output"
+                    Direction="SocketDirection.Vertical"
+                    T="typeof(float)"
+                    InnerColor="#10b981"
+                    OuterColor="#065f46" />
+    </div>
+</FlowNode>
+
+<style>
+    .v-inputs, .v-outputs {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+    }
+</style>
+```
+
+### Multiple Vertical Sockets
+
+Arrange several sockets side-by-side in a row:
+
+```razor
+<!-- Multiple inputs across the top -->
+<div class="v-inputs">
+    <FlowSocket Name="A" Label="A" Type="SocketType.Input"
+                Direction="SocketDirection.Vertical" T="typeof(float)"
+                InnerColor="#3b82f6" OuterColor="#1e40af"/>
+    <FlowSocket Name="B" Label="B" Type="SocketType.Input"
+                Direction="SocketDirection.Vertical" T="typeof(float)"
+                InnerColor="#3b82f6" OuterColor="#1e40af"/>
+</div>
+
+<!-- Multiple outputs across the bottom -->
+<div class="v-outputs">
+    <FlowSocket Name="Sum"  Label="Sum"  Type="SocketType.Output"
+                Direction="SocketDirection.Vertical" T="typeof(float)"
+                InnerColor="#10b981" OuterColor="#065f46"/>
+    <FlowSocket Name="Diff" Label="Diff" Type="SocketType.Output"
+                Direction="SocketDirection.Vertical" T="typeof(float)"
+                InnerColor="#f59e0b" OuterColor="#b45309"/>
+</div>
+```
+
+### Vertical Edge Path
+
+When using vertical sockets, pair them with a vertical Bézier edge function so edges flow naturally from bottom to top:
+
+```javascript
+// wwwroot/graphLine.js
+function createVerticalPath(from, to) {
+  const dy = to.y - from.y;
+  const dist = Math.abs(dy) + Math.abs(to.x - from.x);
+  const offset = Math.min(150, dist * 0.45);
+  const c1 = { x: from.x, y: from.y + offset };
+  const c2 = { x: to.x,   y: to.y   - offset };
+  return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
+}
+window.VerticalEdgeFunc = createVerticalPath;
+```
+
+```razor
+<FlowCanvas Graph="graph"
+            JsEdgePathFunctionName="VerticalEdgeFunc"
+            Height="100vh"
+            Width="100vw">
+</FlowCanvas>
+```
+
+See `examples/SharedNodesLibrary/VerticalNodes/` and `GraphViewportVertical.razor` for a complete working example.
 

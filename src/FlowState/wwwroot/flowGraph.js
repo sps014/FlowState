@@ -780,6 +780,11 @@ class FlowCanvas {
    */
   deleteEdgeFromMap = (edgeEl, nodeEl) =>
     this.edgeController.deleteEdgeFromMap(edgeEl, nodeEl);
+  /**
+   * @param {SVGPathElement} edgeEl
+   * @returns {{x: number, y: number}|null}
+   */
+  getEdgeMidpoint = (edgeEl) => this.edgeController.getEdgeMidpoint(edgeEl);
   /** @param {HTMLElement} el */
   setTempEdgeElement = (el) => (this.edgeController.tempEdgeElement = el);
   /**

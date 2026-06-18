@@ -1,0 +1,179 @@
+@using SharedNodesLibrary
+@using SharedNodesLibrary.VerticalNodes
+
+@if (_selected == null)
+{
+    <div class="tp-overlay">
+        <div class="tp-dialog">
+            <div class="tp-header">
+                <div class="tp-logo">⬡</div>
+                <h1 class="tp-title">FlowState</h1>
+                <p class="tp-subtitle">Choose a template to get started</p>
+            </div>
+
+            <div class="tp-cards">
+                <button class="tp-card" @onclick='() => Pick("standard")'>
+                    <div class="tp-card-icon">🔗</div>
+                    <div class="tp-card-name">Standard</div>
+                    <div class="tp-card-desc">Classic horizontal flow with curved edges, if-else branching, and math nodes.</div>
+                    <div class="tp-card-tag">Default</div>
+                </button>
+
+                <button class="tp-card" @onclick='() => Pick("unity")'>
+                    <div class="tp-card-icon">🎮</div>
+                    <div class="tp-card-name">Unity Style</div>
+                    <div class="tp-card-desc">Unity-inspired graph editor with angular edges, ocean wave renderer, and color gradient nodes.</div>
+                    <div class="tp-card-tag">Themed</div>
+                </button>
+
+                <button class="tp-card" @onclick='() => Pick("vertical")'>
+                    <div class="tp-card-icon">↕️</div>
+                    <div class="tp-card-name">Vertical Pipeline</div>
+                    <div class="tp-card-desc">Top-to-bottom flow with vertical socket anchors and labeled edges — great for linear pipelines.</div>
+                    <div class="tp-card-tag">New</div>
+                </button>
+            </div>
+        </div>
+    </div>
+}
+else if (_selected == "standard")
+{
+    <GraphViewport />
+}
+else if (_selected == "unity")
+{
+    <GraphViewportUnity />
+}
+else if (_selected == "vertical")
+{
+    <GraphViewportVertical />
+}
+
+@code {
+    private string? _selected;
+
+    private void Pick(string template) => _selected = template;
+}
+
+<style>
+    .tp-overlay {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-canvas, #0f172a);
+        z-index: 1000;
+        font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .tp-dialog {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 40px;
+        padding: 48px 40px;
+        max-width: 860px;
+        width: 100%;
+    }
+
+    .tp-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .tp-logo {
+        font-size: 42px;
+        line-height: 1;
+        filter: drop-shadow(0 0 16px #10b981);
+    }
+
+    .tp-title {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 700;
+        color: #f1f5f9;
+        letter-spacing: -0.5px;
+    }
+
+    .tp-subtitle {
+        margin: 0;
+        font-size: 14px;
+        color: rgba(255,255,255,0.45);
+    }
+
+    .tp-cards {
+        display: flex;
+        gap: 20px;
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .tp-card {
+        flex: 1 1 220px;
+        max-width: 260px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 28px 20px 24px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 16px;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s, transform 0.15s;
+        text-align: center;
+        position: relative;
+        color: inherit;
+        font: inherit;
+    }
+
+    .tp-card:hover {
+        background: rgba(16,185,129,0.08);
+        border-color: #10b981;
+        transform: translateY(-3px);
+    }
+
+    .tp-card:active {
+        transform: translateY(-1px);
+    }
+
+    .tp-card-icon {
+        font-size: 36px;
+        line-height: 1;
+    }
+
+    .tp-card-name {
+        font-size: 17px;
+        font-weight: 600;
+        color: #f1f5f9;
+    }
+
+    .tp-card-desc {
+        font-size: 12px;
+        color: rgba(255,255,255,0.5);
+        line-height: 1.5;
+    }
+
+    .tp-card-tag {
+        margin-top: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #10b981;
+        background: rgba(16,185,129,0.12);
+        border: 1px solid rgba(16,185,129,0.3);
+        border-radius: 20px;
+        padding: 2px 10px;
+    }
+
+    .tp-card:hover .tp-card-tag {
+        background: rgba(16,185,129,0.2);
+        border-color: rgba(16,185,129,0.6);
+    }
+</style>

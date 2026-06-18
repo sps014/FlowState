@@ -1,0 +1,23 @@
+@using FlowState.Components
+@using FlowState.Models
+@inherits FlowState.Components.FlowNodeBase
+
+<FlowNode>
+    <div class="vnode-body">
+        <div class="vnode-title">📤 Source</div>
+        <div class="vnode-content">
+            <label class="vnode-label">Value</label>
+            <input type="number" class="vnode-input" draggable="false" @bind="Value" placeholder="0" />
+        </div>
+        <div class="vnode-sockets vnode-outputs">
+            <FlowSocket Name="Output"
+                        Label="Out"
+                        Type="SocketType.Output"
+                        Direction="SocketDirection.Vertical"
+                        T="typeof(float)"
+                        InnerColor="#00ffc8"
+                        OuterColor="#007a61"
+                        EdgeLabel="raw" />
+        </div>
+    </div>
+</FlowNode>

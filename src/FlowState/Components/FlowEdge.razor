@@ -4,11 +4,12 @@
 @using Microsoft.JSInterop
 @using System.Diagnostics
 
+<g @key="Id">
 <path id="@Id"
     class="edge @(IsExecuting && Canvas != null ? Canvas.ExecutingEdgeClass : "")" 
     style="pointer-events: stroke; @Style" 
     @ref="edgeRef" 
-    @key="Id" 
+    @key="@(Id + "_path")"
     stroke-width="@StrokeWidth" 
     fill="@Fill"
     stroke-linecap="@StrokeLineCap" 
@@ -16,3 +17,20 @@
     inert="@Inert"
     @attributes="InputAttributes">
 </path>
+
+@if (_hasMidpoint && LabelContent != null)
+{
+    <foreignObject x="@(_midX - LabelWidth / 2.0)" y="@(_midY - LabelHeight / 2.0)"
+                   width="@LabelWidth" height="@LabelHeight"
+                   style="overflow: visible; pointer-events: all;">
+        <div xmlns="http://www.w3.org/1999/xhtml"
+             style="width:@(LabelWidth)px; height:@(LabelHeight)px; display:flex; align-items:center; justify-content:center;">
+            @LabelContent
+        </div>
+    </foreignObject>
+}
+else if (_hasMidpoint && Label != null)
+{
+    @((MarkupString)$"<text x=\"{_midX.ToString(System.Globalization.CultureInfo.InvariantCulture)}\" y=\"{_midY.ToString(System.Globalization.CultureInfo.InvariantCulture)}\" text-anchor=\"middle\" dominant-baseline=\"middle\" style=\"pointer-events:none;user-select:none;font-size:12px;fill:var(--fg-text,#e2e8f0);\">{System.Net.WebUtility.HtmlEncode(Label)}</text>")
+}
+</g>

@@ -85,6 +85,14 @@ namespace FlowState.Components
         public string LabelClass { get; set; } = "socket-label";
 
         /// <summary>
+        /// Gets or sets the layout direction of the socket anchor relative to its label.
+        /// Use <see cref="SocketDirection.Horizontal"/> (default) for left/right anchors,
+        /// or <see cref="SocketDirection.Vertical"/> for top/bottom anchors.
+        /// </summary>
+        [Parameter]
+        public SocketDirection Direction { get; set; } = SocketDirection.Horizontal;
+
+        /// <summary>
         /// Gets the number of connections to this socket
         /// </summary>
         public List<FlowEdge> Connections { get; set; } = new();
@@ -104,6 +112,14 @@ namespace FlowState.Components
         [Parameter]
         public int MaxConnections { get; set; } = 99;
 
+        /// <summary>
+        /// Gets or sets a label that is automatically applied to any edge drawn from this socket.
+        /// Set on an output socket to annotate every connection leaving it.
+        /// The label persists even if the edge is deleted and recreated.
+        /// </summary>
+        [Parameter]
+        public string? EdgeLabel { get; set; }
+
         private string? innerSocketColorCopy;
         
         /// <summary>
@@ -118,6 +134,14 @@ namespace FlowState.Components
         private string ComputedAnchorClass => string.IsNullOrEmpty(AnchorClass) ? "socket-default" : AnchorClass;
         private string SocketStyle => AnchorClass==null?
             $"width:{Size}px; height:{Size}px; background-color:{currentInnerColor ?? InnerColor}; border:2px solid {currentOuterColor ?? OuterColor};":string.Empty;
+
+        private string FlexDirection => (Direction, Type) switch
+        {
+            (SocketDirection.Vertical, SocketType.Input)  => "column",
+            (SocketDirection.Vertical, SocketType.Output) => "column-reverse",
+            (_, SocketType.Output)                        => "row-reverse",
+            _                                             => "row"
+        };
 
         // Lifecycle Methods
 

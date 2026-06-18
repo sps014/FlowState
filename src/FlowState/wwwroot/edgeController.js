@@ -234,6 +234,33 @@ export class EdgeController {
         const toPos = this.canvas.getSocketPosition(inputSocketEl);
         const path = this.generateSvgPath(toPos, fromPos);
         edgeEl.setAttribute("d", path);
+        this._updateEdgeLabelPosition(edgeEl);
+    }
+
+    /**
+     * Repositions a sibling <foreignObject> or <text> label inside the edge's <g> wrapper
+     * to stay centred on the path midpoint after the path `d` attribute changes.
+     * @param {SVGPathElement} edgeEl
+     */
+    _updateEdgeLabelPosition = (edgeEl) => {
+        const g = edgeEl.parentElement;
+        if (!g || g.tagName !== 'g') return;
+        if (typeof edgeEl.getTotalLength !== 'function') return;
+        const totalLength = edgeEl.getTotalLength();
+        if (!totalLength) return;
+        const mid = edgeEl.getPointAtLength(totalLength * 0.5);
+        const fo = g.querySelector('foreignObject');
+        if (fo) {
+            const w = parseFloat(fo.getAttribute('width') || 0);
+            const h = parseFloat(fo.getAttribute('height') || 0);
+            fo.setAttribute('x', mid.x - w / 2);
+            fo.setAttribute('y', mid.y - h / 2);
+        }
+        const txt = g.querySelector('text');
+        if (txt) {
+            txt.setAttribute('x', mid.x);
+            txt.setAttribute('y', mid.y);
+        }
     }
 
     /**
@@ -291,5 +318,18 @@ export class EdgeController {
             this.nodeEdgeMap.get(nodeEl).delete(edgeEl);
         }
         this.edgeSocketsMap.delete(edgeEl);
+    }
+
+    /**
+     * Returns the midpoint coordinates of an SVG path element.
+     * @param {SVGPathElement} edgeEl - The SVG path element.
+     * @returns {{x: number, y: number}|null} Midpoint in canvas-space coordinates, or null if not available.
+     */
+    getEdgeMidpoint = (edgeEl) => {
+        if (!edgeEl || typeof edgeEl.getTotalLength !== 'function') return null;
+        const totalLength = edgeEl.getTotalLength();
+        if (totalLength === 0) return null;
+        const point = edgeEl.getPointAtLength(totalLength * 0.5);
+        return { x: point.x, y: point.y };
     }
 }

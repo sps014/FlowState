@@ -401,6 +401,18 @@ public class FlowGraph : ISerializable<GraphData>
         return null;
     }
 
+    /// <summary>
+    /// Returns the <see cref="EdgeInfo"/> for the given edge ID, or null if not found.
+    /// Use this to read or mutate the edge's parameter dictionary (e.g. to set labels).
+    /// </summary>
+    /// <param name="id">The ID of the edge</param>
+    /// <returns>The EdgeInfo, or null if not found</returns>
+    public EdgeInfo? GetEdgeInfoById(string id)
+    {
+        EdgesInfo.TryGetValue(id, out var info);
+        return info;
+    }
+
     // Graph Execution Methods
 
     /// <summary>

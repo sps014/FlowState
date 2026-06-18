@@ -26,6 +26,25 @@ function createUnityStylePath(from, to) {
 
 window.EdgePathFunc = createUnityStylePath;
 
+/**
+ * Vertical S-curve: exits the source socket downward and enters the
+ * target socket from above.  Use this when sockets are oriented
+ * Direction=Vertical (anchors on top/bottom of nodes).
+ *
+ * @param {{ x: number, y: number }} from  - output socket position (bottom of source node)
+ * @param {{ x: number, y: number }} to    - input socket position  (top of target node)
+ */
+function createVerticalPath(from, to) {
+  const dy = to.y - from.y;
+  const dist = Math.abs(dy) + Math.abs(to.x - from.x);
+  const offset = Math.min(150, dist * 0.45);
+  const c1 = { x: from.x, y: from.y + offset };
+  const c2 = { x: to.x,   y: to.y   - offset };
+  return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
+}
+
+window.VerticalEdgeFunc = createVerticalPath;
+
 export function Load() {
   // for future initialization logic
 }

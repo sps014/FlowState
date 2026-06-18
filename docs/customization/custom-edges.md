@@ -322,4 +322,125 @@ export function Load() {
 - [FlowCanvas](../components/flow-canvas.html) - JsEdgePathFunctionName parameter
 - [Getting Started](../getting-started.html) - GraphViewportUnity example
 - [Styling Guide](./styling-guide.html) - Edge styling with CSS
+- [Custom Sockets](./custom-sockets.html) - Vertical socket direction for top-to-bottom flows
+
+## Edge Labels and Custom Content
+
+Add text or interactive Blazor content directly on top of edge paths.
+
+### Simple Text Label
+
+Use the `Label` parameter to render a text string centered at the midpoint of the edge:
+
+```razor
+<!-- In FlowCanvas, edges are added programmatically via FlowGraph.ConnectAsync.
+     After connecting, set the Label on the returned EdgeInfo.Parameters. -->
+
+@code {
+    private async Task OnLoaded()
+    {
+        var source = await graph.CreateNodeAsync<MySourceNode>(100, 100, []);
+        var target = await graph.CreateNodeAsync<MyTargetNode>(400, 100, []);
+
+        await Task.Delay(100);
+
+        var (edge, _) = await graph.ConnectAsync(source.Id, target.Id, "Output", "Input");
+        if (edge != null)
+            edge.Parameters[nameof(FlowEdge.Label)] = "Data";
+    }
+}
+```
+
+The label is rendered inside the SVG coordinate space so it automatically follows canvas pan and zoom.
+
+### Rich Content (Buttons, Icons)
+
+Use the `LabelContent` RenderFragment for arbitrary Blazor content.  The content is placed inside an SVG `<foreignObject>` element at the path midpoint:
+
+```razor
+<!-- Custom edge type with a delete button -->
+@code {
+    // Build the RenderFragment and store it in the Parameters dict
+    private RenderFragment MakeDeleteButton(string edgeId) => __builder =>
+    {
+        __builder.OpenElement(0, "button");
+        __builder.AddAttribute(1, "class", "edge-delete-btn");
+        __builder.AddAttribute(2, "onclick",
+            EventCallback.Factory.Create<MouseEventArgs>(this, () => DeleteEdge(edgeId)));
+        __builder.AddContent(3, "✕");
+        __builder.CloseElement();
+    };
+
+    private async Task OnLoaded()
+    {
+        var (edge, _) = await graph.ConnectAsync(src.Id, tgt.Id, "Output", "Input");
+        if (edge != null)
+        {
+            edge.Parameters[nameof(FlowEdge.LabelContent)] = MakeDeleteButton(edge.Id);
+            edge.Parameters[nameof(FlowEdge.LabelWidth)]   = 32;
+            edge.Parameters[nameof(FlowEdge.LabelHeight)]  = 32;
+        }
+    }
+
+    private async Task DeleteEdge(string id) => await graph.RemoveEdgeAsync(id);
+}
+```
+
+```css
+.edge-delete-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(30,30,30,0.85);
+    color: #ef4444;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.edge-delete-btn:hover {
+    background: rgba(239,68,68,0.2);
+}
+```
+
+### Label Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `Label` | `string?` | null | Simple SVG text rendered at path midpoint |
+| `LabelContent` | `RenderFragment?` | null | Arbitrary Blazor content (takes precedence over `Label`) |
+| `LabelWidth` | `int` | 120 | Width in px of the foreignObject container |
+| `LabelHeight` | `int` | 40 | Height in px of the foreignObject container |
+
+> **Note:** `LabelContent` and `Label` are only rendered after the edge path is computed — typically the frame after the canvas loads. There is no visual flash; the label simply appears once the path midpoint is known.
+
+### Vertical Edge Paths
+
+For graphs using `Direction="SocketDirection.Vertical"` sockets (anchors on top/bottom of nodes), use a vertical Bézier path instead of the default horizontal one:
+
+```javascript
+// wwwroot/graphLine.js
+function createVerticalPath(from, to) {
+  const dy = to.y - from.y;
+  const dist = Math.abs(dy) + Math.abs(to.x - from.x);
+  const offset = Math.min(150, dist * 0.45);
+  const c1 = { x: from.x, y: from.y + offset };
+  const c2 = { x: to.x,   y: to.y   - offset };
+  return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
+}
+
+window.VerticalEdgeFunc = createVerticalPath;
+```
+
+```razor
+<FlowCanvas Graph="graph"
+            JsEdgePathFunctionName="VerticalEdgeFunc"
+            Height="100vh"
+            Width="100vw">
+</FlowCanvas>
+```
+
+See `examples/SharedNodesLibrary/GraphViewportVertical.razor` for a complete working example with vertical nodes and labeled edges.
 
