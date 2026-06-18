@@ -21,14 +21,22 @@
             <input type="number" class="vnode-input" draggable="false" @bind="Offset" step="0.1" placeholder="0" />
         </div>
         <div class="vnode-sockets vnode-outputs">
-            <FlowSocket Name="Output"
-                        Label="Out"
+            <FlowSocket Name="Transformed"
+                        Label="f(x)"
                         Type="SocketType.Output"
                         Direction="SocketDirection.Vertical"
                         T="typeof(float)"
                         InnerColor="#00ffc8"
                         OuterColor="#007a61"
-                        EdgeLabel="result" />
+                        EdgeLabel="f(x)" />
+            <FlowSocket Name="Passthrough"
+                        Label="raw"
+                        Type="SocketType.Output"
+                        Direction="SocketDirection.Vertical"
+                        T="typeof(float)"
+                        InnerColor="#fb923c"
+                        OuterColor="#c2410c"
+                        EdgeLabel="raw" />
         </div>
     </div>
 </FlowNode>

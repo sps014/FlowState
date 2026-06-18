@@ -23,7 +23,8 @@ public partial class VProcessNode : FlowNodeBase
     {
         var input = context.GetInputSocketData<float>("Input");
         var result = input * Multiplier + Offset;
-        context.SetOutputSocketData("Output", result);
+        context.SetOutputSocketData("Transformed", result);
+        context.SetOutputSocketData("Passthrough", input);
         return ValueTask.CompletedTask;
     }
 }

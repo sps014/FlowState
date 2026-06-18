@@ -230,11 +230,6 @@
     }
 
     /* ── Edge labels ──────────────────────────────────────────── */
-    .edges .edge {
-        stroke: #00ffc8;
-        stroke-width: 1.5px;
-    }
-
     .edges text {
         font-family: 'SF Mono', 'Fira Code', monospace;
         font-size: 9px;
@@ -269,22 +264,28 @@
         await Runtime.InvokeAsync<IJSObjectReference>(
             "import", "/_content/SharedNodesLibrary/graphLine.js");
 
-        // --- Pipeline 1: Source → Process → Display (column A) ---
-        var src1 = await graph.CreateNodeAsync<VSourceNode>(160, 60,   []);
-        var prc1 = await graph.CreateNodeAsync<VProcessNode>(160, 280, []);
-        var dsp1 = await graph.CreateNodeAsync<VDisplayNode>(160, 530, []);
+        // ── Pipeline 1: branching (src → process → two displays) ──────────
+        //   prc1 has two outputs: Transformed (cyan) and Passthrough (orange)
+        var src1          = await graph.CreateNodeAsync<VSourceNode> (280, 60,  []);
+        var prc1          = await graph.CreateNodeAsync<VProcessNode>(280, 280, []);
+        var dsp_transform = await graph.CreateNodeAsync<VDisplayNode>(100, 540, []);
+        var dsp_pass      = await graph.CreateNodeAsync<VDisplayNode>(460, 540, []);
 
-        // --- Pipeline 2: Source → Process → Display (column B) ---
-        var src2 = await graph.CreateNodeAsync<VSourceNode>(420, 60,   []);
-        var prc2 = await graph.CreateNodeAsync<VProcessNode>(420, 280, []);
-        var dsp2 = await graph.CreateNodeAsync<VDisplayNode>(420, 530, []);
+        // ── Pipeline 2: simple straight chain ─────────────────────────────
+        var src2 = await graph.CreateNodeAsync<VSourceNode> (720, 60,  []);
+        var prc2 = await graph.CreateNodeAsync<VProcessNode>(720, 280, []);
+        var dsp2 = await graph.CreateNodeAsync<VDisplayNode>(720, 540, []);
 
         await Task.Delay(100); // let nodes render so sockets are available
 
-        await graph.ConnectAsync(src1.Id, prc1.Id, "Output", "Input");
-        await graph.ConnectAsync(prc1.Id, dsp1.Id, "Output", "Input");
-        await graph.ConnectAsync(src2.Id, prc2.Id, "Output", "Input");
-        await graph.ConnectAsync(prc2.Id, dsp2.Id, "Output", "Input");
+        // Pipeline 1 connections — two outputs fan to separate displays
+        await graph.ConnectAsync(src1.Id, prc1.Id,          "Output",      "Input");
+        await graph.ConnectAsync(prc1.Id, dsp_transform.Id, "Transformed", "Input");
+        await graph.ConnectAsync(prc1.Id, dsp_pass.Id,      "Passthrough", "Input");
+
+        // Pipeline 2 connections
+        await graph.ConnectAsync(src2.Id, prc2.Id, "Output",      "Input");
+        await graph.ConnectAsync(prc2.Id, dsp2.Id, "Transformed", "Input");
     }
 
     // ── Toolbar handlers ───────────────────────────────────────────────────
