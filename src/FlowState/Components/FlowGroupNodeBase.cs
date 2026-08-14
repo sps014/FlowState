@@ -9,8 +9,6 @@ namespace FlowState.Components;
 /// </summary>
 public abstract class FlowGroupNodeBase: FlowNodeBase
 {
-
-
     /// <summary>
     /// Gets or sets the width of the node
     /// </summary>

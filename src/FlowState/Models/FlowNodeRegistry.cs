@@ -1,4 +1,3 @@
-
 namespace FlowState.Models;
 
 /// <summary>

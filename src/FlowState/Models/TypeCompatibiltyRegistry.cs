@@ -7,7 +7,7 @@ namespace FlowState.Models;
 /// </summary>
 public class TypeCompatibiltyRegistry
 {
-    private Dictionary<string, HashSet<string>> fromToComatibilityMap = new();
+    private Dictionary<string, HashSet<string>> fromToCompatibiltyMap = new();
 
     /// <summary>
     /// Registers compatible types for a given type
@@ -26,7 +26,7 @@ public class TypeCompatibiltyRegistry
     /// <param name="toTypes">The compatible target type names</param>
     public void Register(string fromType, params IEnumerable<string> toTypes)
     {
-        fromToComatibilityMap[fromType] = toTypes.ToHashSet();
+        fromToCompatibiltyMap[fromType] = toTypes.ToHashSet();
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ public class TypeCompatibiltyRegistry
     /// <returns>True if the types are compatible, false otherwise</returns>
     public bool IsCompatible(string fromType, string toType)
     {
-        if (fromToComatibilityMap.ContainsKey(fromType) && fromToComatibilityMap[fromType].Contains(toType))
+        if (fromToCompatibiltyMap.ContainsKey(fromType) && fromToCompatibiltyMap[fromType].Contains(toType))
             return true;
         return false;
     }
@@ -48,7 +48,7 @@ public class TypeCompatibiltyRegistry
     /// <param name="fromType">The source type</param>
     /// <param name="toType">The target type</param>
     /// <returns>True if the types are compatible, false otherwise</returns>
-    public bool IsCompatible(Type fromType,Type toType)
+    public bool IsCompatible(Type fromType, Type toType)
     {
         return IsCompatible(fromType.ToString(), toType.ToString());
     }
