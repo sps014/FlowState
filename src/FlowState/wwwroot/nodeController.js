@@ -14,12 +14,12 @@ export class NodeController {
         this.isNodeDragging = false;
         /** @type {boolean} Whether a group node is being dragged */
         this.isGroupNodeDragging = false;
-        /** @type {Map<HTMLElement, {x: number, y: number}>} Initial positions of dragged nodes */
-        this.dragStartPositions = new Map();
-        /** @type {number} Last mouse X position */
-        this.lastMouseX = 0;
-        /** @type {number} Last mouse Y position */
-        this.lastMouseY = 0;
+        /** @type {Map<HTMLElement, {x: number, y: number}>} Origin positions of dragged nodes */
+        this.dragOriginPositions = new Map();
+        /** @type {number} Pointer X at drag start */
+        this.dragPointerStartX = 0;
+        /** @type {number} Pointer Y at drag start */
+        this.dragPointerStartY = 0;
         /** @type {Set<HTMLElement>} Nodes grouped within the dragged group node */
         this.groupedNodes = new Set();
 
@@ -28,6 +28,10 @@ export class NodeController {
         this.isResizing = false;
         /** @type {HTMLElement} Node being resized */
         this.resizeNodeEl = null;
+        /** @type {number} Width at resize start */
+        this.resizeStartWidth = 0;
+        /** @type {number} Height at resize start */
+        this.resizeStartHeight = 0;
     }
 
     // --- Resizing ---
@@ -40,7 +44,12 @@ export class NodeController {
     startResize(e, resizeHandler) {
         this.resizeNodeEl = resizeHandler;
         this.isResizing = true;
+        const size = this.canvas.splitNumberAndUnit(this.resizeNodeEl.style.width);
+        const height = this.canvas.splitNumberAndUnit(this.resizeNodeEl.style.height);
+        this.resizeStartWidth = size.number || this.resizeNodeEl.offsetWidth;
+        this.resizeStartHeight = height.number || this.resizeNodeEl.offsetHeight;
         this.canvas.canvasEl.style.cursor = 'se-resize';
+        this.canvas.canvasEl.classList.add('is-dragging');
     }
 
     /**
@@ -49,7 +58,13 @@ export class NodeController {
      */
     resizeNode = (e) => {
         const rect = this.resizeNodeEl.getBoundingClientRect();
-        this.canvas.setGroupNodeSize(this.resizeNodeEl, (e.pageX - rect.left) / this.canvas.zoom, (e.pageY - rect.top) / this.canvas.zoom);
+        let width = (e.pageX - rect.left) / this.canvas.zoom;
+        let height = (e.pageY - rect.top) / this.canvas.zoom;
+        if (this.canvas.snapToGrid) {
+            width = this.canvas.snap(width);
+            height = this.canvas.snap(height);
+        }
+        this.canvas.setGroupNodeSize(this.resizeNodeEl, Math.max(width, this.canvas.snapGridSize), Math.max(height, this.canvas.snapGridSize));
     }
 
     /**
@@ -60,10 +75,18 @@ export class NodeController {
         const width = this.canvas.splitNumberAndUnit(this.resizeNodeEl.style.width).number;
         const height = this.canvas.splitNumberAndUnit(this.resizeNodeEl.style.height).number;
 
-        this.canvas.dotnetRef.invokeMethodAsync("NotifyNodeResized", this.resizeNodeEl.id, width, height);
+        this.canvas.dotnetRef.invokeMethodAsync(
+            "NotifyNodeResized",
+            this.resizeNodeEl.id,
+            this.resizeStartWidth,
+            this.resizeStartHeight,
+            width,
+            height
+        );
         this.isResizing = false;
         this.resizeNodeEl = null;
-        this.canvas.canvasEl.style.cursor = 'grab';
+        this.canvas.canvasEl.classList.remove('is-dragging');
+        this.canvas.canvasEl.style.cursor = this.canvas.canvasMode === 1 ? 'grab' : 'default';
     }
 
     // --- Dragging ---
@@ -79,14 +102,13 @@ export class NodeController {
         if (selectionCtrl.selectedNodes.size === 0) {
             selectionCtrl.selectedNodes.add(node);
             node.classList.add(this.canvas.nodeSelectionClass);
-            this.canvas.dotnetRef.invokeMethodAsync("NotifyNodeSelected", [node.id]);
+            this.canvas.dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
         }
 
         // Use spatial grid for efficient group node containment queries
         for (const n of selectionCtrl.selectedNodes) {
             if (n.getAttribute('kind') === 'Group') {
                 this.isGroupNodeDragging = true;
-                // Use spatial grid
                 const childNodes = this.canvas.spatialGrid.queryNodesInNode(n);
 
                 childNodes.forEach(child => {
@@ -97,14 +119,17 @@ export class NodeController {
         }
 
         this.isNodeDragging = true;
-        this.lastMouseX = e.clientX;
-        this.lastMouseY = e.clientY;
+        this.dragPointerStartX = e.clientX;
+        this.dragPointerStartY = e.clientY;
+        this.canvas.canvasEl.classList.add('is-dragging');
 
-        this.dragStartPositions.clear();
+        this.dragOriginPositions.clear();
         for (const n of selectionCtrl.selectedNodes) {
             const style = window.getComputedStyle(n);
             const matrix = new DOMMatrixReadOnly(style.transform);
-            this.dragStartPositions.set(n, { x: matrix.m41, y: matrix.m42 });
+            const x = n.dataX ?? matrix.m41;
+            const y = n.dataY ?? matrix.m42;
+            this.dragOriginPositions.set(n, { x, y });
         }
         e.stopPropagation();
     }
@@ -116,19 +141,19 @@ export class NodeController {
     dragNodeMove = (e) => {
         if (!this.isNodeDragging || this.canvas.selectionController.selectedNodes.size === 0) return;
 
-        const deltaX = (e.clientX - this.lastMouseX) / this.canvas.zoom;
-        const deltaY = (e.clientY - this.lastMouseY) / this.canvas.zoom;
-        this.lastMouseX = e.clientX;
-        this.lastMouseY = e.clientY;
+        const deltaX = (e.clientX - this.dragPointerStartX) / this.canvas.zoom;
+        const deltaY = (e.clientY - this.dragPointerStartY) / this.canvas.zoom;
 
         for (const n of this.canvas.selectionController.selectedNodes) {
-            const startPos = this.dragStartPositions.get(n);
-            const newX = startPos.x + deltaX;
-            const newY = startPos.y + deltaY;
+            const origin = this.dragOriginPositions.get(n);
+            if (!origin) continue;
+            let newX = origin.x + deltaX;
+            let newY = origin.y + deltaY;
+            if (this.canvas.snapToGrid) {
+                newX = this.canvas.snap(newX);
+                newY = this.canvas.snap(newY);
+            }
             this.moveNode(n, newX, newY, false);
-            this.dragStartPositions.set(n, { x: newX, y: newY });
-
-            // Mark node as dirty in spatial grid for batch update
             this.canvas.spatialGrid.markDirty(n);
         }
 
@@ -143,11 +168,9 @@ export class NodeController {
     dragNodeStop = (e) => {
         if (!this.isNodeDragging) return;
         this.isNodeDragging = false;
+        this.canvas.canvasEl.classList.remove('is-dragging');
 
-        // Update spatial grid with all dirty nodes at once
         this.canvas.spatialGrid.updateDirtyNodes();
-        
-        // Update viewport virtualization after node moves
         this.canvas.viewportVirtualization.scheduleUpdate();
 
         if (this.isGroupNodeDragging) {
@@ -159,26 +182,71 @@ export class NodeController {
         }
 
         const ids = [];
+        const oldXs = [];
+        const oldYs = [];
         const xs = [];
         const ys = [];
 
         for (const n of this.canvas.selectionController.selectedNodes) {
-            const pos = this.dragStartPositions.get(n);
-            if (pos) {
-                ids.push(n.id);
-                xs.push(pos.x);
-                ys.push(pos.y);
-            }
+            const origin = this.dragOriginPositions.get(n);
+            if (!origin) continue;
+            const nx = n.dataX ?? origin.x;
+            const ny = n.dataY ?? origin.y;
+            ids.push(n.id);
+            oldXs.push(origin.x);
+            oldYs.push(origin.y);
+            xs.push(nx);
+            ys.push(ny);
         }
 
         if (ids.length > 0) {
-            this.canvas.dotnetRef.invokeMethodAsync("NotifyNodesMoved", ids, xs, ys);
+            this.canvas.dotnetRef.invokeMethodAsync("NotifyNodesMoved", ids, oldXs, oldYs, xs, ys);
         }
 
-        this.dragStartPositions.clear();
+        this.dragOriginPositions.clear();
         e.stopPropagation();
     }
 
+    /**
+     * Nudges selected nodes by a canvas-space delta and records undo.
+     * @param {number} dx
+     * @param {number} dy
+     */
+    nudgeSelectedNodes = (dx, dy) => {
+        const nodes = [...this.canvas.selectionController.selectedNodes];
+        if (nodes.length === 0 || this.canvas.isReadOnly) return;
+
+        const ids = [];
+        const oldXs = [];
+        const oldYs = [];
+        const xs = [];
+        const ys = [];
+
+        for (const n of nodes) {
+            const ox = n.dataX || 0;
+            const oy = n.dataY || 0;
+            let nx = ox + dx;
+            let ny = oy + dy;
+            if (this.canvas.snapToGrid) {
+                nx = this.canvas.snap(nx);
+                ny = this.canvas.snap(ny);
+            }
+            if (nx === ox && ny === oy) continue;
+            ids.push(n.id);
+            oldXs.push(ox);
+            oldYs.push(oy);
+            xs.push(nx);
+            ys.push(ny);
+            this.moveNode(n, nx, ny, false);
+            this.canvas.spatialGrid.markDirty(n);
+        }
+
+        if (ids.length === 0) return;
+
+        this.canvas.spatialGrid.updateDirtyNodes();
+        this.canvas.edgeController.updateEdges(nodes);
+        this.canvas.dotnetRef.invokeMethodAsync("NotifyNodesMoved", ids, oldXs, oldYs, xs, ys);
+    }
 
     /**
      * Moves a node to a specific position.
@@ -196,8 +264,6 @@ export class NodeController {
             this.canvas.edgeController.updateEdges([nodeEl]);
         }
 
-        // Update spatial grid immediately for single node moves
-        // (batch operations will use markDirty instead)
         if (!this.isNodeDragging) {
             this.canvas.spatialGrid.updateNode(nodeEl);
         }

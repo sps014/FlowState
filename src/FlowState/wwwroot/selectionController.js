@@ -10,6 +10,8 @@ export class SelectionController {
         this.canvas = canvas;
         /** @type {Set<HTMLElement>} Set of selected nodes */
         this.selectedNodes = new Set();
+        /** @type {Set<SVGPathElement>} Set of selected edges */
+        this.selectedEdges = new Set();
 
         // Rectangle Selection State
         /** @type {boolean} Whether rectangle selection is active */
@@ -36,6 +38,9 @@ export class SelectionController {
      * @param {MouseEvent} e - The mouse event.
      */
     handleNodeSelection = (node, e) => {
+        if (!this.canvas.isMultiSelectionKeyPressed(e)) {
+            this.clearEdgeSelection();
+        }
         if (this.canvas.isMultiSelectionKeyPressed(e)) {
             if (this.selectedNodes.has(node)) {
                 node.classList.remove(this.canvas.nodeSelectionClass);
@@ -49,12 +54,48 @@ export class SelectionController {
         } else {
             if (this.selectedNodes.has(node)) return; // Maintain selection for drag
 
-            this.clearSelection();
+            this.clearNodeSelection();
             node.classList.add(this.canvas.nodeSelectionClass);
             this.selectedNodes.add(node);
             this.canvas.dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
         }
         this.notifySelectionChanged();
+    }
+
+    /**
+     * Handles selection of an edge.
+     * @param {SVGPathElement} edgeEl
+     * @param {MouseEvent} e
+     */
+    handleEdgeSelection = (edgeEl, e) => {
+        if (!edgeEl) return;
+        if (!this.canvas.isMultiSelectionKeyPressed(e)) {
+            this.clearNodeSelection();
+            this.notifySelectionChanged();
+        }
+        if (this.canvas.isMultiSelectionKeyPressed(e)) {
+            if (this.selectedEdges.has(edgeEl)) {
+                this.deselectEdge(edgeEl);
+            } else {
+                this.selectEdge(edgeEl);
+            }
+        } else {
+            if (this.selectedEdges.has(edgeEl) && this.selectedEdges.size === 1) return;
+            this.clearEdgeSelection();
+            this.selectEdge(edgeEl);
+        }
+    }
+
+    selectEdge = (edgeEl) => {
+        if (!edgeEl) return;
+        edgeEl.classList.add('selected');
+        this.selectedEdges.add(edgeEl);
+    }
+
+    deselectEdge = (edgeEl) => {
+        if (!edgeEl) return;
+        edgeEl.classList.remove('selected');
+        this.selectedEdges.delete(edgeEl);
     }
 
     /**
@@ -68,12 +109,13 @@ export class SelectionController {
             this.selectedNodes.add(node);
             this.canvas.dotnetRef.invokeMethodAsync("NotifyNodeSelected", node.id);
         }
+        this.notifySelectionChanged();
     }
 
     /**
-     * Clears the current selection.
+     * Clears node selection only.
      */
-    clearSelection = () => {
+    clearNodeSelection = () => {
         for (const n of this.selectedNodes) {
             n.classList.remove(this.canvas.nodeSelectionClass);
         }
@@ -81,22 +123,52 @@ export class SelectionController {
     }
 
     /**
+     * Clears edge selection only.
+     */
+    clearEdgeSelection = () => {
+        for (const edge of this.selectedEdges) {
+            edge.classList.remove('selected');
+        }
+        this.selectedEdges.clear();
+    }
+
+    /**
+     * Clears the current selection.
+     */
+    clearSelection = () => {
+        this.clearNodeSelection();
+        this.clearEdgeSelection();
+    }
+
+    /**
+     * Deletes the currently selected nodes and edges.
+     */
+    deleteSelection = () => {
+        if (this.canvas.isReadOnly) return;
+
+        const edgeIds = [...this.selectedEdges]
+            .map(edge => edge.id || edge.getAttribute('id'))
+            .filter(Boolean);
+        const nodeIds = [...this.selectedNodes].map(node => node.id);
+
+        this.clearSelection();
+        this.notifySelectionChanged();
+        this.canvas.edgeController.clearHoverHighlight();
+
+        if (edgeIds.length === 0 && nodeIds.length === 0) return;
+
+        this.canvas.dotnetRef.invokeMethodAsync("DeleteSelection", nodeIds, edgeIds).then(() => {
+            setTimeout(() => {
+                this.canvas.spatialGrid.cleanupStaleNodes();
+            }, 60);
+        });
+    }
+
+    /**
      * Deletes the currently selected nodes.
      */
     deleteSelectedNodes = () => {
-        if (this.canvas.isReadOnly || this.selectedNodes.size === 0) return;
-        const nodeIds = [...this.selectedNodes].map(node => node.id);
-        const nodeCount = nodeIds.length;
-
-        this.clearSelection();
-
-        // Call C# to delete nodes
-        this.canvas.dotnetRef.invokeMethodAsync("DeleteNodes", nodeIds).then(() => {
-            // After C# removes nodes and Blazor updates DOM, cleanup stale spatial grid refs
-            setTimeout(() => {
-                this.canvas.spatialGrid.cleanupStaleNodes();
-            }, 60); // Small delay to let Blazor update DOM
-        });
+        this.deleteSelection();
     }
 
     /**

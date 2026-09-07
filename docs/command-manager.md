@@ -70,6 +70,9 @@ Commands are automatically tracked for:
 - Node removal
 - Edge creation
 - Edge removal
+- Node moves (drag and arrow-key nudge)
+- Group node resizes
+- Multi-node delete, paste, and duplicate (as a single composite undo step)
 
 ```csharp
 // These operations are automatically tracked:
@@ -77,6 +80,21 @@ await graph.CreateNodeAsync<MyNode>(100, 100, []);  // Tracked
 await graph.RemoveNodeAsync(nodeId);                // Tracked
 await graph.ConnectAsync(from, to, "Out", "In");   // Tracked
 await graph.RemoveEdgeAsync(edgeId);                // Tracked
+```
+
+### Batching commands
+
+```csharp
+graph.CommandManager.BeginBatch();
+try
+{
+    await graph.CreateNodeAsync<MyNode>(0, 0, []);
+    await graph.CreateNodeAsync<MyNode>(80, 0, []);
+}
+finally
+{
+    graph.CommandManager.EndBatch(); // one undo step
+}
 ```
 
 ## UI Integration
@@ -109,12 +127,13 @@ await graph.RemoveEdgeAsync(edgeId);                // Tracked
 
 ### Keyboard Shortcuts
 
-FlowCanvas automatically handles Ctrl+Z / Ctrl+Y:
+FlowCanvas automatically handles editor shortcuts:
 
 ```csharp
-// Built-in keyboard shortcuts:
-// Ctrl+Z or Cmd+Z → Undo
-// Ctrl+Y or Cmd+Shift+Z → Redo
+// Ctrl/Cmd+Z → Undo
+// Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z → Redo
+// Ctrl/Cmd+A → Select all
+// Ctrl/Cmd+C / V / D → Copy / paste / duplicate
 ```
 
 **Note:** Keyboard shortcuts for undo/redo are automatically handled by FlowCanvas:
@@ -239,6 +258,9 @@ The following command types are automatically tracked:
 2. **NodeRemovedCommand** - Node deletion (includes connected edges)
 3. **EdgeAddedCommand** - Edge creation
 4. **EdgeRemovedCommand** - Edge deletion
+5. **NodesMovedCommand** - Drag or nudge
+6. **NodeResizedCommand** - Group node resize
+7. **CompositeCommand** - Several of the above as one undo step
 
 ## See Also
 

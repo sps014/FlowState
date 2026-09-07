@@ -61,15 +61,8 @@ namespace FlowState.Components
         /// <param name="firstRender">Whether this is the first time the component has rendered</param>
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-             // on web assembly it takes many render calls before parameters are set
-            if(OperatingSystem.IsBrowser() && Node!=null && Node.DomElement==null)
+             if (Node != null && Node.DomElement == null)
                 await InitAsync();
-
-            if (!firstRender)
-                return;
-
-            await InitAsync();
-            
         }
 
         private async ValueTask InitAsync()

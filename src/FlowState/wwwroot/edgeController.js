@@ -59,7 +59,7 @@ export class EdgeController {
      * @param {MouseEvent} e - The mouse event.
      */
     handleEdgeMouseEnter = (e) => {
-        if (!this.edgeHoverDetectorEl || this.canvas.viewportController.isPanning || this.canvas.nodeController.isNodeDragging || this.isConnectingNodes || this.canvas.selectionController.isRectangleSelecting) return;
+        if (!this.edgeHoverDetectorEl || this.canvas.viewportController.isPanning || this.canvas.nodeController.isNodeDragging || this.canvas.nodeController.isResizing || this.isConnectingNodes || this.canvas.selectionController.isRectangleSelecting) return;
 
         const target = e.target;
         if (target && target.classList && target.classList.contains('edge') && target.id !== 'tempEdge') {
@@ -79,10 +79,42 @@ export class EdgeController {
      */
     handleEdgeMouseLeave = (e) => {
         if (!this.edgeHoverDetectorEl) return;
+
         const target = e.target;
-        if (target && target.classList && target.classList.contains('edge') && target === this.hoveredEdgeEl) {
-            this.edgeHoverDetectorEl.removeAttribute('d');
-            this.hoveredEdgeEl = null;
+        const related = e.relatedTarget;
+        const leavingHoveredEdge = target === this.hoveredEdgeEl;
+        const leavingDetector = target === this.edgeHoverDetectorEl
+            || (target?.classList && target.classList.contains('edge-hover-detector'));
+        const stillOnDetector = related === this.edgeHoverDetectorEl
+            || (related?.classList && related.classList.contains('edge-hover-detector'));
+        const stillOnHoveredEdge = related === this.hoveredEdgeEl;
+
+        // Keep the fat detector visible while the pointer slides from the edge onto it.
+        if (leavingHoveredEdge && stillOnDetector) return;
+        if (leavingDetector && stillOnHoveredEdge) return;
+
+        if (leavingHoveredEdge || leavingDetector || (this.hoveredEdgeEl && !this.hoveredEdgeEl.isConnected)) {
+            this.clearHoverHighlight();
+        }
+    }
+
+    /**
+     * Hides the hover-detector path and forgets the hovered edge.
+     */
+    clearHoverHighlight = () => {
+        this.hoveredEdgeEl = null;
+        if (!this.edgeHoverDetectorEl) return;
+        this.edgeHoverDetectorEl.removeAttribute('d');
+        this.edgeHoverDetectorEl.setAttribute('d', '');
+        this.edgeHoverDetectorEl.removeAttribute('stroke');
+    }
+
+    /**
+     * Drops the highlighter if the hovered edge was removed from the DOM.
+     */
+    syncHoverHighlight = () => {
+        if (this.hoveredEdgeEl && !this.hoveredEdgeEl.isConnected) {
+            this.clearHoverHighlight();
         }
     }
 
@@ -91,13 +123,12 @@ export class EdgeController {
      */
     deleteHoveredEdge = () => {
         if (!this.hoveredEdgeEl || this.canvas.isReadOnly) return;
-        const edgeId = this.hoveredEdgeEl.id || this.hoveredEdgeEl.getAttribute('id');
+        const edgeEl = this.hoveredEdgeEl;
+        const edgeId = edgeEl.id || edgeEl.getAttribute('id');
+        this.canvas.selectionController.deselectEdge(edgeEl);
+        this.clearHoverHighlight();
         if (edgeId) {
             this.canvas.dotnetRef.invokeMethodAsync("DeleteEdge", edgeId);
-            this.hoveredEdgeEl = null;
-            if (this.edgeHoverDetectorEl) {
-                this.edgeHoverDetectorEl.removeAttribute('d');
-            }
         }
     }
 

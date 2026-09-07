@@ -24,6 +24,23 @@ Core graph management class. Handles nodes, edges, execution, and serialization.
 | Canvas | FlowCanvas | Associated canvas component |
 | ExecutionFlow | FlowGraphExecution | Execution handler |
 
+### Batching UI refreshes
+
+```csharp
+graph.SuspendRefresh();
+try
+{
+    // many CreateNodeAsync / ConnectAsync calls
+    graph.RequestDomRefresh();
+}
+finally
+{
+    graph.ResumeRefresh();
+}
+```
+
+`SuspendRefresh` / `ResumeRefresh` are reference-counted. While suspended, canvas re-renders are deferred until the last `ResumeRefresh`.
+
 ## Node Management
 
 ### RegisterNode
@@ -220,6 +237,18 @@ await graph.DeserializeAsync(json);
 // From GraphData object
 GraphData data = GetGraphData();
 await graph.DeserializeAsync(data);
+```
+
+### Copy and paste
+
+`CopySelectionAsync` serializes the given nodes plus edges whose both endpoints are included. `PasteSelectionAsync` creates new IDs, offsets the copies, and records a single composite undo step.
+
+```csharp
+var payload = await graph.CopySelectionAsync(selectedIds);
+var newIds = await graph.PasteSelectionAsync(payload);
+```
+
+Keyboard copy/paste on the canvas uses this path and also writes JSON to `navigator.clipboard` when available.
 ```
 
 ### GetSerializableObjectAsync

@@ -13,13 +13,16 @@ FlowState is designed to handle graphs with hundreds of nodes, but as the comple
 FlowState includes built-in optimizations to maintain smooth performance during panning and zooming.
 
 ### Interaction States
-When a user pans or zooms the canvas, FlowState automatically adds the following CSS classes to the main `.flow-canvas` element:
+When a user pans, zooms, or drags nodes, FlowState automatically adds CSS classes to `.flow-canvas`:
 - `.is-panning`: Active while dragging the canvas.
 - `.is-zooming`: Active while scrolling to zoom.
+- `.is-dragging`: Active while dragging or resizing nodes.
 
 By default, FlowState uses these classes to:
 1.  **Disable Expensive Styles**: `box-shadow`, `backdrop-filter`, and `transition` are disabled on all `.flow-node` elements to reduce GPU fill-rate costs.
 2.  **Disable Input Interaction**: Pointer events are disabled on `<input>` and `<textarea>` elements to prevent browser hit-testing overhead during movement.
+
+Off-screen nodes are culled with `visibility` and `content-visibility` so the browser can skip painting them. Components stay mounted; this is paint culling, not Blazor unmounting.
 
 ## User-Side Optimizations
 
@@ -36,7 +39,8 @@ If you add custom styling *inside* your nodes (e.g., a specific inner container 
 
 /* Optimize it! */
 .flow-canvas.is-panning .my-custom-node-card,
-.flow-canvas.is-zooming .my-custom-node-card {
+.flow-canvas.is-zooming .my-custom-node-card,
+.flow-canvas.is-dragging .my-custom-node-card {
     box-shadow: none !important;
     filter: none !important;
 }
@@ -63,7 +67,20 @@ Nodes are rendered as Blazor components.
 
 ### 1. Batch Updates
 If you are programmatically adding or moving many nodes (e.g., auto-layout), avoid triggering a re-render for every single change.
-- Use `SuspendRefresh` / `ResumeRefresh` patterns if available in your logic (or simply don't call `StateHasChanged` until the end of a batch operation).
+
+```csharp
+graph.SuspendRefresh();
+try
+{
+    for (int i = 0; i < 200; i++)
+        await graph.CreateNodeAsync<MyNode>(i * 20, 0, []);
+    graph.RequestDomRefresh();
+}
+finally
+{
+    graph.ResumeRefresh(); // one canvas render
+}
+```
 
 ### 2. Limit Node Count
 While optimizations allow for 200-500+ nodes, web browsers have limits.

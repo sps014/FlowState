@@ -205,21 +205,6 @@ public abstract class FlowNodeBase : ComponentBase, IDisposable, ISerializable<N
     }
 
     /// <summary>
-    /// Performs initialization after the component has rendered
-    /// </summary>
-    /// <param name="firstRender">Whether this is the first time the component has rendered</param>
-    protected override void OnAfterRender(bool firstRender)
-    {
-        base.OnAfterRender(firstRender);
-
-        if (!firstRender)
-            return;
-
-        if (Canvas != null)
-            Canvas.Refresh();
-    }
-
-    /// <summary>
     /// Asynchronously waits until the component has finished rendering.
     /// </summary>
     /// <returns>A task that completes when the component is fully rendered.</returns>

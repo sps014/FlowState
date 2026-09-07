@@ -56,16 +56,15 @@ export class ViewportVirtualization {
     /**
      * Disable viewport virtualization (show all nodes and edges)
      */
-    disable() {
+        disable() {
         this.enabled = false;
         // Show all hidden nodes
         for (const node of this.hiddenNodes) {
-            node.style.visibility = '';
-            node.style.pointerEvents = '';
+            this._showNode(node);
         }
         // Show all hidden edges
         for (const edge of this.hiddenEdges) {
-            edge.style.visibility = '';
+            this._showEdge(edge);
         }
         this.hiddenNodes.clear();
         this.visibleNodes.clear();
@@ -96,9 +95,8 @@ export class ViewportVirtualization {
         const startTime = performance.now();
 
         // Calculate viewport bounds in world space
-        const canvasRect = this.canvas.canvasEl.getBoundingClientRect();
-        const canvasWidth = canvasRect.width;
-        const canvasHeight = canvasRect.height;
+        const canvasWidth = this.canvas.spatialGrid.canvasWidth || this.canvas.canvasEl.clientWidth;
+        const canvasHeight = this.canvas.spatialGrid.canvasHeight || this.canvas.canvasEl.clientHeight;
 
         // Convert to world space
         const viewportX = -this.canvas.offsetX / this.canvas.zoom;
@@ -126,8 +124,7 @@ export class ViewportVirtualization {
         // ONLY hide nodes that WERE visible but are NOW out of view
         for (const node of this.visibleNodes) {
             if (!nowVisible.has(node)) {
-                node.style.visibility = 'hidden';
-                node.style.pointerEvents = 'none';
+                this._hideNode(node);
                 this.hiddenNodes.add(node);
                 changesCount++;
 
@@ -145,9 +142,8 @@ export class ViewportVirtualization {
         for (const node of nowVisible) {
             if (!this.visibleNodes.has(node)) {
                 // Node is now visible but wasn't before
-                if (node.style.visibility === 'hidden') {
-                    node.style.visibility = '';
-                    node.style.pointerEvents = '';
+                if (node.style.visibility === 'hidden' || node.style.contentVisibility === 'hidden') {
+                    this._showNode(node);
                     changesCount++;
                 }
                 this.hiddenNodes.delete(node);
@@ -181,14 +177,13 @@ export class ViewportVirtualization {
             // Hide edge if BOTH nodes are hidden
             if (fromHidden && toHidden) {
                 if (edge.style.visibility !== 'hidden') {
-                    edge.style.visibility = 'hidden';
+                    this._hideEdge(edge);
                     this.hiddenEdges.add(edge);
                     edgeChangesCount++;
                 }
             } else {
-                // Show edge if at least ONE node is visible
                 if (edge.style.visibility === 'hidden') {
-                    edge.style.visibility = '';
+                    this._showEdge(edge);
                     this.hiddenEdges.delete(edge);
                     edgeChangesCount++;
                 }
@@ -206,10 +201,28 @@ export class ViewportVirtualization {
         this.stats.edgeChangesCount = edgeChangesCount;
     }
 
-    /**
-     * Get viewport virtualization statistics
-     * @returns {object} Statistics object
-     */
+    _hideNode(node) {
+        node.style.visibility = 'hidden';
+        node.style.contentVisibility = 'hidden';
+        node.style.pointerEvents = 'none';
+    }
+
+    _showNode(node) {
+        node.style.visibility = '';
+        node.style.contentVisibility = '';
+        node.style.pointerEvents = '';
+    }
+
+    _hideEdge(edge) {
+        edge.style.visibility = 'hidden';
+        edge.style.contentVisibility = 'hidden';
+    }
+
+    _showEdge(edge) {
+        edge.style.visibility = '';
+        edge.style.contentVisibility = '';
+    }
+
     getStats() {
         return {
             ...this.stats,

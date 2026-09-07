@@ -42,6 +42,12 @@ class FlowCanvas {
   canvasMode = 0;
   /** @type {number} Scroll speed multiplier */
   scrollSpeed = 1;
+  /** @type {boolean} Whether dragging snaps to a grid */
+  snapToGrid = false;
+  /** @type {number} Snap grid size in canvas pixels */
+  snapGridSize = 20;
+  /** @type {boolean} Whether space is currently held */
+  isSpacePressed = false;
 
   // Long Press State (kept here as it spans multiple concepts)
   /** @type {number|null} Timer ID for long press */
@@ -129,6 +135,7 @@ class FlowCanvas {
     this.canvasEl.addEventListener("touchend", this.viewportController.onTouchEnd, { passive: false });
     this.canvasEl.addEventListener("contextmenu", this.onContextMenu);
     this.canvasEl.addEventListener("keydown", this.onKeyDown);
+    this.canvasEl.addEventListener("keyup", this.onKeyUp);
 
     this.edgeController.setupEdgeHoverDetection();
 
@@ -162,6 +169,7 @@ class FlowCanvas {
     el.removeEventListener("touchend", this.viewportController.onTouchEnd);
     el.removeEventListener("contextmenu", this.onContextMenu);
     el.removeEventListener("keydown", this.onKeyDown);
+    el.removeEventListener("keyup", this.onKeyUp);
     
     // Ensure document-level tracking is cleaned up
     this.detachDocumentTracking();
@@ -178,6 +186,8 @@ class FlowCanvas {
     this.panKey = (props.panKey || "alt").toLowerCase();
     this.isReadOnly = props.isReadOnly || false;
     this.scrollSpeed = props.scrollSpeed || 0.02;
+    this.snapToGrid = !!props.snapToGrid;
+    this.snapGridSize = props.snapGridSize > 0 ? props.snapGridSize : 20;
   };
 
   /**
@@ -212,6 +222,12 @@ class FlowCanvas {
     e.stopPropagation();
     this.canvasEl?.focus();
 
+    if (e.button === 1 || this.isSpacePressed) {
+      e.preventDefault();
+      this.viewportController.panStart(e);
+      return;
+    }
+
     const resizeHandler = this.getClickedResizeHandler(e);
     if (resizeHandler) {
       this.nodeController.startResize(e, resizeHandler);
@@ -220,6 +236,7 @@ class FlowCanvas {
 
     const socket = this.getClickedSocket(e);
     const node = this.getClickedNode(e);
+    const edge = this.getClickedEdge(e);
 
     if (socket) {
       if (this.isInteractiveElement(e.target) || this.isReadOnly) return;
@@ -230,6 +247,7 @@ class FlowCanvas {
         const nodeId = socket.getAttribute("node-id");
         const socketName = socket.getAttribute("name");
         if (nodeId && socketName) {
+          this.edgeController.clearHoverHighlight();
           this.dotnetRef.invokeMethodAsync("DeleteSocketEdges", nodeId, socketName);
         }
         return;
@@ -243,6 +261,8 @@ class FlowCanvas {
       if (!this.isInteractiveElement(e.target) && !this.isReadOnly) {
         this.nodeController.dragNodeStart(e, node);
       }
+    } else if (edge) {
+      this.selectionController.handleEdgeSelection(edge, e);
     } else {
       if (!this.isMultiSelectionKeyPressed(e)) {
         this.selectionController.clearSelection();
@@ -265,6 +285,7 @@ class FlowCanvas {
   pointermove = (e) => {
     if (this.viewportController._isPinching) return;
     e.stopPropagation();
+    this.edgeController.syncHoverHighlight();
     this.checkLongPressMove(e);
 
     if (this.nodeController.isResizing) {
@@ -341,31 +362,85 @@ class FlowCanvas {
    * @param {KeyboardEvent} e - The keyboard event.
    */
   onKeyDown = (e) => {
-    if (this.isInteractiveElement(e.target) || this.isReadOnly) return;
+    if (this.isInteractiveElement(e.target)) return;
 
-    // Handle undo/redo
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+    if (e.code === "Space") {
+      if (!e.repeat) this.isSpacePressed = true;
+      e.preventDefault();
+      return;
+    }
+
+    const meta = e.ctrlKey || e.metaKey;
+    const key = e.key.toLowerCase();
+
+    if (meta && key === "z" && !e.shiftKey) {
       e.preventDefault();
       this.dotnetRef.invokeMethodAsync("HandleUndo");
       return;
     }
-    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) {
+    if (meta && (key === "y" || (key === "z" && e.shiftKey))) {
       e.preventDefault();
       this.dotnetRef.invokeMethodAsync("HandleRedo");
       return;
     }
+    if (meta && key === "a") {
+      e.preventDefault();
+      this.selectAllNodes();
+      return;
+    }
+    if (meta && key === "c") {
+      e.preventDefault();
+      this.copySelection();
+      return;
+    }
+
+    if (this.isReadOnly) return;
+
+    if (meta && key === "v") {
+      e.preventDefault();
+      this.pasteSelection();
+      return;
+    }
+    if (meta && key === "d") {
+      e.preventDefault();
+      this.duplicateSelection();
+      return;
+    }
 
     if (e.key === "Delete" || e.key === "Backspace") {
-      if (this.edgeController.hoveredEdgeEl) {
-        e.preventDefault();
-        if (this.selectionController.selectedNodes.size > 0) {
-          this.selectionController.clearSelection();
-        }
+      e.preventDefault();
+      if (
+        this.selectionController.selectedEdges.size > 0 ||
+        this.selectionController.selectedNodes.size > 0
+      ) {
+        this.selectionController.deleteSelection();
+      } else if (this.edgeController.hoveredEdgeEl) {
         this.edgeController.deleteHoveredEdge();
-      } else if (this.selectionController.selectedNodes.size > 0) {
-        e.preventDefault();
-        this.selectionController.deleteSelectedNodes();
       }
+      return;
+    }
+
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const base = this.snapToGrid ? this.snapGridSize : 1;
+      const step = e.shiftKey ? base * (this.snapToGrid ? 5 : 10) : base;
+      let dx = 0;
+      let dy = 0;
+      if (e.key === "ArrowLeft") dx = -step;
+      if (e.key === "ArrowRight") dx = step;
+      if (e.key === "ArrowUp") dy = -step;
+      if (e.key === "ArrowDown") dy = step;
+      this.nodeController.nudgeSelectedNodes(dx, dy);
+    }
+  };
+
+  /**
+   * Handles key up events.
+   * @param {KeyboardEvent} e
+   */
+  onKeyUp = (e) => {
+    if (e.code === "Space") {
+      this.isSpacePressed = false;
     }
   };
 
@@ -571,6 +646,23 @@ class FlowCanvas {
   getClickedSocket = (e) => e.target.closest(".socket-anchor");
 
   /**
+   * Gets the clicked edge from the event target.
+   * @param {Event} e
+   * @returns {SVGPathElement|null}
+   */
+  getClickedEdge = (e) => {
+    const target = e.target;
+    if (!target || !target.classList) return null;
+    if (target.classList.contains("edge-hover-detector")) {
+      return this.edgeController.hoveredEdgeEl;
+    }
+    if (target.classList.contains("edge") && target.id !== "tempEdge") {
+      return target;
+    }
+    return null;
+  };
+
+  /**
    * Gets the clicked resize handler from the event target.
    * @param {Event} e - The event.
    * @returns {HTMLElement|null} The node associated with the resize handler.
@@ -613,6 +705,16 @@ class FlowCanvas {
    * @returns {number} The clamped value.
    */
   clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+  /**
+   * Snaps a canvas coordinate to the configured grid.
+   * @param {number} value
+   * @returns {number}
+   */
+  snap = (value) => {
+    const size = this.snapGridSize || 20;
+    return Math.round(value / size) * size;
+  };
 
   /**
    * Splits a string into number and unit.
@@ -751,6 +853,55 @@ class FlowCanvas {
   /** @returns {string[]} Selected node IDs */
   getSelectedNodes = () =>
     [...this.selectionController.selectedNodes].map((n) => n.id);
+
+  /**
+   * Selects every node currently in the canvas.
+   */
+  selectAllNodes = () => {
+    const nodes = this.flowContentEl?.querySelectorAll(".flow-node") ?? [];
+    this.selectionController.selectNodes(nodes);
+  };
+
+  /**
+   * Copies the current node selection.
+   */
+  copySelection = async () => {
+    const ids = this.getSelectedNodes();
+    if (!ids.length) return;
+    const json = await this.dotnetRef.invokeMethodAsync("HandleCopy", ids);
+    if (!json) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(json);
+      }
+    } catch {
+      // In-memory clipboard on the graph still holds the copy.
+    }
+  };
+
+  /**
+   * Pastes from the system clipboard, falling back to in-memory copy.
+   */
+  pasteSelection = async () => {
+    let json = null;
+    try {
+      if (navigator.clipboard?.readText) {
+        json = await navigator.clipboard.readText();
+      }
+    } catch {
+      json = null;
+    }
+    await this.dotnetRef.invokeMethodAsync("HandlePaste", json);
+  };
+
+  /**
+   * Duplicates the current selection.
+   */
+  duplicateSelection = async () => {
+    const ids = this.getSelectedNodes();
+    if (!ids.length) return;
+    await this.dotnetRef.invokeMethodAsync("HandleDuplicate", ids);
+  };
   /** @param {HTMLElement} nodeEl */
   updateEdge = (nodeEl) => this.edgeController.updateEdges([nodeEl]);
   /** 

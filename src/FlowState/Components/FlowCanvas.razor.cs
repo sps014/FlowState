@@ -1,5 +1,7 @@
+using System.Text.Json;
 using System.Threading.Tasks;
 using FlowState.Models;
+using FlowState.Models.Commands;
 using FlowState.Models.Dom;
 using FlowState.Models.Events;
 using FlowState.Models.Execution;
@@ -80,6 +82,18 @@ namespace FlowState.Components
         /// </summary>
         [Parameter]
         public string PanKey { get; set; } = "alt";
+
+        /// <summary>
+        /// Gets or sets whether node drags and nudges snap to a grid.
+        /// </summary>
+        [Parameter]
+        public bool SnapToGrid { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the snap grid size in canvas pixels.
+        /// </summary>
+        [Parameter]
+        public double SnapGridSize { get; set; } = 20;
 
         /// <summary>
         /// Gets or sets the CSS class for the selection rectangle
@@ -267,6 +281,7 @@ namespace FlowState.Components
         private ElementReference edgesSvgRef;
         internal ElementReference gridRef;
         private bool isInitialized;
+        private bool _syncingNodeCascade;
 
         /// <summary>
         /// Gets the underlying DOM element reference for the canvas container
@@ -317,52 +332,67 @@ namespace FlowState.Components
         {
             await base.OnAfterRenderAsync(firstRender);
 
-            if (!firstRender)
-                return;
-
-            if (BackgroundContent == null)
-                throw new Exception("Flow Canvas Background is null");
-
-            JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowGraph.js");
-            JsModule = await JsModule.InvokeAsync<IJSObjectReference>("createFlowCanvas");
-            
-            await JsModule.InvokeVoidAsync("setComponentProperties", new
+            if (firstRender)
             {
-                nodeSelectionClass = NodeSelectionClass,
-                autoUpdateSocketColors = AutoUpdateSocketColors,
-                jsEdgePathFunctionName = JsEdgePathFunctionName,
-                panKey = PanKey,
-                isReadOnly = IsReadOnly,
-                scrollSpeed = ScrollSpeed
-            });
-            await JsModule.InvokeVoidAsync("setupCanvasEvents", 
-                new
+                if (BackgroundContent == null)
+                    throw new Exception("Flow Canvas Background is null");
+
+                JsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/_content/FlowState/flowGraph.js");
+                JsModule = await JsModule.InvokeAsync<IJSObjectReference>("createFlowCanvas");
+
+                await JsModule.InvokeVoidAsync("setComponentProperties", new
                 {
-                    canvasElement = canvasRef,
-                    gridElement = gridRef,
-                    flowContentElement = flowContentRef,
-                    selectionRectElement = selectionRectRef,
-                    edgeHoverDetectorElement = edgeHoverDetectorRef,
-                    edgesSvgElement = edgesSvgRef
-                }, 
-                dotnetObjRef);
-            await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
+                    nodeSelectionClass = NodeSelectionClass,
+                    autoUpdateSocketColors = AutoUpdateSocketColors,
+                    jsEdgePathFunctionName = JsEdgePathFunctionName,
+                    panKey = PanKey,
+                    isReadOnly = IsReadOnly,
+                    scrollSpeed = ScrollSpeed,
+                    snapToGrid = SnapToGrid,
+                    snapGridSize = SnapGridSize
+                });
+                await JsModule.InvokeVoidAsync("setupCanvasEvents",
+                    new
+                    {
+                        canvasElement = canvasRef,
+                        gridElement = gridRef,
+                        flowContentElement = flowContentRef,
+                        selectionRectElement = selectionRectRef,
+                        edgeHoverDetectorElement = edgeHoverDetectorRef,
+                        edgesSvgElement = edgesSvgRef
+                    },
+                    dotnetObjRef);
+                await SetViewportPropertiesAsync(new CanvasProperties { Zoom = Zoom, MinZoom = MinZoom, MaxZoom = MaxZoom });
 
-            if (TempEdge != null)
-            {
-                TempEdge.SetGraph(Graph);
-                await TempEdge.SetTempEdgeElementAsync();
+                if (TempEdge != null)
+                {
+                    TempEdge.SetGraph(Graph);
+                    await TempEdge.SetTempEdgeElementAsync();
+                }
+
+                if (OnCanvasLoaded.HasDelegate)
+                    await OnCanvasLoaded.InvokeAsync(new CanvasLoadedEventArgs
+                    {
+                        Zoom = Zoom,
+                        MinZoom = MinZoom,
+                        MaxZoom = MaxZoom
+                    });
+
+                isInitialized = true;
             }
 
-            if (OnCanvasLoaded.HasDelegate)
-                await OnCanvasLoaded.InvokeAsync(new CanvasLoadedEventArgs
-                {
-                    Zoom = Zoom,
-                    MinZoom = MinZoom,
-                    MaxZoom = MaxZoom
-                });
+            // CascadingValue for FlowNodeBase.Instance is null on the first paint of a new node.
+            // One follow-up render lets FlowNode apply X/Y via JS instead of staying at 0,0.
+            if (!_syncingNodeCascade
+                && Graph != null
+                && Graph.NodesInfo.Values.Any(n => n.Instance != null && n.Instance.DomElement == null))
+            {
+                _syncingNodeCascade = true;
+                StateHasChanged();
+                return;
+            }
 
-            isInitialized = true;
+            _syncingNodeCascade = false;
         }
         // Event Handlers
 
@@ -373,36 +403,36 @@ namespace FlowState.Components
 
         private void RefreshOnAllEdgesCleared(object? _, EventArgs e)
         {
-            NotifyStateHasChanged();
+            Graph.RequestDomRefresh();
         }
 
         private void RefreshOnNodeAdded(object? _, NodeAddedEventArgs e)
         {
-            NotifyStateHasChanged();
+            Graph.RequestDomRefresh();
             OnNodeAdded.InvokeAsync(e);
         }
 
         private void RefreshOnNodeRemoved(object? _, NodeRemovedEventArgs e)
         {
-            NotifyStateHasChanged();
+            Graph.RequestDomRefresh();
             OnNodeRemoved.InvokeAsync(e);
         }
 
         private void RefreshOnEdgeAdded(object? _, EdgeAddedEventArgs e)
         {
-            NotifyStateHasChanged();
+            Graph.RequestDomRefresh();
             OnEdgeAdded.InvokeAsync(e);
         }
 
         private void RefreshOnEdgeRemoved(object? _, EdgeRemovedEventArgs e)
         {
-            NotifyStateHasChanged();
+            Graph.RequestDomRefresh();
             OnEdgeRemoved.InvokeAsync(e);
         }
 
         private void RefreshOnAllNodesCleared(object? _, EventArgs e)
         {
-            NotifyStateHasChanged();
+            Graph.RequestDomRefresh();
             OnAllNodesCleared.InvokeAsync(EventArgs.Empty);
         }
 
@@ -677,18 +707,23 @@ namespace FlowState.Components
         /// Called from JavaScript when multiple nodes are moved
         /// </summary>
         [JSInvokable]
-        public async Task NotifyNodesMoved(string[] nodeIds, double[] xs, double[] ys)
+        public async Task NotifyNodesMoved(string[] nodeIds, double[] oldXs, double[] oldYs, double[] xs, double[] ys)
         {
-            if (IsReadOnly)
+            if (IsReadOnly || Graph == null || nodeIds == null || nodeIds.Length == 0)
                 return;
 
-            if (OnNodeMoved.HasDelegate)
+            bool changed = false;
+            for (int i = 0; i < nodeIds.Length; i++)
             {
-                for (int i = 0; i < nodeIds.Length; i++)
-                {
+                if (oldXs[i] != xs[i] || oldYs[i] != ys[i])
+                    changed = true;
+
+                if (OnNodeMoved.HasDelegate)
                     await OnNodeMoved.InvokeAsync(new NodeMovedArgs(nodeIds[i], xs[i], ys[i]));
-                }
             }
+
+            if (changed)
+                Graph.CommandManager.AddCommand(new NodesMovedCommand(nodeIds, oldXs, oldYs, xs, ys, Graph));
         }
 
         /// <summary>
@@ -798,8 +833,18 @@ namespace FlowState.Components
                 return;
 
             var edgeIds = socket.Connections.Select(e => e.Id).ToArray();
-            foreach (var edgeId in edgeIds)
-                await Graph.RemoveEdgeAsync(edgeId);
+            Graph.CommandManager.BeginBatch();
+            Graph.SuspendRefresh();
+            try
+            {
+                foreach (var edgeId in edgeIds)
+                    await Graph.RemoveEdgeAsync(edgeId);
+            }
+            finally
+            {
+                Graph.ResumeRefresh();
+                Graph.CommandManager.EndBatch();
+            }
         }
 
         /// <summary>
@@ -832,9 +877,72 @@ namespace FlowState.Components
             if (IsReadOnly || Graph == null || nodeIds == null || nodeIds.Length == 0)
                 return;
 
-            foreach (var nodeId in nodeIds)
+            Graph.CommandManager.BeginBatch();
+            Graph.SuspendRefresh();
+            try
             {
-                await Graph.RemoveNodeAsync(nodeId);
+                foreach (var nodeId in nodeIds)
+                    await Graph.RemoveNodeAsync(nodeId);
+            }
+            finally
+            {
+                Graph.ResumeRefresh();
+                Graph.CommandManager.EndBatch();
+            }
+        }
+
+        /// <summary>
+        /// Called from JavaScript when selected edges should be deleted
+        /// </summary>
+        [JSInvokable]
+        public async Task DeleteEdges(string[] edgeIds)
+        {
+            if (IsReadOnly || Graph == null || edgeIds == null || edgeIds.Length == 0)
+                return;
+
+            Graph.CommandManager.BeginBatch();
+            Graph.SuspendRefresh();
+            try
+            {
+                foreach (var edgeId in edgeIds)
+                    await Graph.RemoveEdgeAsync(edgeId);
+            }
+            finally
+            {
+                Graph.ResumeRefresh();
+                Graph.CommandManager.EndBatch();
+            }
+        }
+
+        /// <summary>
+        /// Deletes selected edges and nodes as a single undo step.
+        /// </summary>
+        [JSInvokable]
+        public async Task DeleteSelection(string[] nodeIds, string[] edgeIds)
+        {
+            if (IsReadOnly || Graph == null)
+                return;
+
+            Graph.CommandManager.BeginBatch();
+            Graph.SuspendRefresh();
+            try
+            {
+                if (edgeIds != null)
+                {
+                    foreach (var edgeId in edgeIds)
+                        await Graph.RemoveEdgeAsync(edgeId);
+                }
+
+                if (nodeIds != null)
+                {
+                    foreach (var nodeId in nodeIds)
+                        await Graph.RemoveNodeAsync(nodeId);
+                }
+            }
+            finally
+            {
+                Graph.ResumeRefresh();
+                Graph.CommandManager.EndBatch();
             }
         }
 
@@ -842,7 +950,7 @@ namespace FlowState.Components
         /// Called from JavaScript when a node is resized
         /// </summary>
         [JSInvokable]
-        public void NotifyNodeResized(string nodeId, double width, double height)
+        public async Task NotifyNodeResized(string nodeId, double oldWidth, double oldHeight, double width, double height)
         {
             if (Graph == null)
                 return;
@@ -850,8 +958,13 @@ namespace FlowState.Components
             var node = Graph.GetNodeById(nodeId);
             if (node == null || node is not FlowGroupNodeBase group)
                 return;
+
             group.OnResized(width, height);
-            return;
+
+            if (!IsReadOnly && (oldWidth != width || oldHeight != height))
+                Graph.CommandManager.AddCommand(new NodeResizedCommand(nodeId, oldWidth, oldHeight, width, height, Graph));
+
+            await ValueTask.CompletedTask;
         }
 
         /// <summary>
@@ -866,6 +979,9 @@ namespace FlowState.Components
         /// <param name="verticalSpacing">Vertical distance between node origins (default: 120)</param>
         public async ValueTask ArrangeAsync(double startX = 50, double startY = 50, double horizontalSpacing = 250, double verticalSpacing = 120)
         {
+            Graph.SuspendRefresh();
+            try
+            {
             var layers = BuildArrangeLayers();
             if (layers == null) return;
 
@@ -884,6 +1000,11 @@ namespace FlowState.Components
                         await node.DomElement.UpdateEdgesAsync();
                     }
                 }
+            }
+            }
+            finally
+            {
+                Graph.ResumeRefresh();
             }
         }
 
@@ -908,6 +1029,9 @@ namespace FlowState.Components
                 return;
             }
 
+            Graph.SuspendRefresh();
+            try
+            {
             var layers = BuildArrangeLayers();
             if (layers == null) return;
 
@@ -951,6 +1075,11 @@ namespace FlowState.Components
 
                     colCurrentY[col] += (sizes.TryGetValue(nodeId, out var sz) ? sz.H : 80) + gapY;
                 }
+            }
+            }
+            finally
+            {
+                Graph.ResumeRefresh();
             }
         }
 
@@ -1138,6 +1267,77 @@ namespace FlowState.Components
         {
             if (Graph?.CommandManager != null)
                 await Graph.CommandManager.RedoAsync();
+        }
+
+        /// <summary>
+        /// Copies the current selection into memory and returns clipboard JSON.
+        /// </summary>
+        [JSInvokable]
+        public async Task<string> HandleCopy(string[] nodeIds)
+        {
+            if (Graph == null || nodeIds == null || nodeIds.Length == 0)
+                return string.Empty;
+
+            var payload = await Graph.CopySelectionAsync(nodeIds);
+            return JsonSerializer.Serialize(payload);
+        }
+
+        /// <summary>
+        /// Pastes clipboard JSON (or the in-memory fallback) and selects the new nodes.
+        /// </summary>
+        [JSInvokable]
+        public async Task HandlePaste(string? json)
+        {
+            if (IsReadOnly || Graph == null)
+                return;
+
+            GraphClipboardPayload? payload = null;
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                try
+                {
+                    payload = JsonSerializer.Deserialize<GraphClipboardPayload>(json);
+                }
+                catch (JsonException)
+                {
+                    payload = null;
+                }
+            }
+
+            if (payload == null || payload.Kind != GraphClipboardPayload.Marker || payload.Nodes.Count == 0)
+                payload = Graph.GetMemoryClipboard();
+
+            if (payload == null || payload.Nodes.Count == 0)
+                return;
+
+            Graph.SetMemoryClipboard(payload);
+            var created = await Graph.PasteSelectionAsync(payload);
+            if (created.Length > 0)
+                await SelectNodesAsync(created);
+        }
+
+        /// <summary>
+        /// Duplicates the given nodes without going through the system clipboard.
+        /// </summary>
+        [JSInvokable]
+        public async Task HandleDuplicate(string[] nodeIds)
+        {
+            if (IsReadOnly || Graph == null || nodeIds == null || nodeIds.Length == 0)
+                return;
+
+            var payload = await Graph.CopySelectionAsync(nodeIds);
+            var created = await Graph.PasteSelectionAsync(payload);
+            if (created.Length > 0)
+                await SelectNodesAsync(created);
+        }
+
+        /// <summary>
+        /// Selects every node in the graph.
+        /// </summary>
+        [JSInvokable]
+        public Task HandleSelectAll()
+        {
+            return SelectAllNodesAsync().AsTask();
         }
 
         // Disposal

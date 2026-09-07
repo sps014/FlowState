@@ -108,7 +108,8 @@
 
 /* Performance optimizations during interaction */
 .flow-canvas.is-panning .flow-node,
-.flow-canvas.is-zooming .flow-node {
+.flow-canvas.is-zooming .flow-node,
+.flow-canvas.is-dragging .flow-node {
     box-shadow: none !important;
     backdrop-filter: none !important;
     transition: none !important;
@@ -117,11 +118,20 @@
 .flow-canvas.is-panning input,
 .flow-canvas.is-panning textarea,
 .flow-canvas.is-zooming input,
-.flow-canvas.is-zooming textarea {
+.flow-canvas.is-zooming textarea,
+.flow-canvas.is-dragging input,
+.flow-canvas.is-dragging textarea {
   pointer-events: none;   /* disable mouse */
   user-select: none;      /* prevent selection */
 }
 .flow-canvas.is-panning input:focus,
-.flow-canvas.is-zooming input:focus {
+.flow-canvas.is-zooming input:focus,
+.flow-canvas.is-dragging input:focus {
   outline: none;
+}
+
+::deep .edge.selected {
+    stroke-width: 4 !important;
+    filter: drop-shadow(0 0 3px currentColor);
+    opacity: 1;
 }

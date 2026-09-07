@@ -9,6 +9,8 @@ public class CommandManager
 {
     private Stack<ICommand> undoStack = [];
     private Stack<ICommand> redoStack = [];
+    private int batchDepth;
+    private List<ICommand>? batch;
 
     /// <summary>
     /// The graph that the command manager is managing
@@ -32,12 +34,53 @@ public class CommandManager
     /// <param name="command">The command to execute</param>
     public void AddCommand(ICommand command)
     {
-
-        if(Graph.IsReadOnly)
+        if (Graph.IsReadOnly)
             return;
-        //await command.ExecuteAsync();
+
+        if (batch != null)
+        {
+            batch.Add(command);
+            return;
+        }
+
         undoStack.Push(command);
         redoStack.Clear();
+        UndoRedoStackChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Starts grouping subsequent commands into a single undo step.
+    /// Nested calls are supported.
+    /// </summary>
+    public void BeginBatch()
+    {
+        if (batchDepth++ == 0)
+            batch = [];
+    }
+
+    /// <summary>
+    /// Ends the current command batch and pushes a composite command when more than one
+    /// command was recorded.
+    /// </summary>
+    public void EndBatch()
+    {
+        if (batchDepth == 0)
+            return;
+
+        batchDepth--;
+        if (batchDepth > 0)
+            return;
+
+        var commands = batch ?? [];
+        batch = null;
+
+        if (commands.Count == 0)
+            return;
+
+        if (commands.Count == 1)
+            AddCommand(commands[0]);
+        else
+            AddCommand(new CompositeCommand(commands));
     }
 
     /// <summary>

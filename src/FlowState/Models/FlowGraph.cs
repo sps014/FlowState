@@ -54,6 +54,11 @@ public class FlowGraph : ISerializable<GraphData>
     internal Dictionary<string, NodeInfo> NodesInfo { get; } = new();
     internal Dictionary<string, EdgeInfo> EdgesInfo { get; } = new();
 
+    private int refreshSuspendCount;
+    private bool refreshPending;
+    private GraphClipboardPayload? memoryClipboard;
+    private int pasteGeneration;
+
     /// <summary>
     /// Gets the execution flow handler for this graph
     /// </summary>
@@ -106,6 +111,7 @@ public class FlowGraph : ISerializable<GraphData>
         NodesInfo.Add(id, new NodeInfo { Id = id, NodeType = type, Component = null, Parameters = data });
 
         if (!suppressEvent)
+        {
             NodeAdded?.Invoke(this, new NodeAddedEventArgs
             {
                 NodeId = id,
@@ -113,6 +119,7 @@ public class FlowGraph : ISerializable<GraphData>
                 X = x,
                 Y = y
             });
+        }
 
         if (!suppressAddingToCommandStack)
         {
@@ -494,26 +501,226 @@ public class FlowGraph : ISerializable<GraphData>
 
         await Task.Delay(50); // allow time for canvas to scale and render
 
-        NodeInfo? lastNodeInfo = null;
-
-        foreach (var node in graphData.Nodes)
+        SuspendRefresh();
+        try
         {
-            var type = NodeRegistry.GetNodeTypeFromName(node.Name);
-            lastNodeInfo = await CreateNodeAsync(type, node.X, node.Y, node.GetRawDictionary(), suppressEvent: true, suppressAddingToCommandStack: true);
+            NodeInfo? lastNodeInfo = null;
+
+            foreach (var node in graphData.Nodes)
+            {
+                var type = NodeRegistry.GetNodeTypeFromName(node.Name);
+                lastNodeInfo = await CreateNodeAsync(type, node.X, node.Y, node.GetRawDictionary(), suppressEvent: true, suppressAddingToCommandStack: true);
+            }
+
+            RequestDomRefresh();
+        }
+        finally
+        {
+            ResumeRefresh();
+        }
+
+        await WaitUntilNodesRenderedAsync();
+
+        SuspendRefresh();
+        try
+        {
+            foreach (var edge in graphData.Edges)
+            {
+                _ = await ConnectAsync(edge.FromNodeId, edge.ToNodeId, edge.FromSocketName, edge.ToSocketName, suppressEvent: true, suppressAddingToCommandStack: true);
+            }
+
+            RequestDomRefresh();
+        }
+        finally
+        {
+            ResumeRefresh();
+        }
+
+    }
+
+    /// <summary>
+    /// Defers canvas re-renders until <see cref="ResumeRefresh"/> is called as many times as this method.
+    /// </summary>
+    public void SuspendRefresh()
+    {
+        refreshSuspendCount++;
+    }
+
+    /// <summary>
+    /// Ends a matching <see cref="SuspendRefresh"/> call. When the last suspension ends, a pending refresh is flushed.
+    /// </summary>
+    public void ResumeRefresh()
+    {
+        if (refreshSuspendCount > 0)
+            refreshSuspendCount--;
+
+        if (refreshSuspendCount == 0 && refreshPending)
+        {
+            refreshPending = false;
+            ForcedRequestDomStateChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>
+    /// Requests a canvas re-render, coalesced while refresh is suspended.
+    /// </summary>
+    public void RequestDomRefresh()
+    {
+        if (refreshSuspendCount > 0)
+        {
+            refreshPending = true;
+            return;
         }
 
         ForcedRequestDomStateChanged?.Invoke(this, EventArgs.Empty);
+    }
 
-        if (lastNodeInfo != null && lastNodeInfo.Instance != null)
-            await lastNodeInfo.Instance.WaitUntilRenderedAsync();
-
-        foreach (var edge in graphData.Edges)
+    /// <summary>
+    /// Waits until every instantiated node has finished its first render.
+    /// </summary>
+    public async ValueTask WaitUntilNodesRenderedAsync()
+    {
+        for (int attempt = 0; attempt < 40; attempt++)
         {
-            _ = await ConnectAsync(edge.FromNodeId, edge.ToNodeId, edge.FromSocketName, edge.ToSocketName, suppressEvent: true, suppressAddingToCommandStack: true);
+            var instances = NodesInfo.Values
+                .Select(n => n.Instance)
+                .Where(n => n != null)
+                .Cast<FlowNodeBase>()
+                .ToArray();
+
+            if (instances.Length == NodesInfo.Count && instances.All(n => n.IsRendered))
+                return;
+
+            var pending = instances.Where(n => !n.IsRendered).Select(n => n.WaitUntilRenderedAsync());
+            if (pending.Any())
+                await Task.WhenAny(Task.WhenAll(pending), Task.Delay(50));
+            else
+                await Task.Delay(16);
+        }
+    }
+
+    /// <summary>
+    /// Serializes the given nodes and any edges whose both endpoints are included.
+    /// </summary>
+    public async ValueTask<GraphClipboardPayload> CopySelectionAsync(IReadOnlyCollection<string> nodeIds)
+    {
+        var payload = new GraphClipboardPayload();
+        var idSet = nodeIds.ToHashSet();
+
+        foreach (var nodeId in nodeIds)
+        {
+            var node = GetNodeById(nodeId);
+            if (node == null)
+                continue;
+
+            payload.Nodes.Add(await node.GetSerializableObjectAsync());
         }
 
-        ForcedRequestDomStateChanged?.Invoke(this, EventArgs.Empty);
+        foreach (var edge in Edges)
+        {
+            var fromId = edge.FromSocket?.FlowNode?.Id;
+            var toId = edge.ToSocket?.FlowNode?.Id;
+            if (fromId == null || toId == null || !idSet.Contains(fromId) || !idSet.Contains(toId))
+                continue;
 
+            payload.Edges.Add(await edge.GetSerializableObjectAsync());
+        }
+
+        memoryClipboard = payload;
+        pasteGeneration = 0;
+        return payload;
+    }
+
+    /// <summary>
+    /// Stores clipboard data for in-memory paste fallback.
+    /// </summary>
+    public void SetMemoryClipboard(GraphClipboardPayload? payload)
+    {
+        memoryClipboard = payload;
+    }
+
+    /// <summary>
+    /// Returns the last copied subgraph kept in memory.
+    /// </summary>
+    public GraphClipboardPayload? GetMemoryClipboard() => memoryClipboard;
+
+    /// <summary>
+    /// Pastes a subgraph with new IDs, offset from the originals. Returns the new node IDs.
+    /// </summary>
+    public async ValueTask<string[]> PasteSelectionAsync(GraphClipboardPayload payload, double offsetX = 40, double offsetY = 40)
+    {
+        if (payload.Nodes.Count == 0)
+            return [];
+
+        pasteGeneration++;
+        var dx = offsetX * pasteGeneration;
+        var dy = offsetY * pasteGeneration;
+        var idMap = new Dictionary<string, string>();
+        var createdIds = new List<string>();
+        var createdPositions = new Dictionary<string, (double X, double Y)>();
+
+        CommandManager.BeginBatch();
+        SuspendRefresh();
+        try
+        {
+            foreach (var node in payload.Nodes)
+            {
+                var newId = Guid.CreateVersion7().ToString();
+                idMap[node.Id] = newId;
+
+                var dict = node.GetRawDictionary();
+                dict.Remove(nameof(FlowNodeBase.Graph));
+                dict[nameof(FlowNodeBase.Id)] = newId;
+
+                var x = node.X + dx;
+                var y = node.Y + dy;
+                dict[nameof(FlowNodeBase.X)] = x;
+                dict[nameof(FlowNodeBase.Y)] = y;
+
+                await CreateNodeAsync(node.Name, x, y, dict, suppressEvent: true);
+                createdIds.Add(newId);
+                createdPositions[newId] = (x, y);
+            }
+
+            RequestDomRefresh();
+        }
+        finally
+        {
+            ResumeRefresh();
+        }
+
+        await Task.Delay(50);
+        await WaitUntilNodesRenderedAsync();
+
+        foreach (var id in createdIds)
+        {
+            var created = GetNodeById(id);
+            if (created?.DomElement == null || !createdPositions.TryGetValue(id, out var pos))
+                continue;
+
+            await created.DomElement.MoveNodeAsync(pos.X, pos.Y);
+        }
+
+        SuspendRefresh();
+        try
+        {
+            foreach (var edge in payload.Edges)
+            {
+                if (!idMap.TryGetValue(edge.FromNodeId, out var fromId) || !idMap.TryGetValue(edge.ToNodeId, out var toId))
+                    continue;
+
+                await ConnectAsync(fromId, toId, edge.FromSocketName, edge.ToSocketName, suppressEvent: true);
+            }
+
+            RequestDomRefresh();
+        }
+        finally
+        {
+            ResumeRefresh();
+            CommandManager.EndBatch();
+        }
+
+        return createdIds.ToArray();
     }
 
 

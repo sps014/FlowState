@@ -45,7 +45,7 @@ public class NodeRemovedCommand : ICommand
     /// <inheritdoc/>
     public ValueTask ExecuteAsync()
     {
-        return Graph.RemoveNodeAsync(NodeProperties.Id);
+        return Graph.RemoveNodeAsync(NodeProperties.Id, suppressAddingToCommandStack: true);
     }
 
     /// <inheritdoc/>

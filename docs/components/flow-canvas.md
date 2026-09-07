@@ -32,7 +32,9 @@ The main canvas component for rendering and managing flow graphs. This is the pr
 | Zoom | double | 1.0 | Initial zoom level |
 | MinZoom | double | 0.2 | Minimum zoom level |
 | MaxZoom | double | 2.0 | Maximum zoom level |
-| PanKey | string | "alt" | Modifier key for panning: "shift", "ctrl", "alt", "meta" |
+| PanKey | string | "alt" | Modifier key for panning: "shift", "ctrl", "alt", "meta". Spacebar and middle-mouse also pan. |
+| SnapToGrid | bool | false | Snap node drags and arrow-key nudges to a grid |
+| SnapGridSize | double | 20 | Grid size in canvas pixels when `SnapToGrid` is enabled |
 | AutoUpdateSocketColors | bool | true | Automatically update socket colors based on connections |
 | EdgeShouldMatchDataType | bool | true | Validate type compatibility when connecting sockets |
 | JsEdgePathFunctionName | string | null | Custom JavaScript function name for edge rendering |
@@ -50,6 +52,24 @@ Gets the underlying DOM element reference for the canvas container `<div>`. Usef
 var canvasEl = canvas.ElementRef;
 await JS.InvokeVoidAsync("myFunction", canvasEl);
 ```
+
+## Keyboard shortcuts
+
+With the canvas focused (click it first), FlowCanvas handles:
+
+| Shortcut | Action |
+|----------|--------|
+| Ctrl/Cmd+Z | Undo |
+| Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z | Redo |
+| Ctrl/Cmd+A | Select all nodes |
+| Ctrl/Cmd+C / V | Copy / paste selected nodes (and edges whose both ends are selected) |
+| Ctrl/Cmd+D | Duplicate selection |
+| Delete / Backspace | Delete selected nodes and edges, or the hovered edge |
+| Arrow keys | Nudge selected nodes (Shift = larger step; snap-aware when `SnapToGrid` is on) |
+| Space (hold) + drag | Pan |
+| Middle mouse drag | Pan |
+
+Shortcuts are ignored while typing in an input, textarea, or other interactive control.
 
 ## Methods
 
